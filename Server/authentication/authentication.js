@@ -79,6 +79,21 @@ module.exports = function(mongoDB, params)
 			});
 	}
 
+	authRouter.get('/signup/:username', function(req, res, next){
+	  	console.log("username check: ", req.params.username);
+
+  		UserModel.findOne().select('user_id').lean().exec(function(err, existingUser)
+  		{
+  			if(errorOccurredCheck(res, err))
+  				return;
+
+  			var isAvailalble = existingUser ? false : true;
+  			
+  			//we must let it be known whether the name is available or not
+			res.status(200).json({username: req.params.username, isAvailalble: isAvailalble});
+  		});	
+	});
+
 	// will handle any request that ends in /events
 	// depends on where the router is "use()'d"
 	authRouter.post('/login/facebook', function(req, res, next) {

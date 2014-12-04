@@ -6,5 +6,4 @@ package edu.eplex.androidsocialclient.API.Objects;
 public class SocialAccount {
     public String service_name;
     public String service_id;
-    public String _id;
 }

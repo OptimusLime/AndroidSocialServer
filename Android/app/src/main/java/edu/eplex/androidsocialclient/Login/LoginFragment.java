@@ -20,6 +20,7 @@ import edu.eplex.androidsocialclient.API.LoginAPI;
 import edu.eplex.androidsocialclient.API.Manager.APIManager;
 import edu.eplex.androidsocialclient.API.Objects.APIToken;
 import edu.eplex.androidsocialclient.API.Objects.AccessToken;
+import edu.eplex.androidsocialclient.API.Objects.UsernameCheck;
 import edu.eplex.androidsocialclient.R;
 
 /**
@@ -93,7 +94,12 @@ public class LoginFragment extends Fragment {
                         //syncrhonously attempt to access server with facebook info!
                         APIToken apiTokenReturn = apiService.syncFacebookLoginRequest(at);
 
-                        Log.d(TAG, "User exists? " + apiTokenReturn.user_exists);
+                        Log.d(TAG, "User exists? " + apiTokenReturn.user.isInitialized);
+
+                        UsernameCheck check = apiService.syncUsernameCheck("bobsyouruncle");
+
+                        Log.d(TAG, "Username available? " + check.isAvailable);
+
 
                     } catch (Exception e) {
                         e.printStackTrace();
