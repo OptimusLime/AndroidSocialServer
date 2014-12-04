@@ -16,6 +16,7 @@ import com.facebook.widget.LoginButton;
 
 import java.util.Arrays;
 
+import edu.eplex.androidsocialclient.API.Manager.APIManager;
 import edu.eplex.androidsocialclient.Login.LoginFragment;
 
 
@@ -25,6 +26,13 @@ public class MainLoginActivity extends FragmentActivity {
 
     private LoginFragment loginFragment;
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        //make sure we have our API setup
+        APIManager.getInstance().createAPIAdapter(this.getString(R.string.app_server_endpoint));
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

@@ -14,7 +14,12 @@ import com.facebook.UiLifecycleHelper;
 import com.facebook.widget.LoginButton;
 
 import java.util.Arrays;
+import java.util.logging.Handler;
 
+import edu.eplex.androidsocialclient.API.LoginAPI;
+import edu.eplex.androidsocialclient.API.Manager.APIManager;
+import edu.eplex.androidsocialclient.API.Objects.APIToken;
+import edu.eplex.androidsocialclient.API.Objects.AccessToken;
 import edu.eplex.androidsocialclient.R;
 
 /**
@@ -27,6 +32,8 @@ public class LoginFragment extends Fragment {
 
     //Helper for life cycle maintenance in FB
     private UiLifecycleHelper uiHelper;
+    private LoginButton fbLogin;
+    private LoginAPI apiService;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -48,11 +55,16 @@ public class LoginFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main_login, container, false);
 
-        LoginButton fbLogin = (LoginButton) rootView.findViewById(R.id.authButton);
-        //tie fb login button results to this fragment
+        fbLogin = (LoginButton) rootView.findViewById(R.id.authButton);
+
+        //tie fb login button results to this fragment and would handle changing the login/logout button
         fbLogin.setFragment(this);
+
         //ask for public profile and email access
         fbLogin.setReadPermissions(Arrays.asList("public_profile", "email"));
+
+        //if we want to register for callbacks, but not change the login/logout button
+//        fbLogin.setSessionStatusCallback(callback);
 
         return rootView;
     }
@@ -61,6 +73,38 @@ public class LoginFragment extends Fragment {
     private void onSessionStateChange(Session session, SessionState state, Exception exception) {
         if (state.isOpened()) {
             Log.i(TAG, "Logged in...");
+
+            final String fbAccessToken = session.getAccessToken();
+
+            Thread thread = new Thread()
+            {
+                @Override
+                public void run() {
+
+                    //now we want to exchange our fb access token for one from our server
+                    try {
+                        if(apiService == null)
+                            apiService = APIManager.getInstance().createLoginAPI();
+
+                        //now we have our api service, let's try to send out this access token
+                        AccessToken at = new AccessToken();
+                        at.access_token = fbAccessToken;
+
+                        //syncrhonously attempt to access server with facebook info!
+                        APIToken apiTokenReturn = apiService.syncFacebookLoginRequest(at);
+
+                        Log.d(TAG, apiTokenReturn.user_exists);
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+
+            thread.start();
+
+
+
         } else if (state.isClosed()) {
             Log.i(TAG, "Logged out...");
         }
