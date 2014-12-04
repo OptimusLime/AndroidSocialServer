@@ -93,7 +93,7 @@ public class LoginFragment extends Fragment {
                         //syncrhonously attempt to access server with facebook info!
                         APIToken apiTokenReturn = apiService.syncFacebookLoginRequest(at);
 
-                        Log.d(TAG, apiTokenReturn.user_exists);
+                        Log.d(TAG, "User exists? " + apiTokenReturn.user_exists);
 
                     } catch (Exception e) {
                         e.printStackTrace();
