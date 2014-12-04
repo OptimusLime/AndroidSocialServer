@@ -2,6 +2,7 @@
 	"name": "simple-social",
 	"main": "server.js",
 	"dependencies": {
+		"superagent" : "*",
 		"express": "4.x.x",
 		"mongoose": "~3.6.13",
 		"body-parser": "~1.0.1"
