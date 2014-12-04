@@ -2,6 +2,8 @@
 	"name": "simple-social",
 	"main": "server.js",
 	"dependencies": {
+		"optimuslime-traverse" : "*",
+		"win-utils" : "*",
 		"superagent" : "*",
 		"express": "4.x.x",
 		"mongoose": "~3.6.13",
