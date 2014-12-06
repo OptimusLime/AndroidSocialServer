@@ -33,22 +33,41 @@ function createSignupTokenInDB(db, user_id, cb)
 	console.log("Token created before DB entry: ", tokenAndHash);
 
 	//now we must store it in our initializiation db
-	db.setTokenWithData(tokenAndHash.tokenHash, {user_id: user_id}, function(err, stored)
+	db.setKeyWithData(tokenAndHash.tokenHash, {user_id: user_id}, function(err, stored)
 	{
+		//errors end this real quick
 		if(err) {
 			cb(err);
 			return;
 		}
+	
+		//if this for some reason didn't work, there would be an empty stored object
+		if(!stored){cb(new Error("Storage of token in Redis DB failed, no redis error though."));return;}
 
-		if(stored)
+		//we also need to store the inverse - user_id -> access tokens
+		//first we fetch our tokens
+		exports.fetchUserAPITokens(db, user_id, function(err, tokens)
 		{
-			//let us know about the token, that's the API access key!
-			cb(undefined, tokenAndHash.token);
-		}
-		else
-		{
-			cb(new Error("Storage of token in Redis DB failed, no redis error though."));
-		}
+			if(err){cb(err);return;}
+
+			//we now have the tokens, we append our new token
+			tokens.push(tokenAndHash.tokenHash);
+
+			//now we save with the new tokens -- no expiration time
+			db.setKeyWithData(user_id, {tokens: tokens}, 0, function(err, stored)
+			{
+				if(stored)
+				{
+					//let us know about the token, that's the API access key!
+					cb(undefined, tokenAndHash.token);
+				}
+				else
+				{
+					cb(new Error("Storage of api tokens in user_id key in Redis DB failed, no redis error though."));
+				}
+			});
+
+		});		
 	});
 }
 
@@ -63,11 +82,54 @@ exports.createAPIToken = function(user_id, cb)
 	createSignupTokenInDB(apiTokenRedisDB, user_id, cb);
 }
 
+exports.fetchUserAPITokens = function(db, user_id, cb)
+{
+	db.getDataByKey(user_id, function(err, tokenData)
+	{
+		if(err)
+		{
+			cb(err);
+			return;
+		}
+
+		//if we have user data, we can verify that information
+		if(tokenData)
+			cb(undefined, tokenData.tokens);
+		else
+			//no error, but no token data found!
+			cb(undefined, []);
+
+	});
+}
+
 exports.verifySignupToken = function(clienttoken, cb)
 {
 	var apiToken = exports.hashToken(clienttoken);
 
-	signupRedisDB.getDataByToken(apiToken, function(err, data)
+	signupRedisDB.getDataByKey(apiToken, function(err, data)
+	{
+		if(err)
+		{
+			cb(err);
+			return;
+		}
+
+		//if we have user data, we can verify that information
+		if(data)
+			cb(undefined, data.user_id);
+		else
+			//no error, but no user data found -- not verified!
+			cb();
+
+	});
+}
+
+
+exports.verifyAPIToken = function(clienttoken, cb)
+{
+	var apiToken = exports.hashToken(clienttoken);
+
+	apiTokenRedisDB.getDataByKey(apiToken, function(err, data)
 	{
 		if(err)
 		{

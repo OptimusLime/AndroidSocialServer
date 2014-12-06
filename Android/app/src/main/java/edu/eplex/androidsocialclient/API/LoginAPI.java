@@ -9,6 +9,7 @@ import retrofit.http.Body;
 import retrofit.http.GET;
 import retrofit.http.POST;
 import retrofit.http.Path;
+import retrofit.http.Query;
 
 /**
  * Created by paul on 12/3/14.
@@ -35,4 +36,9 @@ public interface LoginAPI {
 
     @GET("/auth/signup/{username}")
     UsernameCheck syncUsernameCheck(@Path("username") String usernameCheck);
+
+    @GET("/auth/verify")
+    APIToken syncVerifyAPIAccess(@Query("api_token") String apiToken);
+
+
 }

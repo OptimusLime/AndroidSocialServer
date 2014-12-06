@@ -97,19 +97,42 @@ public class LoginFragment extends Fragment {
 
                         Log.d(TAG, "User exists? " + apiTokenReturn.user.isInitialized);
 
-                        OAuth2Signup signupInfo = new OAuth2Signup();
-                        signupInfo.api_token = apiTokenReturn.api_token;
-                        signupInfo.user_id = apiTokenReturn.user.user_id;
-                        signupInfo.username = "bobsyouruncle";
-                        signupInfo.password = "bob22";
-                        signupInfo.email = apiTokenReturn.user.email;
 
-                        APIToken signupConfirmation = apiService.syncFacebookSignup(signupInfo);
+                        if(apiTokenReturn.user != null && apiTokenReturn.user.isInitialized)
+                        {
+                            //we're signed in! should we check we have access?
+                            APIToken confirmUserAccess = apiService.syncVerifyAPIAccess(apiTokenReturn.api_token);
 
 
-                        UsernameCheck check = apiService.syncUsernameCheck("bobsyouruncle");
+                            Log.d(TAG, "User verified? " + confirmUserAccess.user.user_id);
 
-                        Log.d(TAG, "Username available? " + check.isAvailable);
+
+                        }
+                        else if(apiTokenReturn.user != null && !apiTokenReturn.user.isInitialized)
+                        {
+                            OAuth2Signup signupInfo = new OAuth2Signup();
+                            signupInfo.api_token = apiTokenReturn.api_token;
+                            signupInfo.user_id = apiTokenReturn.user.user_id;
+                            signupInfo.username = "bobsyouruncle";
+                            signupInfo.password = "bob22";
+                            signupInfo.email = apiTokenReturn.user.email;
+
+                            //in theory we are signed up, let's also verify
+                            APIToken signupConfirmation = apiService.syncFacebookSignup(signupInfo);
+
+                            //we're signed in! should we check we have access?
+                            APIToken confirmUserAccess = apiService.syncVerifyAPIAccess(signupConfirmation.api_token);
+
+                            Log.d(TAG, "User verified after signup? " + confirmUserAccess.user.isInitialized);
+
+                        }
+
+
+
+
+//                        UsernameCheck check = apiService.syncUsernameCheck("bobsyouruncle");
+
+//                        Log.d(TAG, "Username available? " + check.isAvailable);
 
 
                     } catch (Exception e) {

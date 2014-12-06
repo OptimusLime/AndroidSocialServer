@@ -53,11 +53,9 @@ module.exports = function(tokenAuth, mongoDB, params)
 		return false;
 	}
 
-	function fetchAndReturnUserFromID(id, res)
+	function fetchAndReturnUserFromID(user_id, res)
 	{
-
-
-		UserModel.findOne({_id: id})
+		UserModel.findOne({user_id: user_id})
 			.select(UserModelClass.clientSafeProperties().join(' '))
 			.lean()
 			.exec(function(err, user) {
@@ -76,18 +74,60 @@ module.exports = function(tokenAuth, mongoDB, params)
 					return;
 				}
 
-				//we know the user exists, so we create a nice little token for them
-				//TODO: try to fetch the existing access token for the user first -- need user_id redis entry
-				tokenAuth.createTemporarySignupToken(user.user_id, function(err, apiToken)
+				//we know the user exists, but are they initialized already?
+				if(user.isInitialized)
 				{
-					console.log("Temp signup token: " + apiToken);
-					//send them back with the token
-					returnUser(res, user, apiToken);
-				});
+					//we simply create a token for this user - new or otherwise
+					tokenAuth.createAPIToken(user.user_id, function(err, apiToken)
+					{
+						console.log("ApiToken generated: " + apiToken)
+						//we've created an api token, return with user
+						returnUser(res, user, apiToken);
+					});
+				}
+				else
+				{
+					//otherwise, this is an uninitiated user, we create a temporary signup token for the user
+					//there is only 1 temp signup token per user
+					tokenAuth.createTemporarySignupToken(user.user_id, function(err, apiToken)
+					{
+						console.log("Temp signup token: " + apiToken);
+						//send them back with the token
+						returnUser(res, user, apiToken);
+					});
+				}				
 
 			});
 		
 	}
+
+	//temporary route to verify api access
+	authRouter.get('/verify', function(req, res, next){
+	  	console.log("credential check: ", req.query.api_token);
+
+	  	var api_token = req.query.api_token;
+
+  		tokenAuth.verifyAPIToken(api_token, function(err, user_id)
+  		{
+  			if(!user_id)
+  			{
+  				res.status(401).json({message: "user_id not found from access token"});
+  				return;
+  			}
+  			UserModel.findOne({user_id: user_id})
+			.select(UserModelClass.clientSafeProperties().join(' '))
+			.lean()
+			.exec(function(err, user) {
+				if(errorOccurredCheck(res,err))
+					return;
+
+				//send it on back
+				returnUser(res, user, api_token);
+			});
+  			
+  		});
+	});
+
 
 	authRouter.get('/signup/:username', function(req, res, next){
 	  	console.log("username check: ", req.params.username);
@@ -178,7 +218,7 @@ module.exports = function(tokenAuth, mongoDB, params)
 						var fbData = new FBDataModel({
 							fid: fbRes.body.id,
 							access_token: req.body.access_token,
-							user_id: savedUser._id,
+							user_id: savedUser.user_id,
 							email: fbRes.body.email,
 							first_name: fbRes.body.first_name,
 							last_name: fbRes.body.last_name,
@@ -205,8 +245,7 @@ module.exports = function(tokenAuth, mongoDB, params)
 
 
 						})
-					})
-
+					});
 				}
 			});
 
