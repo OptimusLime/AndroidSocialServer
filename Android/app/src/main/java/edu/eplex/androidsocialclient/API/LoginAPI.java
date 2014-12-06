@@ -27,6 +27,9 @@ public interface LoginAPI {
     @POST("/auth/signup/facebook")
     void asyncFacebookSignup(@Body OAuth2Signup signupRequest, Callback<APIToken> cb);
 
+    @POST("/auth/signup/facebook")
+    APIToken syncFacebookSignup(@Body OAuth2Signup signupRequest);
+
     @GET("/auth/signup/{username}")
     void asyncUsernameCheck(@Path("username") String usernameCheck, Callback<UsernameCheck> cb);
 

@@ -11,7 +11,7 @@ var FBDataModelClass = require('./models/fbdata.js');
 //TODO: Error handling in this process. Need to have an official error handler so we can 
 //more efficiently pass errors. Better logging platform like Winston as well
 
-module.exports = function(mongoDB, params)
+module.exports = function(tokenAuth, mongoDB, params)
 {
 	if(!mongoDB){
 		throw new Error("MongoDB Connection not passed into authentication router");
@@ -29,11 +29,11 @@ module.exports = function(mongoDB, params)
 	authRouter.use(bodyParser.urlencoded({ extended: true }));
 	authRouter.use(bodyParser.json());
 
-	function returnUser(res, user)
+	function returnUser(res, user, apiToken)
 	{
 		//otherwise, we have discovered our user, send them back!
 		//we don't need to send the whole user back, but 
-		var rUser = {api_token: "", user: UserModelClass.makeClientSafe(user), token_expiration: null};
+		var rUser = {api_token: apiToken, user: UserModelClass.makeClientSafe(user)};
 		
 		console.log("Returning user: ", rUser);
 		res.json(rUser);
@@ -55,6 +55,8 @@ module.exports = function(mongoDB, params)
 
 	function fetchAndReturnUserFromID(id, res)
 	{
+
+
 		UserModel.findOne({_id: id})
 			.select(UserModelClass.clientSafeProperties().join(' '))
 			.lean()
@@ -74,9 +76,17 @@ module.exports = function(mongoDB, params)
 					return;
 				}
 
-				//send them back
-				returnUser(res, user);
+				//we know the user exists, so we create a nice little token for them
+				//TODO: try to fetch the existing access token for the user first -- need user_id redis entry
+				tokenAuth.createTemporarySignupToken(user.user_id, function(err, apiToken)
+				{
+					console.log("Temp signup token: " + apiToken);
+					//send them back with the token
+					returnUser(res, user, apiToken);
+				});
+
 			});
+		
 	}
 
 	authRouter.get('/signup/:username', function(req, res, next){
@@ -180,8 +190,20 @@ module.exports = function(mongoDB, params)
 							if(errorOccurredCheck(res, err))
 								return;
 
-							//we've created our temporary user, lets send them back!
-							returnUser(res, savedUser.toObject());
+							//finally, we create our initialization API token
+							//this is a short lived token for creating a new user and updating their information
+							//during signup -- this does not give you access to other parts of the api
+							tokenAuth.createTemporarySignupToken(newUser.user_id, function(err, apiToken)
+							{
+								if(errorOccurredCheck(res, err))
+									return;
+
+								//we've created our temporary user and our api authentications, lets send them back!
+								returnUser(res, savedUser.toObject(), apiToken);
+
+							})
+
+
 						})
 					})
 
@@ -190,19 +212,92 @@ module.exports = function(mongoDB, params)
 
 		});
 
-
-	
-
-	  
-
-
 	});
 
 	authRouter.post('/signup/facebook', function(req, res, next){
 	  console.log("signup request facebook: ", req.body);
 	  
+	  //need to change user information, first verify the signup api token is correct
+	  var signupToken = req.body.api_token;
+
+	  tokenAuth.verifySignupToken(signupToken, function(err, user_id)
+	  {
+	  	//check for error finding signup token
+	  	if(errorOccurredCheck(res,err))
+	  		return;
+
+	  	//no error! It was found! 
+	  	if(!user_id)
+		{
+			errorOccurredCheck(res, new Error("Verify signup token returned empty user_id. This is wrong."));
+			return;	
+		}
+
+		//we have a user id! go fetch our user, then update their info, finally sending back the information
+	  	UserModel.findOne({user_id: user_id})
+			.exec(function(err, user) {
+					
+				//uh oh, mongodb error
+	 			if(errorOccurredCheck(res, err))
+						return;
+				
+				console.log("Found user: ", user.toObject());
+
+				if(!user)
+				{
+					//there is no existing user with this id, this is a weird error
+					console.error(new Error("Weird error: cannot find user during signup despire having known user_id. Malicious?"));
+					res.status(500);
+					return;
+				}
+
+				//we know the user exists, so we create a nice little token for them
+				tokenAuth.createAPIToken(user.user_id, function(err, apiToken)
+				{
+
+					//if this user is already initialized, we don't change this at all
+					if(user.isInitialized)
+					{	
+						console.log("User initialized, why are you trying to signup?");
+						returnUser(res, user, apiToken);
+						return;
+					}
+
+					//oitherwise, user is not initialised, so we take the user requests and apply them 
+					//to the account with this signup mumbo jumbo! We are verified so no worries
+					console.log("Unsafe user overwrite occurring, must check email and verify username exists");
+					
+					//verify the email is not in use before writing it to the user
+					user.email = req.body.email || user.email;
+
+					//TODO: verify the username exists before giving it away -- lol
+					user.username = req.body.username || user.username;
+
+					//this will actually encrypt the password and save the hash
+					user.password = req.body.password;
+
+					console.log("Official api token: " + apiToken);
+
+					//successfully initilaized our user! Save this sexy user to the DB
+					user.isInitialized = true;
+
+					user.save(function(err, savedUser)
+					{
+						if(errorOccurredCheck(res, err))
+							return;
+
+						//send them back with the token and the updated user
+						returnUser(res, savedUser.toObject(), apiToken);
+					})
+
+				});
+
+			});
+
+	  });
+
 	  //all good 
-	   res.status(200).json({message: "FB Signup router reached successfully"});
+	   // res.status(200).json({message: "FB Signup router reached successfully"});
 	});
 
 	return authRouter;

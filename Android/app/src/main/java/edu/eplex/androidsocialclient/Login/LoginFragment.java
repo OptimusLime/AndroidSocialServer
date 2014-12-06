@@ -20,6 +20,7 @@ import edu.eplex.androidsocialclient.API.LoginAPI;
 import edu.eplex.androidsocialclient.API.Manager.APIManager;
 import edu.eplex.androidsocialclient.API.Objects.APIToken;
 import edu.eplex.androidsocialclient.API.Objects.AccessToken;
+import edu.eplex.androidsocialclient.API.Objects.OAuth2Signup;
 import edu.eplex.androidsocialclient.API.Objects.UsernameCheck;
 import edu.eplex.androidsocialclient.R;
 
@@ -95,6 +96,16 @@ public class LoginFragment extends Fragment {
                         APIToken apiTokenReturn = apiService.syncFacebookLoginRequest(at);
 
                         Log.d(TAG, "User exists? " + apiTokenReturn.user.isInitialized);
+
+                        OAuth2Signup signupInfo = new OAuth2Signup();
+                        signupInfo.api_token = apiTokenReturn.api_token;
+                        signupInfo.user_id = apiTokenReturn.user.user_id;
+                        signupInfo.username = "bobsyouruncle";
+                        signupInfo.password = "bob22";
+                        signupInfo.email = apiTokenReturn.user.email;
+
+                        APIToken signupConfirmation = apiService.syncFacebookSignup(signupInfo);
+
 
                         UsernameCheck check = apiService.syncUsernameCheck("bobsyouruncle");
 

@@ -2,7 +2,9 @@
 	"name": "simple-social",
 	"main": "server.js",
 	"dependencies": {
+		"redis" : "*",
 		"optimuslime-traverse" : "*",
+		"node-uuid" : "*",
 		"win-utils" : "*",
 		"superagent" : "*",
 		"express": "4.x.x",
