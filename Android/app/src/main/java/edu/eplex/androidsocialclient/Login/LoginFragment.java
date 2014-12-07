@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 
 import com.facebook.Session;
 import com.facebook.SessionState;
@@ -40,6 +41,10 @@ public class LoginFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getActivity().getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
+        getActivity().getActionBar().hide();
+
         uiHelper = new UiLifecycleHelper(getActivity(), callback);
         uiHelper.onCreate(savedInstanceState);
     }
@@ -58,6 +63,7 @@ public class LoginFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_main_login, container, false);
 
         fbLogin = (LoginButton) rootView.findViewById(R.id.authButton);
+        fbLogin.getBackground().setAlpha(getResources().getInteger(R.integer.percent_alpha));
 
         //tie fb login button results to this fragment and would handle changing the login/logout button
         fbLogin.setFragment(this);
@@ -141,7 +147,7 @@ public class LoginFragment extends Fragment {
                 }
             };
 
-            thread.start();
+//            thread.start();
 
 
 

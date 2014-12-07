@@ -268,6 +268,8 @@ module.exports = function(tokenAuth, mongoDB, params)
 	  	//no error! It was found! 
 	  	if(!user_id)
 		{
+			//TODO: this would send a not authorized callback -- the authorization does not exist anymore
+			//either is expired, or it was removed
 			errorOccurredCheck(res, new Error("Verify signup token returned empty user_id. This is wrong."));
 			return;	
 		}
@@ -290,18 +292,24 @@ module.exports = function(tokenAuth, mongoDB, params)
 					return;
 				}
 
+				if(user.isInitialized)
+				{
+					//send them back with the already initialized user
+					returnUser(res, savedUser.toObject());
+
+					//importantly, expire all tokens associated with this user
+					tokenAuth.expireSignupTokens(savedUser.user_id, function()
+					{
+						//we don't care if this succeeds or not -- the tokens will eventually expire anyways
+					});
+
+					return;
+				}
+
+
 				//we know the user exists, so we create a nice little token for them
 				tokenAuth.createAPIToken(user.user_id, function(err, apiToken)
 				{
-
-					//if this user is already initialized, we don't change this at all
-					if(user.isInitialized)
-					{	
-						console.log("User initialized, why are you trying to signup?");
-						returnUser(res, user, apiToken);
-						return;
-					}
-
 					//oitherwise, user is not initialised, so we take the user requests and apply them 
 					//to the account with this signup mumbo jumbo! We are verified so no worries
 					console.log("Unsafe user overwrite occurring, must check email and verify username exists");
@@ -327,7 +335,9 @@ module.exports = function(tokenAuth, mongoDB, params)
 
 						//send them back with the token and the updated user
 						returnUser(res, savedUser.toObject(), apiToken);
-					})
+
+
+					});
 
 				});
 

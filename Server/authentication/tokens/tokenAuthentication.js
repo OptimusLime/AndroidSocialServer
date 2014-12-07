@@ -147,6 +147,18 @@ exports.verifyAPIToken = function(clienttoken, cb)
 	});
 }
 
+exports.expireSignupTokens = function(user_id, cb)
+{
+	//remove all signup keys for a particular user 
+	signupRedisDB.expireTokensByUserID(user_id, cb);
+}
+
+exports.removeAPIAccessByUserID = function(user_id, cb)
+{
+	//remove all current api tokens and access for a user based on their user_id
+	apiTokenRedisDB.expireTokensByUserID(user_id, cb);
+}
+
 exports.initializeRedisConnections = function(databaseValues, databaseTTL, cb)
 {
 	//signup db connection

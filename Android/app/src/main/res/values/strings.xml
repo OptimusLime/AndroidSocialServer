@@ -4,5 +4,13 @@
     <string name="app_name">AndroidSocialClient</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="prompt_email">Username</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in_short">Log In</string>
+    <string name="action_sign_in">Log In</string>
+    <string name="action_register_email">Join with Email</string>
+    <string name="action_register_facebook">Join with Facebook</string>
+
+    <integer name="percent_alpha">40</integer>
 
 </resources>
