@@ -10,7 +10,7 @@ var FBDataModelClass = require('./models/fbdata.js');
 //TODO: Error handling in this process. Need to have an official error handler so we can 
 //more efficiently pass errors. Better logging platform like Winston as well
 
-module.exports = function(tokenAuth, mongoDB, params)
+module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 {
 	if(!mongoDB){
 		throw new Error("MongoDB Connection not passed into authentication router");

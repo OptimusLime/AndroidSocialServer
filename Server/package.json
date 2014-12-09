@@ -3,6 +3,7 @@
 	"main": "server.js",
 	"dependencies": {
 		"base64-url": "~1.0.0",
+		"jsonwebtoken" : "*",
 		"redis" : "*",
 		"optimuslime-traverse" : "*",
 		"node-uuid" : "*",

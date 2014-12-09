@@ -5,7 +5,7 @@ var app = express();
 //get our authentication router
 var AuthRouting = require("./authentication/authentication.js");
 var tokenAuth = require('./authentication/tokens/tokenAuthentication.js');
-
+var googleAuth = require("./authentication/tokens/googleVerification.js");
 
 //what port to operate on?
 var port = process.env.PORT || 8000; 		// set our port
@@ -38,24 +38,28 @@ var redisDefaultTTL = {
 var clientKeys = require("./clientKeys.js");
 
 db.once('open', function() {
-	// Our database connection is open, we can now do our router setup and handle model creation 
 
+	// Our database connection is open, we can now do our router setup and handle model creation 
 	tokenAuth.initializeRedisConnections(redisDBLocation, redisDefaultTTL, function(err)
 	{
 		//catch any errors from redis before starting
 		if(err) throw err;
 
-		// a route for handling authentication -- just send it in with our db connections and some params [later]
-		app.use('/auth', new AuthRouting(tokenAuth, db, {keys: clientKeys}));
-
-		//now we setup our app on the desired port
-		app.listen(port, function()
+		googleAuth.initializeGoogleVerification(clientKeys, function(err)
 		{
-			console.log("Now running on port " + port);	
-		});
-	})
+			if(err) throw err;
 
-	
+			// a route for handling authentication -- just send it in with our db connections and some params [later]
+			app.use('/auth', new AuthRouting(tokenAuth, googleAuth, db, {keys: clientKeys}));
+
+			//now we setup our app on the desired port
+			app.listen(port, function()
+			{
+				console.log("Now running on port " + port);	
+			});
+
+		});
+	});
 
 });
 
