@@ -5,6 +5,7 @@ import android.app.FragmentManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.NavUtils;
@@ -13,6 +14,7 @@ import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
+import android.text.method.CharacterPickerDialog;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
@@ -37,9 +39,13 @@ import com.facebook.Session;
 import com.facebook.SessionState;
 import com.facebook.UiLifecycleHelper;
 import com.facebook.widget.LoginButton;
+import com.google.android.gms.auth.GoogleAuthException;
+import com.google.android.gms.auth.GoogleAuthUtil;
+import com.google.android.gms.auth.UserRecoverableAuthException;
 import com.rengwuxian.materialedittext.MaterialEditText;
 import com.rengwuxian.materialedittext.validation.RegexpValidator;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -55,6 +61,7 @@ import edu.eplex.androidsocialclient.API.Objects.OAuth2Signup;
 import edu.eplex.androidsocialclient.API.Objects.UsernameCheck;
 import edu.eplex.androidsocialclient.R;
 import edu.eplex.androidsocialclient.Utilities.ProgressWheel;
+import edu.eplex.androidsocialclient.Utilities.UserEmailFetcher;
 import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
@@ -357,6 +364,11 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 
         return rootView;
     }
+    void quickSetText(){
+        emailEditText.setText("d@do.do");
+        passwordEditText.setText("dododo");
+        usernameEditText.setText("checkface");
+    }
 
     void applyGreenRedIcon(ImageView view, boolean validated, int drawGreen, int drawRed)
     {
@@ -562,12 +574,82 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
             int actionBarHeight = ((ActionBarActivity)getActivity()).getSupportActionBar().getHeight();
 
             completeMenuButton.setLayoutParams(new RelativeLayout.LayoutParams(actionBarHeight, actionBarHeight));
+
+            completeMenuButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    //locally good to go
+                    if(isEmailValid && isUsernameValid && isPasswordValid) {
+                        //grab user email for google specifically to create the token
+                        AsyncTask<Void, Void, String> task = new AsyncTask<Void, Void, String>() {
+                            @Override
+                            protected String doInBackground(Void... params) {
+
+                                String email = UserEmailFetcher.getEmail(getActivity());
+                                String token = null;
+
+                                try {
+
+                                    token = GoogleAuthUtil.getToken(getActivity(),
+                                                    email,
+                                                    "audience:server:client_id:694834200067-1l6lrta2d4lfbdmiv1tosinoq91cnp51.apps.googleusercontent.com");
+//                                                    "audience:server:client_id:694834200067-jv9qgnu0eb5pr95cc4gva5i4f2qjcok6.apps.googleusercontent.com");
+
+                                    OAuth2Signup signup = new OAuth2Signup();
+                                    signup.api_token = token;
+                                    signup.email = emailEditText.getText().toString();
+                                    signup.username = usernameEditText.getText().toString();
+                                    signup.password = passwordEditText.getText().toString();
+
+                                    APIToken apiToken = apiService.syncEmailSignup(signup);
+
+                                    Log.d("TokenRetrieve", apiToken.api_token);
+
+                                } catch (IOException transientEx) {
+                                    // Network or server error, try later
+                                    Log.e(TAG, transientEx.toString());
+                                } catch (UserRecoverableAuthException e) {
+                                    // Recover (with e.getIntent())
+//                                    Log.e(TAG, e.toString());
+//                                    Intent recover = e.getIntent();
+//                                    startActivityForResult(recover, REQUEST_CODE_TOKEN_AUTH);
+                                } catch (GoogleAuthException authEx) {
+                                    // The call is not ever expected to succeed
+                                    // assuming you have already verified that
+                                    // Google Play services is installed.
+                                    Log.e(TAG, authEx.toString());
+                                }
+                                catch (Exception e)
+                                {
+                                    e.printStackTrace();
+                                }
+
+                                return token;
+                            }
+
+                            @Override
+                            protected void onPostExecute(String token) {
+                                Log.i(TAG, "Access token retrieved:" + token);
+                            }
+
+                        };
+
+                        //start it up!
+                        task.execute();
+                    }
+                }
+            });
+
         }
 
+        //quickly set up the entries to test faster manually
+        quickSetText();
 
         //set up our menu initially -- if we have everything we need, we are good to go
         //but initially, that won't be the case
         checkReadyToFinish();
+
+
 
     }
 
@@ -578,7 +660,7 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
         if(completeMenuButton.isEnabled() != readyToFinish)
             completeMenuButton.setEnabled(readyToFinish);
 
-        return  readyToFinish;
+        return readyToFinish;
     }
     void popRegistrationFragment()
     {
@@ -606,6 +688,51 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 
                 getActivity().onBackPressed();
                 return true;
+            case R.id.complete_register:
+
+                //if we're enabled, then we're good to go!
+                if(completeMenuButton.isEnabled())
+                {
+                    //locally good to go
+                    if(isEmailValid && isUsernameValid && isPasswordValid) {
+                        //grab user email for google specifically to create the token
+
+                        Thread sendStuff = new Thread()
+                        {
+                            @Override
+                            public void run() {
+                                String email = UserEmailFetcher.getEmail(getActivity());
+                                try {
+                                    String tokenToVerify = GoogleAuthUtil.getToken
+                                            (getActivity(),
+                                                    email,
+                                                    "audience:server:client_id:694834200067-jv9qgnu0eb5pr95cc4gva5i4f2qjcok6.apps.googleusercontent.com");
+
+                                    OAuth2Signup signup = new OAuth2Signup();
+                                    signup.api_token = tokenToVerify;
+                                    signup.email = emailEditText.getText().toString();
+                                    signup.username = usernameEditText.getText().toString();
+                                    signup.password = passwordEditText.getText().toString();
+
+                                    APIToken apiToken = apiService.syncEmailSignup(signup);
+
+                                    Log.d("TokenRetrieve", apiToken.api_token);
+                                }
+                                catch (Exception e)
+                                {
+                                    e.printStackTrace();
+                                }
+                            }
+                        };
+
+                        //start it up!
+                        sendStuff.run();
+
+                    }
+                }
+
+
+                break;
             default:
 
                 break;

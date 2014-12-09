@@ -1,6 +1,7 @@
 
 #Ignore the social keys and other senstitive strings
 socialKeys.xml
+clientKeys.js
 
 # Logs
 logs

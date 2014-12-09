@@ -35,6 +35,7 @@ var redisDefaultTTL = {
 	apiTokenDB : 60*60*24*20
 };
 
+var clientKeys = require("./clientKeys.js");
 
 db.once('open', function() {
 	// Our database connection is open, we can now do our router setup and handle model creation 
@@ -45,7 +46,7 @@ db.once('open', function() {
 		if(err) throw err;
 
 		// a route for handling authentication -- just send it in with our db connections and some params [later]
-		app.use('/auth', new AuthRouting(tokenAuth, db));
+		app.use('/auth', new AuthRouting(tokenAuth, db, {keys: clientKeys}));
 
 		//now we setup our app on the desired port
 		app.listen(port, function()

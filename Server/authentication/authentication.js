@@ -2,7 +2,6 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var superagent = require('superagent');
 
-
 var util = require('util');
 
 var UserModelClass = require('./models/user.js');
@@ -18,6 +17,8 @@ module.exports = function(tokenAuth, mongoDB, params)
 	}
 
 	params = params || {};
+
+	var googleAuthKeys = params.keys;
 
 	var authRouter = express.Router();
 
@@ -349,6 +350,51 @@ module.exports = function(tokenAuth, mongoDB, params)
 	  //all good 
 	   // res.status(200).json({message: "FB Signup router reached successfully"});
 	});
+
+	authRouter.post('/signup/email', function(req, res, next){
+	  console.log("signup request email: ", req.body);
+
+	  // console.log("Google web token: " + req.body.api_token);
+
+	  var splitToken = req.body.api_token.split(".");
+
+	  for(var i=0; i < splitToken.length; i++)
+	  {
+	  	var toDecode = splitToken[i];
+		var buf = new Buffer(toDecode, 'base64'); // Ta-da
+		// console.log("Part " + i + ": " + buf.toString());
+	  }
+
+	  //certs at: https://www.googleapis.com/oauth2/v1/certs
+
+	  var crypto = require('crypto');
+	  var base64URL = require("base64-url");
+	  var decodeHeader = new Buffer(splitToken[0], 'base64').toString();
+	  var decodePayload = new Buffer(splitToken[1], 'base64').toString();
+
+		var unescapesig = base64URL.unescape(splitToken[2]);
+		// console.log("unescape: "  + unescapesig)
+	  var verified = crypto.createVerify("RSA-SHA256")
+  							.update(splitToken[0] + "." + splitToken[1])
+  							.verify("-----BEGIN CERTIFICATE-----\nMIICITCCAYqgAwIBAgIIYArhtPfhtHQwDQYJKoZIhvcNAQEFBQAwNjE0MDIGA1UE\nAxMrZmVkZXJhdGVkLXNpZ25vbi5zeXN0ZW0uZ3NlcnZpY2VhY2NvdW50LmNvbTAe\nFw0xNDEyMDgwOTEzMzRaFw0xNDEyMDkyMjEzMzRaMDYxNDAyBgNVBAMTK2ZlZGVy\nYXRlZC1zaWdub24uc3lzdGVtLmdzZXJ2aWNlYWNjb3VudC5jb20wgZ8wDQYJKoZI\nhvcNAQEBBQADgY0AMIGJAoGBALSRZguUq3Uv6dDsMV7zj/Y7jyyUcLMotqz8uSfY\nNBaJW7R2zbYJ9uzQkHMxcdxQx/BuLHSwyrAWBNDMHiPqi1iQplcTGg/EwwkeVpP3\ntg+ZWNovtc8HpJHITId3gz975wCbhUuA96YiEzoVwvowqt2WNtTWe6+RpWTufbNr\ndGO5AgMBAAGjODA2MAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgeAMBYGA1Ud\nJQEB/wQMMAoGCCsGAQUFBwMCMA0GCSqGSIb3DQEBBQUAA4GBAGN+LzexrGDhL+Rf\n+YNRhiu6alt3afMIAJm/JwKR4ommwbP+2cW1fRlcOiEIt/CtOwz9sgwMKrU01I9F\nr/yH38SVdrY7/LDZg1YSZziVzDOYURcwbj0tVKzREVT7g+xwwTR/h8YiYH1IBYN6\nf03y3YGzpdieQWZXkw/PCFMZeLYm\n-----END CERTIFICATE-----\n"
+  								, unescapesig, 'base64');
+
+  								// "_wZcyFHf2JhbExJRPZj_38dT", unescapesig, 'base64');
+
+
+	  // console.log("Payload:" + decodePayload);
+	  console.log(jsonPayload, "","");
+
+
+	  console.log("Verified signed?" + verified);
+
+	  var jsonPayload = JSON.parse(decodePayload);
+
+	  console.log("Verified Web? " + (googleAuthKeys.web == jsonPayload.aud ? "yes, web matches. " : "no, web doesn't match. "));
+	  console.log("Verified Android? " + (googleAuthKeys.android == jsonPayload.azp ? "yes, android matches. " : "no, android doesn't match. "));
+
+
+	 });
 
 	return authRouter;
 
