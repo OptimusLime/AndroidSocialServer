@@ -5,12 +5,14 @@ import android.app.ActionBar;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.os.Build;
+import android.view.Window;
 
 import com.facebook.widget.LoginButton;
 
@@ -20,7 +22,7 @@ import edu.eplex.androidsocialclient.API.Manager.APIManager;
 import edu.eplex.androidsocialclient.Login.LoginFragment;
 
 
-public class MainLoginActivity extends FragmentActivity {
+public class MainLoginActivity extends ActionBarActivity {
 
     private static final String TAG = "MainLoginActivity";
 
@@ -36,6 +38,10 @@ public class MainLoginActivity extends FragmentActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+
+//        getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
+//        getActionBar().hide();
+
         super.onCreate(savedInstanceState);
 
         if (savedInstanceState == null) {

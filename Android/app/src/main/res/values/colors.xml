@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="indigo_500">#3f51b5</color>
+    <color name="indigo_700">#303f9f</color>
+    <color name="cyan_500">#00bcd4</color>
+    <color name="tick_background">#ff2450aa</color>
+    <!--<color name="tick_background">#bb030858</color>-->
+    <color name="registration_toolbar_background">#000000</color>
+    <color name="registration_toolbar_text">#DDD</color>
+    <!--<color name="tick_background_disabled">#3300bcd4</color>-->
+    <color name="indeterminate_progress_wheel">#99222222</color>
+    <color name="indeterminate_progress_success">#99228822</color>
+    <color name="indeterminate_progress_failure">#CC992222</color>
+    <color name="toolbar_divider">#DDD</color>
+</resources>

@@ -9,6 +9,7 @@ import retrofit.RestAdapter;
 public class APIManager {
 
     private RestAdapter restAdapter;
+    private LoginAPI loginServiceAPI;
 
     private static APIManager instance = null;
     protected APIManager() {
@@ -31,11 +32,16 @@ public class APIManager {
                 .build();
     }
 
+    //only create one across the app, it doesn't need to be duplicated -- the calls all'
+    //come from the same place
     public LoginAPI createLoginAPI() throws Exception {
         if(restAdapter == null)
             throw new Exception("Instantiating login API before creating rest adapter");
 
-        return restAdapter.create(LoginAPI.class);
+        if(loginServiceAPI == null)
+            loginServiceAPI = restAdapter.create(LoginAPI.class);
+
+        return loginServiceAPI;
     }
 
 }

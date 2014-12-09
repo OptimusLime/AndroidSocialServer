@@ -2,10 +2,74 @@
 
     <color name="login_gray">#33333333</color>
     <dimen name="login_font_size">16.0sp</dimen>
+    <dimen name="action_bar_icon_vertical_padding">8dip</dimen>
 
+    <style name="AppBaseTheme" parent="Theme.AppCompat.Light.NoActionBar">
+
+        <item name="colorPrimary">@color/indigo_500</item>
+        <item name="colorPrimaryDark">@color/indigo_700</item>
+        <item name="colorAccent">@color/cyan_500</item>
+
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="toolbarStyle">@style/Widget.AppCompat.Toolbar</item>
+
+        <!--<item name="android:actionBarDivider">@drawable/title_separator</item>-->
+        <!--<item name="actionBarDivider">@drawable/title_separator</item>-->
+
+        <!--<item name="android:dividerVertical">@drawable/title_separator</item>-->
+        <!--<item name="dividerVertical">@drawable/title_separator</item>-->
+
+        <!-- Set AppCompat’s actionBarStyle -->
+        <!--<item name="actionBarStyle">@style/MyActionBarStyle</item>-->
+
+
+    </style>
+
+    <style name="Divider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">?android:attr/listDivider</item>
+    </style>
+
+    <style name="RegistrationToolbarTheme" parent="Theme.AppCompat">
+
+        <!--<item name="android:actionBarDivider">@drawable/title_separator</item>-->
+        <!--<item name="actionBarDivider">@drawable/title_separator</item>-->
+
+        <!--<item name="android:showDividers">beginning</item>-->
+        <!--<item name="showDividers">beginning</item>-->
+        <!--<item name="android:divider">@color/toolbar_divider</item>-->
+        <!--<item name="divider">@color/toolbar_divider</item>-->
+
+        <!-- android:textColorPrimary is the  color of the title text
+             in the Toolbar, in the Theme.AppCompat theme:  -->
+        <item name="android:textColorPrimary">@color/registration_toolbar_text</item>
+
+        <!-- android:textColorPrimaryInverse is the  color of the title
+             text in the Toolbar, in the Theme.AppCompat.Light theme:  -->
+        <!-- <item name="android:textColorPrimaryInverse">@color/abc_primary_text_material_light</item> -->
+
+        <!-- android:actionMenuTextColor is the color of the text of
+              action (menu) items in the Toolbar, at least in the
+              Theme.AppCompat theme.
+              For some reason, they already get the textColorPrimary
+              when running on API 21, but not on older versions of
+              Android, so this is only necessary to support older
+              Android versions.-->
+        <item name="actionMenuTextColor">@color/registration_toolbar_text</item>
+
+        <!-- android:textColorSecondary is the color of the menu
+             overflow icon (three vertical dots) -->
+        <item name="android:textColorSecondary">@color/registration_toolbar_text</item>
+
+        <!-- This would set the toolbar's background color,
+              but setting this also changes the popup menu's background,
+              even if we define popupTheme for our <Toolbar> -->
+        <!-- <item name="android:background">@color/color_primary</item> -->
+    </style>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="android:Theme.Holo.Light.DarkActionBar">
+    <style name="HiddenActionTheme" parent="AppBaseTheme">
         <!-- Customize your theme here. -->
         <item name="android:windowActionBar">false</item>
         <item name="android:windowTitleSize">0dp</item>

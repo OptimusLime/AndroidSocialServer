@@ -3,11 +3,13 @@ package edu.eplex.androidsocialclient.Login;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.Button;
 
 import com.facebook.Session;
 import com.facebook.SessionState;
@@ -38,12 +40,20 @@ public class LoginFragment extends Fragment {
     private LoginButton fbLogin;
     private LoginAPI apiService;
 
+    private Button registerEmailButton;
+    private Button loginButton;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
+
+        //hide that shit yo!
+//        getActivity().setTheme(R.style.HiddenActionTheme);
+
+//        getActivity().getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
+//        getActivity().getActionBar().hide();
+
         super.onCreate(savedInstanceState);
 
-        getActivity().getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
-        getActivity().getActionBar().hide();
 
         uiHelper = new UiLifecycleHelper(getActivity(), callback);
         uiHelper.onCreate(savedInstanceState);
@@ -74,8 +84,32 @@ public class LoginFragment extends Fragment {
         //if we want to register for callbacks, but not change the login/logout button
 //        fbLogin.setSessionStatusCallback(callback);
 
+        registerEmailButton = (Button)rootView.findViewById(R.id.register_email_button);
+        loginButton = (Button) rootView.findViewById(R.id.login_button);
+
+        registerEmailButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //create a registration fragment -- handles signing up with e-mail
+                //or alternatively, signing up once logged in with facebook
+                RegisterFragment rf = new RegisterFragment();
+
+                //add register fragment to the stack
+                getActivity().getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(android.R.id.content, rf)
+                        .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                        .addToBackStack(null)
+                        .commit();
+            }
+        });
+
+
         return rootView;
     }
+
+    //handle register click by adding the RegisterFragment to our stack
+
 
 
     private void onSessionStateChange(Session session, SessionState state, Exception exception) {
@@ -160,6 +194,9 @@ public class LoginFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+
+
+
 
         // For scenarios where the main activity is launched and user
         // session is not null, the session state change notification

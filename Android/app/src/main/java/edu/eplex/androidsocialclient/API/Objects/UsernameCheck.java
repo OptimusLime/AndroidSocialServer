@@ -6,5 +6,5 @@ package edu.eplex.androidsocialclient.API.Objects;
 public class UsernameCheck {
     //we want to send our desired username
     public String username;
-    public Boolean isAvailable;
+    public boolean isAvailable;
 }

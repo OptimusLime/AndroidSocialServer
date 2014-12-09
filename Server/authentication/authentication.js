@@ -132,15 +132,16 @@ module.exports = function(tokenAuth, mongoDB, params)
 	authRouter.get('/signup/:username', function(req, res, next){
 	  	console.log("username check: ", req.params.username);
 
-  		UserModel.findOne().select('user_id').lean().exec(function(err, existingUser)
+  		UserModel.findOne({username: req.params.username}).select('user_id').lean().exec(function(err, existingUser)
   		{
   			if(errorOccurredCheck(res, err))
   				return;
 
-  			var isAvailalble = existingUser ? false : true;
+  			var isAvailable = existingUser ? false : true;
+  			// console.log("Is '"+ req.params.username + "' available: " + isAvailable)
   			
   			//we must let it be known whether the name is available or not
-			res.status(200).json({username: req.params.username, isAvailalble: isAvailalble});
+			res.status(200).json({username: req.params.username, isAvailable: isAvailable});
   		});	
 	});
 
