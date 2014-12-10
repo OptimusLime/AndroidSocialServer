@@ -39,11 +39,9 @@ public class MainLoginActivity extends ActionBarActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
 
-//        getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
-//        getActionBar().hide();
-
         super.onCreate(savedInstanceState);
 
+        //TODO: check if user is logged in, then just open up the appropriate fragment/activity combo
         if (savedInstanceState == null) {
             // Add the fragment on initial activity setup
             loginFragment = new LoginFragment();

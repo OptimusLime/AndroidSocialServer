@@ -14,15 +14,9 @@ var googleClientIDs;
 var refreshBuffer =  30*60*1000;
 var fetchHappening = false;
 
-exports.initializeGoogleVerification = function(googleIDs, cb)
-{
-	googleClientIDs = googleIDs;
 
-	//fetch the certs and set it up for us
-	exports.fetchGoogleCerts(cb);
-}
-
-exports.fetchGoogleCerts = function(cb)
+//function for grabbing the latest google certs
+function fetchGoogleCerts(cb)
 {
 	if(fetchHappening)
 		return;
@@ -47,15 +41,24 @@ exports.fetchGoogleCerts = function(cb)
 			certExpiration = new Date(gRes.headers.expires).getTime();
 			googleCerts = gRes.body;
 
-			console.log("Cert header expiration: ", certExpiration, " Actual date: ", new Date(gRes.headers.expires));
-			console.log("Now: ", Date.now(), " expired? ", (Date.now() - certExpiration > 0 ? "Yes" : "No"));
-			console.log("Certificates Keys: ", Object.keys(googleCerts));
+			// console.log("Cert header expiration: ", certExpiration, " Actual date: ", new Date(gRes.headers.expires));
+			// console.log("Now: ", Date.now(), " expired? ", (Date.now() - certExpiration > 0 ? "Yes" : "No"));
+			// console.log("Certificates Keys: ", Object.keys(googleCerts));
 
 			//need to check for expiration
 			cb();
 
 		});
 }		
+
+//exported functions
+exports.initializeGoogleVerification = function(googleIDs, cb)
+{
+	googleClientIDs = googleIDs;
+
+	//fetch the certs and set it up for us
+	fetchGoogleCerts(cb);
+}
 
 exports.finishVerifyToken = function(api_token, cb)
 {
@@ -69,6 +72,10 @@ exports.finishVerifyToken = function(api_token, cb)
 	  console.log("Err: ",err);
 	  console.log("Decoded: ", decoded);
 
+	  if(err)
+	  	cb(false);
+	  else
+	  	cb(true, decoded);
 	});
 }
 
@@ -81,15 +88,15 @@ exports.verifyGoogleToken = function(api_token, cb) {
 	if(!googleCerts || Date.now() > certExpiration)
 	{
 		fetchGoogleCerts(function()
-			{
-				finishVerifyToken(api_token, cb);
-			});
+		{
+			exports.finishVerifyToken(api_token, cb);
+		});
 	}
 	//otherwise, we're good to verify now
 	else
 	{
 		//we do verification immediately, then we fetch from google
-		finishVerifyToken(api_token, cb);
+		exports.finishVerifyToken(api_token, cb);
 	}
 
 };

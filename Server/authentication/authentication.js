@@ -102,6 +102,30 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 		
 	}
 
+	function validateAndSaveUserInformation(user, userJSON, cb)
+	{
+		//oitherwise, user is not initialised, so we take the user requests and apply them 
+		//to the account with this signup mumbo jumbo! We are verified so no worries
+		console.log("Unsafe user overwrite occurring, must check email and verify username exists");
+		
+		//verify the email is not in use before writing it to the user
+		user.email = userJSON.email || user.email;
+
+		//TODO: verify the username exists before giving it away -- lol
+		user.username = userJSON.username || user.username;
+
+		//this will actually encrypt the password and save the hash
+		user.password = userJSON.password;
+
+		//is our user authorized by some google account? Make sure to keep it
+		user.googleAuthorizedID = userJSON.googleAuthorizedID;
+
+		//successfully initilaized our user! Save this sexy user to the DB
+		user.isInitialized = true;
+
+		user.save(cb);
+	}
+
 	//temporary route to verify api access
 	authRouter.get('/verify', function(req, res, next){
 	  	console.log("credential check: ", req.query.api_token);
@@ -312,34 +336,19 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 				//we know the user exists, so we create a nice little token for them
 				tokenAuth.createAPIToken(user.user_id, function(err, apiToken)
 				{
-					//oitherwise, user is not initialised, so we take the user requests and apply them 
-					//to the account with this signup mumbo jumbo! We are verified so no worries
-					console.log("Unsafe user overwrite occurring, must check email and verify username exists");
-					
-					//verify the email is not in use before writing it to the user
-					user.email = req.body.email || user.email;
-
-					//TODO: verify the username exists before giving it away -- lol
-					user.username = req.body.username || user.username;
-
-					//this will actually encrypt the password and save the hash
-					user.password = req.body.password;
-
-					console.log("Official api token: " + apiToken);
-
-					//successfully initilaized our user! Save this sexy user to the DB
-					user.isInitialized = true;
-
-					user.save(function(err, savedUser)
+					//Create and save our user info now
+					validateAndSaveUserInformation(user, {
+						email: req.body.email,
+						username: req.body.username,
+						passowrd: req.body.password
+					}, function(err, savedUser)
 					{
 						if(errorOccurredCheck(res, err))
 							return;
 
 						//send them back with the token and the updated user
 						returnUser(res, savedUser.toObject(), apiToken);
-
-
-					});
+					})
 
 				});
 
@@ -356,42 +365,93 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 
 	  // console.log("Google web token: " + req.body.api_token);
 
-	  var splitToken = req.body.api_token.split(".");
-
-	  for(var i=0; i < splitToken.length; i++)
+	  googleAuth.verifyGoogleToken(req.body.api_token, function(isVerified, decoded)
 	  {
-	  	var toDecode = splitToken[i];
-		var buf = new Buffer(toDecode, 'base64'); // Ta-da
-		// console.log("Part " + i + ": " + buf.toString());
-	  }
+	  		//double check verified
+  			console.log("User is verified? " + isVerified);
+	  		
+	  		//we have potentially verified the signup with this new information
+	  		if(isVerified)
+	  		{	  			
+	  			//user is google authenticated, as far as we can tell
+				var newUser = new UserModel({
+					isInitialized : true,
+					social_accounts: []
+				});
+
+				//we simply create a token for this user - new or otherwise
+				tokenAuth.createAPIToken(newUser.user_id, function(err, apiToken)
+				{
+					//created token
+					console.log("ApiToken generated for verified email user: " + apiToken)
+					
+					//validate our user info before saving, and we're good to go
+	  				//we associate the google account with this new user so we can track if 
+	  				//many of the same devices/people create a bunch of different accounts -- possible spam
+					validateAndSaveUserInformation(newUser, {
+						email: req.body.email,
+						username: req.body.username,
+						googleAuthorizedID: decoded.email,
+						password: req.body.password
+					}, function(err, savedUser)
+					{
+						//check any errors
+						if(errorOccurredCheck(res, err))
+							return;
+
+						//our user has been verified and saved,
+						//return with user
+						returnUser(res, savedUser, apiToken);
+					})
+
+				});
+	  		}
+	  		else
+	  		{
+	  			errorOccurredCheck(res, new Error("Google API Token invalid, cannot determine device identity."));
+	  			return;
+	  		}
+
+
+	  });
+
+
+	 //  var splitToken = req.body.api_token.split(".");
+
+	 //  for(var i=0; i < splitToken.length; i++)
+	 //  {
+	 //  	var toDecode = splitToken[i];
+		// var buf = new Buffer(toDecode, 'base64'); // Ta-da
+		// // console.log("Part " + i + ": " + buf.toString());
+	 //  }
 
 	  //certs at: https://www.googleapis.com/oauth2/v1/certs
 
-	  var crypto = require('crypto');
-	  var base64URL = require("base64-url");
-	  var decodeHeader = new Buffer(splitToken[0], 'base64').toString();
-	  var decodePayload = new Buffer(splitToken[1], 'base64').toString();
+	 //  var crypto = require('crypto');
+	 //  var base64URL = require("base64-url");
+	 //  var decodeHeader = new Buffer(splitToken[0], 'base64').toString();
+	 //  var decodePayload = new Buffer(splitToken[1], 'base64').toString();
 
-		var unescapesig = base64URL.unescape(splitToken[2]);
-		// console.log("unescape: "  + unescapesig)
-	  var verified = crypto.createVerify("RSA-SHA256")
-  							.update(splitToken[0] + "." + splitToken[1])
-  							.verify("-----BEGIN CERTIFICATE-----\nMIICITCCAYqgAwIBAgIIYArhtPfhtHQwDQYJKoZIhvcNAQEFBQAwNjE0MDIGA1UE\nAxMrZmVkZXJhdGVkLXNpZ25vbi5zeXN0ZW0uZ3NlcnZpY2VhY2NvdW50LmNvbTAe\nFw0xNDEyMDgwOTEzMzRaFw0xNDEyMDkyMjEzMzRaMDYxNDAyBgNVBAMTK2ZlZGVy\nYXRlZC1zaWdub24uc3lzdGVtLmdzZXJ2aWNlYWNjb3VudC5jb20wgZ8wDQYJKoZI\nhvcNAQEBBQADgY0AMIGJAoGBALSRZguUq3Uv6dDsMV7zj/Y7jyyUcLMotqz8uSfY\nNBaJW7R2zbYJ9uzQkHMxcdxQx/BuLHSwyrAWBNDMHiPqi1iQplcTGg/EwwkeVpP3\ntg+ZWNovtc8HpJHITId3gz975wCbhUuA96YiEzoVwvowqt2WNtTWe6+RpWTufbNr\ndGO5AgMBAAGjODA2MAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgeAMBYGA1Ud\nJQEB/wQMMAoGCCsGAQUFBwMCMA0GCSqGSIb3DQEBBQUAA4GBAGN+LzexrGDhL+Rf\n+YNRhiu6alt3afMIAJm/JwKR4ommwbP+2cW1fRlcOiEIt/CtOwz9sgwMKrU01I9F\nr/yH38SVdrY7/LDZg1YSZziVzDOYURcwbj0tVKzREVT7g+xwwTR/h8YiYH1IBYN6\nf03y3YGzpdieQWZXkw/PCFMZeLYm\n-----END CERTIFICATE-----\n"
-  								, unescapesig, 'base64');
+		// var unescapesig = base64URL.unescape(splitToken[2]);
+		// // console.log("unescape: "  + unescapesig)
+	 //  var verified = crypto.createVerify("RSA-SHA256")
+  // 							.update(splitToken[0] + "." + splitToken[1])
+  // 							.verify("-----BEGIN CERTIFICATE-----\nMIICITCCAYqgAwIBAgIIYArhtPfhtHQwDQYJKoZIhvcNAQEFBQAwNjE0MDIGA1UE\nAxMrZmVkZXJhdGVkLXNpZ25vbi5zeXN0ZW0uZ3NlcnZpY2VhY2NvdW50LmNvbTAe\nFw0xNDEyMDgwOTEzMzRaFw0xNDEyMDkyMjEzMzRaMDYxNDAyBgNVBAMTK2ZlZGVy\nYXRlZC1zaWdub24uc3lzdGVtLmdzZXJ2aWNlYWNjb3VudC5jb20wgZ8wDQYJKoZI\nhvcNAQEBBQADgY0AMIGJAoGBALSRZguUq3Uv6dDsMV7zj/Y7jyyUcLMotqz8uSfY\nNBaJW7R2zbYJ9uzQkHMxcdxQx/BuLHSwyrAWBNDMHiPqi1iQplcTGg/EwwkeVpP3\ntg+ZWNovtc8HpJHITId3gz975wCbhUuA96YiEzoVwvowqt2WNtTWe6+RpWTufbNr\ndGO5AgMBAAGjODA2MAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgeAMBYGA1Ud\nJQEB/wQMMAoGCCsGAQUFBwMCMA0GCSqGSIb3DQEBBQUAA4GBAGN+LzexrGDhL+Rf\n+YNRhiu6alt3afMIAJm/JwKR4ommwbP+2cW1fRlcOiEIt/CtOwz9sgwMKrU01I9F\nr/yH38SVdrY7/LDZg1YSZziVzDOYURcwbj0tVKzREVT7g+xwwTR/h8YiYH1IBYN6\nf03y3YGzpdieQWZXkw/PCFMZeLYm\n-----END CERTIFICATE-----\n"
+  // 								, unescapesig, 'base64');
 
-  								// "_wZcyFHf2JhbExJRPZj_38dT", unescapesig, 'base64');
-
-
-	  // console.log("Payload:" + decodePayload);
-	  console.log(jsonPayload, "","");
+  // 								// "_wZcyFHf2JhbExJRPZj_38dT", unescapesig, 'base64');
 
 
-	  console.log("Verified signed?" + verified);
+	 //  // console.log("Payload:" + decodePayload);
+	 //  console.log(jsonPayload, "","");
 
-	  var jsonPayload = JSON.parse(decodePayload);
 
-	  console.log("Verified Web? " + (googleAuthKeys.web == jsonPayload.aud ? "yes, web matches. " : "no, web doesn't match. "));
-	  console.log("Verified Android? " + (googleAuthKeys.android == jsonPayload.azp ? "yes, android matches. " : "no, android doesn't match. "));
+	 //  console.log("Verified signed?" + verified);
+
+	 //  var jsonPayload = JSON.parse(decodePayload);
+
+	  // console.log("Verified Web? " + (googleAuthKeys.web == jsonPayload.aud ? "yes, web matches. " : "no, web doesn't match. "));
+	  // console.log("Verified Android? " + (googleAuthKeys.android == jsonPayload.azp ? "yes, android matches. " : "no, android doesn't match. "));
 
 
 	 });

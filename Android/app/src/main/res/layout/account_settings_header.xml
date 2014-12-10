@@ -1,0 +1,23 @@
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/as_header_height"
+    android:orientation="vertical"
+    >
+    <View
+        android:id="@+id/as_header_separator"
+        android:layout_width="match_parent"
+        android:layout_alignParentBottom="true"
+        style="@style/listViewHeaderDividerStyle"
+        />
+    <TextView
+        android:textIsSelectable="false"
+        android:id="@+id/as_list_hdr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/as_header_separator"
+        android:text="Stuff stuff stuff"
+        style="@style/listViewHeaderItem"
+        />
+
+</RelativeLayout>

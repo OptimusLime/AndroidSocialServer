@@ -13,6 +13,8 @@
         <item name="android:windowContentOverlay">@null</item>
         <item name="toolbarStyle">@style/Widget.AppCompat.Toolbar</item>
 
+        <item name="md_accent_color">#673AB7</item>
+
         <!--<item name="android:actionBarDivider">@drawable/title_separator</item>-->
         <!--<item name="actionBarDivider">@drawable/title_separator</item>-->
 
@@ -25,11 +27,60 @@
 
     </style>
 
-    <style name="Divider">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">1dp</item>
-        <item name="android:background">?android:attr/listDivider</item>
+    <!--<style name="Divider">-->
+        <!--<item name="android:layout_width">match_parent</item>-->
+        <!--<item name="android:layout_height">1dp</item>-->
+        <!--<item name="android:background">?android:attr/listDivider</item>-->
+    <!--</style>-->
+
+    <style name="listViewHeaderItem">
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">@dimen/as_header_text_size</item>
+        <item name="android:textColor">@color/as_header_text_color</item>
+
+        <item name="android:layout_marginLeft">@dimen/as_item_left_indent</item>
+        <item name="android:layout_marginBottom">@dimen/as_header_text_raise_margin</item>
+        <item name="android:gravity">bottom</item>
+        <item name="android:layout_gravity">bottom</item>
+
+        <item name="android:background">@color/transparent</item>
+        <item name="android:clickable">false</item>
+        <item name="android:enabled">false</item>
     </style>
+
+    <style name="listViewItem">
+        <item name="android:layout_height">@dimen/as_list_item_height</item>
+    </style>
+
+    <style name="listViewPrimaryDetail">
+        <item name="android:textColor">@color/as_primary_text_color</item>
+        <item name="android:textSize">@dimen/as_primary_text_size</item>
+        
+        <item name="android:layout_marginLeft">@dimen/as_item_left_indent</item>
+        
+        <item name="android:layout_gravity">center_vertical</item>
+        <item name="android:gravity">center_vertical</item>
+
+        <item name="android:clickable">false</item>
+        <item name="android:enabled">false</item>
+
+    </style>
+
+    <style name="listViewDividerStyle">
+        <item name="android:layout_height">@dimen/as_divider_height</item>
+        <item name="android:layout_marginLeft">@dimen/as_divider_margin_left_right</item>
+        <item name="android:layout_marginRight">@dimen/as_divider_margin_left_right</item>
+        <item name="android:background">@color/as_divider_color</item>
+    </style>
+
+    <style name="listViewHeaderDividerStyle">
+        <item name="android:layout_height">@dimen/as_section_divider_height</item>
+        <item name="android:layout_marginLeft">@dimen/as_divider_margin_left_right</item>
+        <item name="android:layout_marginRight">@dimen/as_divider_margin_left_right</item>
+        <item name="android:background">@drawable/as_header_separator</item>
+    </style>
+
+
 
     <style name="RegistrationToolbarTheme" parent="Theme.AppCompat">
 

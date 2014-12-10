@@ -11,7 +11,7 @@
     <string name="action_register_email">Join with Email</string>
     <string name="action_register_facebook">Join with Facebook</string>
     <string name="register_title">Register</string>
-
+    <string name="as_toolbar_title">ACCOUNT SETTINGS</string>
 
     <integer name="percent_alpha">40</integer>
 

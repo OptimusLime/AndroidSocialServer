@@ -12,6 +12,7 @@ import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
+import android.text.Html;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.method.CharacterPickerDialog;
@@ -35,6 +36,8 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.afollestad.materialdialogs.Alignment;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.facebook.Session;
 import com.facebook.SessionState;
 import com.facebook.UiLifecycleHelper;
@@ -60,6 +63,7 @@ import edu.eplex.androidsocialclient.API.Objects.AccessToken;
 import edu.eplex.androidsocialclient.API.Objects.OAuth2Signup;
 import edu.eplex.androidsocialclient.API.Objects.UsernameCheck;
 import edu.eplex.androidsocialclient.R;
+import edu.eplex.androidsocialclient.Utilities.FragmentFlowManager;
 import edu.eplex.androidsocialclient.Utilities.ProgressWheel;
 import edu.eplex.androidsocialclient.Utilities.UserEmailFetcher;
 import retrofit.Callback;
@@ -578,65 +582,30 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
             completeMenuButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    //locally good to go
-                    if(isEmailValid && isUsernameValid && isPasswordValid) {
-                        //grab user email for google specifically to create the token
-                        AsyncTask<Void, Void, String> task = new AsyncTask<Void, Void, String>() {
-                            @Override
-                            protected String doInBackground(Void... params) {
 
-                                String email = UserEmailFetcher.getEmail(getActivity());
-                                String token = null;
-
-                                try {
-
-                                    token = GoogleAuthUtil.getToken(getActivity(),
-                                                    email,
-                                                    "audience:server:client_id:694834200067-1l6lrta2d4lfbdmiv1tosinoq91cnp51.apps.googleusercontent.com");
-//                                                    "audience:server:client_id:694834200067-jv9qgnu0eb5pr95cc4gva5i4f2qjcok6.apps.googleusercontent.com");
-
-                                    OAuth2Signup signup = new OAuth2Signup();
-                                    signup.api_token = token;
-                                    signup.email = emailEditText.getText().toString();
-                                    signup.username = usernameEditText.getText().toString();
-                                    signup.password = passwordEditText.getText().toString();
-
-                                    APIToken apiToken = apiService.syncEmailSignup(signup);
-
-                                    Log.d("TokenRetrieve", apiToken.api_token);
-
-                                } catch (IOException transientEx) {
-                                    // Network or server error, try later
-                                    Log.e(TAG, transientEx.toString());
-                                } catch (UserRecoverableAuthException e) {
-                                    // Recover (with e.getIntent())
-//                                    Log.e(TAG, e.toString());
-//                                    Intent recover = e.getIntent();
-//                                    startActivityForResult(recover, REQUEST_CODE_TOKEN_AUTH);
-                                } catch (GoogleAuthException authEx) {
-                                    // The call is not ever expected to succeed
-                                    // assuming you have already verified that
-                                    // Google Play services is installed.
-                                    Log.e(TAG, authEx.toString());
-                                }
-                                catch (Exception e)
-                                {
-                                    e.printStackTrace();
+                    //hide the keyboard, no use for that here!
+                    closeKeyboardInput();
+                    new MaterialDialog.Builder(getActivity())
+                            .title("Verify Correct E-mail")
+                            .content(Html.fromHtml("You have entered <br/><b>" + emailEditText.getText().toString() + "</b><br/><br/> Is this your correct e-mail address?"))
+                            .titleAlignment(Alignment.CENTER)
+                            .contentAlignment(Alignment.CENTER)
+                            .positiveText("Yes")
+                            .neutralText("No")
+                            .callback(new MaterialDialog.Callback() {
+                                @Override
+                                public void onNegative(MaterialDialog materialDialog) {
+                                    //easy, just hide ourselves!
+                                    materialDialog.hide();
                                 }
 
-                                return token;
-                            }
-
-                            @Override
-                            protected void onPostExecute(String token) {
-                                Log.i(TAG, "Access token retrieved:" + token);
-                            }
-
-                        };
-
-                        //start it up!
-                        task.execute();
-                    }
+                                @Override
+                                public void onPositive(MaterialDialog materialDialog) {
+                                    materialDialog.hide();
+                                    asyncRegisterEmail();
+                                }
+                            })
+                            .show();
                 }
             });
 
@@ -651,6 +620,78 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 
 
 
+    }
+
+    //make a call to register this email info when ready -- also fetches google token
+    //called in an async task -- probably good place for bolts
+    //TODO: better than async task, BOLTS
+    void asyncRegisterEmail()
+    {
+        //locally good to go
+        if(isEmailValid && isUsernameValid && isPasswordValid) {
+            //grab user email for google specifically to create the token
+            AsyncTask<Void, Void, String> task = new AsyncTask<Void, Void, String>() {
+                @Override
+                protected String doInBackground(Void... params) {
+
+                    String email = UserEmailFetcher.getEmail(getActivity());
+                    String token = null;
+
+                    try {
+
+                        token = GoogleAuthUtil.getToken(getActivity(),
+                                email,
+                                "audience:server:client_id:694834200067-1l6lrta2d4lfbdmiv1tosinoq91cnp51.apps.googleusercontent.com");
+//                                                    "audience:server:client_id:694834200067-jv9qgnu0eb5pr95cc4gva5i4f2qjcok6.apps.googleusercontent.com");
+
+                        OAuth2Signup signup = new OAuth2Signup();
+                        signup.api_token = token;
+                        signup.email = emailEditText.getText().toString();
+                        signup.username = usernameEditText.getText().toString();
+                        signup.password = passwordEditText.getText().toString();
+
+                        APIToken apiToken = apiService.syncEmailSignup(signup);
+                        if(apiToken.user != null && apiToken.api_token != null)
+                        {
+                            Log.d("TokenRetrieve", apiToken.api_token);
+
+                            //launch into the actual app now (temporarily user settings)
+                            FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
+                        }
+
+
+                    } catch (IOException transientEx) {
+                        // Network or server error, try later
+                        Log.e(TAG, transientEx.toString());
+                    } catch (UserRecoverableAuthException e) {
+                        // Recover (with e.getIntent())
+//                                    Log.e(TAG, e.toString());
+//                                    Intent recover = e.getIntent();
+//                                    startActivityForResult(recover, REQUEST_CODE_TOKEN_AUTH);
+                    } catch (GoogleAuthException authEx) {
+                        // The call is not ever expected to succeed
+                        // assuming you have already verified that
+                        // Google Play services is installed.
+                        Log.e(TAG, authEx.toString());
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+
+                    return token;
+                }
+
+                @Override
+                protected void onPostExecute(String token) {
+                    Log.i(TAG, "Access token retrieved:" + token);
+                }
+
+            };
+
+            //start it up!
+            task.execute();
+        }
     }
 
     boolean checkReadyToFinish()
@@ -669,7 +710,12 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
                 .remove(this)
                 .commit();
     }
-
+    void closeKeyboardInput()
+    {
+        //close the damn keyboard
+        InputMethodManager imm = (InputMethodManager)getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(emailEditText.getWindowToken(), 0);
+    }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
@@ -682,10 +728,8 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
         switch (id)
         {
             case android.R.id.home:
-                //close the damn keyboard
-                InputMethodManager imm = (InputMethodManager)getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(emailEditText.getWindowToken(), 0);
 
+                closeKeyboardInput();
                 getActivity().onBackPressed();
                 return true;
             case R.id.complete_register:

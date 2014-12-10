@@ -13,4 +13,24 @@
 
     <dimen name="login_image_layout_margin">110dp</dimen>
 
+    <!--Account settings layout-->
+
+    <dimen name="as_item_left_indent">30dp</dimen>
+    <dimen name="as_divider_margin_left_right">20dp</dimen>
+    <dimen name="as_header_text_raise_margin">7dp</dimen>
+    <dimen name="as_primary_text_size">18sp</dimen>
+
+    <dimen name="as_header_height">65dp</dimen>
+    <dimen name="as_list_item_height">50dp</dimen>
+
+    <dimen name="as_header_text_size">19sp</dimen>
+
+    <dimen name="as_divider_height">1px</dimen>
+    <dimen name="as_section_divider_height">3dp</dimen>
+    <dimen name="asDividerMargin">15dp</dimen>
+    <dimen name="asSectionDividerMargin">5dp</dimen>
+
+    <dimen name="asSectionDividerMarginTop">5dp</dimen>
+    <dimen name="asSectionDividerPaddingLeftRight">15dp</dimen>
+
 </resources>

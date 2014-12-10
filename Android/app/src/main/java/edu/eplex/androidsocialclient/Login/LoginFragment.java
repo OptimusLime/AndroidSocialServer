@@ -26,6 +26,7 @@ import edu.eplex.androidsocialclient.API.Objects.AccessToken;
 import edu.eplex.androidsocialclient.API.Objects.OAuth2Signup;
 import edu.eplex.androidsocialclient.API.Objects.UsernameCheck;
 import edu.eplex.androidsocialclient.R;
+import edu.eplex.androidsocialclient.Utilities.FragmentFlowManager;
 
 /**
  * Created by paul on 12/3/14.
@@ -90,17 +91,21 @@ public class LoginFragment extends Fragment {
         registerEmailButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //create a registration fragment -- handles signing up with e-mail
-                //or alternatively, signing up once logged in with facebook
-                RegisterFragment rf = new RegisterFragment();
 
-                //add register fragment to the stack
-                getActivity().getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(android.R.id.content, rf)
-                        .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-                        .addToBackStack(null)
-                        .commit();
+                //transfer over to registered please
+                FragmentFlowManager.getInstance().homeSignupFacebookOrEmail(getActivity());
+
+//                //create a registration fragment -- handles signing up with e-mail
+//                //or alternatively, signing up once logged in with facebook
+//                RegisterFragment rf = new RegisterFragment();
+//
+//                //add register fragment to the stack
+//                getActivity().getSupportFragmentManager()
+//                        .beginTransaction()
+//                        .replace(android.R.id.content, rf)
+//                        .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+//                        .addToBackStack(null)
+//                        .commit();
             }
         });
 

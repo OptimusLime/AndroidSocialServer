@@ -35,6 +35,12 @@ var User = new Schema({
         type: String,
         unique: true
     },
+    //this is the google account that was attached to the request 
+    //it's not officially used in any context other than to know if someone from
+    //the same google account has made more than 1 account -- which is allowed up to a point (possible spam)
+    googleAuthorizedID : {
+        type: String
+    },
     isInitialized: {
         type: Boolean
     },

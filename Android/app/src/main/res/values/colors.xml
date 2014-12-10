@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="transparent">#0000</color>
     <color name="indigo_500">#3f51b5</color>
     <color name="indigo_700">#303f9f</color>
     <color name="cyan_500">#00bcd4</color>
@@ -7,9 +8,24 @@
     <!--<color name="tick_background">#bb030858</color>-->
     <color name="registration_toolbar_background">#000000</color>
     <color name="registration_toolbar_text">#DDD</color>
+
+    <color name="as_toolbar_background">#000000</color>
+    <color name="as_toolbar_text">#DDD</color>
+
     <!--<color name="tick_background_disabled">#3300bcd4</color>-->
     <color name="indeterminate_progress_wheel">#99222222</color>
     <color name="indeterminate_progress_success">#99228822</color>
     <color name="indeterminate_progress_failure">#CC992222</color>
-    <color name="toolbar_divider">#DDD</color>
+
+
+    <!--<color name="toolbar_divider">#DDD</color>-->
+
+    <color name="as_header_text_color">#C444</color>
+    <color name="as_header_divider_color">#9444</color>
+
+    <color name="as_primary_text_color">#333333</color>
+    <color name="as_divider_color">#6333</color>
+
+    <color name="asListItemBackgroundSelectedColor">#6333</color>
+
 </resources>
