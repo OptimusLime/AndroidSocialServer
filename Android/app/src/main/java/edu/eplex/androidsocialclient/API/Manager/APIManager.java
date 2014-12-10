@@ -1,6 +1,9 @@
 package edu.eplex.androidsocialclient.API.Manager;
 
+import android.content.Context;
+
 import edu.eplex.androidsocialclient.API.LoginAPI;
+import edu.eplex.androidsocialclient.R;
 import retrofit.RestAdapter;
 
 /**
@@ -22,21 +25,21 @@ public class APIManager {
         return instance;
     }
 
-    public void createAPIAdapter(String endpoint)
+    private void createAPIAdapter(Context context)
     {
         if(restAdapter != null)
             return;
 
         restAdapter = new RestAdapter.Builder()
-                .setEndpoint(endpoint)
+                .setEndpoint(context.getResources().getString(R.string.app_server_endpoint))
                 .build();
     }
 
     //only create one across the app, it doesn't need to be duplicated -- the calls all'
     //come from the same place
-    public LoginAPI createLoginAPI() throws Exception {
+    public LoginAPI createLoginAPI(Context context) throws Exception {
         if(restAdapter == null)
-            throw new Exception("Instantiating login API before creating rest adapter");
+            createAPIAdapter(context);
 
         if(loginServiceAPI == null)
             loginServiceAPI = restAdapter.create(LoginAPI.class);

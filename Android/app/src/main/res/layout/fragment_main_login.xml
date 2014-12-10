@@ -13,18 +13,26 @@
         android:scaleType="centerCrop"
         android:adjustViewBounds="false"
         />
+    <ImageView
+        android:id="@+id/login_background_buffer"
+        android:layout_width="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_height="@dimen/login_image_layout_buffer"
+        />
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_centerInParent="true">
+        android:layout_above="@+id/login_background_buffer"
+        android:fillViewport="true"
+        >
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_gravity="center"
         android:gravity="center"
-        android:layout_marginBottom="@dimen/login_image_layout_margin"
         >
 
         <RelativeLayout
@@ -112,6 +120,7 @@
                     android:layout_height="match_parent"
                     android:layout_marginLeft="@dimen/login_edit_text_margin_leftright"
                     android:layout_marginRight="@dimen/login_edit_text_margin_leftright"
+                    android:inputType="textPassword"
                     android:hint="Password"
                     android:textCursorDrawable="@null"
                     app:baseColor="#FFF"
@@ -143,29 +152,53 @@
                 />
         </RelativeLayout>
 
-
-        <Button android:id="@+id/login_button"
-            style="?android:textAppearanceSmall"
-
-            android:paddingLeft="@dimen/button_padding_leftright"
-            android:paddingRight="@dimen/button_padding_leftright"
-            android:paddingTop="@dimen/button_padding_topbottom"
-            android:paddingBottom="@dimen/button_padding_topbottom"
+        <LinearLayout
+            android:id="@+id/login_linear_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/login_button_height"
+            android:orientation="horizontal"
+            android:weightSum="1"
 
             android:layout_marginTop="@dimen/button_margin_topbottom"
             android:layout_marginBottom="@dimen/button_margin_topbottom"
             android:layout_marginLeft="@dimen/button_margin_leftright"
             android:layout_marginRight="@dimen/button_margin_leftright"
+            >
+            <Button android:id="@+id/login_button"
+                style="?android:textAppearanceSmall"
 
-            android:layout_gravity="center_horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/login_button_height"
-            android:textSize="@dimen/login_font_size"
-            android:text="@string/action_sign_in"
-            android:textStyle="bold"
-            android:background="@drawable/login_button_selector"
-            android:textColor="#FFF"
-            />
+                android:layout_gravity="center_horizontal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/login_font_size"
+                android:text="@string/action_sign_in"
+                android:textStyle="bold"
+                android:background="@drawable/login_button_selector"
+                android:textColor="#FFF"
+                android:layout_weight="1"
+                />
+            <ImageView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".1"
+                android:background="@color/transparent"
+                />
+            <Button android:id="@+id/cancel_button"
+                style="?android:textAppearanceSmall"
+
+                android:layout_gravity="center_horizontal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/login_font_size"
+                android:text="@string/action_cancel_sign_in"
+                android:textStyle="bold"
+                android:background="@drawable/login_button_selector"
+                android:textColor="#FFF"
+                android:layout_weight="1"
+                />
+            </LinearLayout>
+
     </LinearLayout>
+
     </ScrollView>
 </RelativeLayout>

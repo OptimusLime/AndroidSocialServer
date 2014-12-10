@@ -47,7 +47,7 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 		if(err)
 		{
 			console.error(err);
-			res.status(500);
+			res.status(500).end();
 			return true;
 		}
 
@@ -100,6 +100,21 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 
 			});
 		
+	}
+
+	function asyncValidateEmail()
+	{
+
+	}
+	function validatePassword(pw)
+	{
+		//this is all junk for now
+		console.log("Fake validate password happened");
+		return pw.length >= 6;
+	}
+	function asyncValidateUsername()
+	{
+
 	}
 
 	function validateAndSaveUserInformation(user, userJSON, cb)
@@ -358,6 +373,55 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 
 	  //all good 
 	   // res.status(200).json({message: "FB Signup router reached successfully"});
+	});
+
+	authRouter.post('/login', function(req, res, next) {
+
+		//we login with a post to our login path
+		var username = req.body.username;
+		var password = req.body.password;
+
+		//should not be hard coded for 6... 
+		if(!username || !password || !validatePassword(password))
+		{
+			errorOccurredCheck(res, new Error("Invalid password format"));
+			return;
+		}
+
+		//now we do the real deed of searching the user, and confirming
+		UserModel.findOne({username: username}, function(err, user)
+		{
+			if(errorOccurredCheck(res,err))
+				return;
+
+			if(!user || !user.isInitialized)
+			{
+				//no user? wrong username I guess
+				errorOccurredCheck(res, new Error("Invalid username/password"))
+				return;
+			}
+
+			if(user.checkPassword(password))
+			{
+				//success! they can be logged in, ya hear?
+				//now we get them an api token
+
+				//we simply create a token for this user - new or otherwise
+				tokenAuth.createAPIToken(user.user_id, function(err, apiToken)
+				{
+					if(errorOccurredCheck(res,err))
+						return;
+
+					//successful api token, send back user info
+					returnUser(res, user, apiToken);
+				});
+			}
+			else
+				errorOccurredCheck(res, new Error("Invalid username/password"))
+		})
+
+
+
 	});
 
 	authRouter.post('/signup/email', function(req, res, next){

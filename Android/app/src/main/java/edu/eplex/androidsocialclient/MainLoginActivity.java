@@ -31,9 +31,6 @@ public class MainLoginActivity extends ActionBarActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
-        //make sure we have our API setup
-        APIManager.getInstance().createAPIAdapter(this.getString(R.string.app_server_endpoint));
     }
 
     @Override

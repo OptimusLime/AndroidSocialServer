@@ -53,8 +53,8 @@ var User = new Schema({
 });
 
 User.methods.encryptPassword = function(password) {
-    // return crypto.createHmac('sha1', this.salt).update(password).digest('hex');
-    return crypto.pbkdf2Sync(password, this.salt, 10000, 512);
+    return crypto.createHmac('sha1', this.salt).update(password).digest('hex');
+    // return crypto.pbkdf2Sync(password, this.salt, 10000, 512);
 };
 
 //what propoerties to return 
@@ -75,6 +75,7 @@ User.virtual('password')
 
 
 User.methods.checkPassword = function(password) {
+    console.log("Checking '" + this.username + "' password: " + password);
     return this.encryptPassword(password) === this.hashedPassword;
 };
 

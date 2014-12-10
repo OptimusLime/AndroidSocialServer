@@ -2,6 +2,7 @@ package edu.eplex.androidsocialclient.API;
 
 import edu.eplex.androidsocialclient.API.Objects.APIToken;
 import edu.eplex.androidsocialclient.API.Objects.AccessToken;
+import edu.eplex.androidsocialclient.API.Objects.LoginRequest;
 import edu.eplex.androidsocialclient.API.Objects.OAuth2Signup;
 import edu.eplex.androidsocialclient.API.Objects.UsernameCheck;
 import retrofit.Callback;
@@ -24,6 +25,14 @@ public interface LoginAPI {
     //do it again, synchronized! For slowness!
     @POST("/auth/login/facebook")
     APIToken syncFacebookLoginRequest(@Body AccessToken token);
+
+    //standard username/password login attempt here
+    @POST("/auth/login")
+    void asyncLoginRequest(@Body LoginRequest login, Callback<APIToken> cb);
+
+    //do it again, synchronized! For slowness!
+    @POST("/auth/login")
+    APIToken syncLoginRequest(@Body LoginRequest login);
 
     @POST("/auth/signup/facebook")
     void asyncFacebookSignup(@Body OAuth2Signup signupRequest, Callback<APIToken> cb);

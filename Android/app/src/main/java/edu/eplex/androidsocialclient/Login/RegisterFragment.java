@@ -1,9 +1,11 @@
 package edu.eplex.androidsocialclient.Login;
 
 import android.app.ActionBar;
+import android.app.Activity;
 import android.app.FragmentManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -77,6 +79,8 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 
     //Tag for logging
     private static final String TAG = "RegisterFragment";
+    //arbitrary number -- need user to sign in to access token
+    private static final int REQUEST_CODE_TOKEN_AUTH =  1;
 
     private LoginAPI apiService;
 
@@ -100,9 +104,12 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
     ScheduledFuture scheduledAPIRequest;
     private int USERNAME_CHECK_TIMEOUT = 2000;
 
+    private boolean attachedToActivity;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        attachedToActivity = true;
 //
 //        //Listen for changes in the back stack
 //        getActivity().getSupportFragmentManager().addOnBackStackChangedListener(this);
@@ -113,7 +120,7 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 //            getActivity().getActionBar().show();
 
             if(apiService == null)
-                apiService = APIManager.getInstance().createLoginAPI();
+                apiService = APIManager.getInstance().createLoginAPI(getActivity());
 
 
         }
@@ -125,12 +132,26 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
             e.printStackTrace();
         }
 
+//        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+//        getActivity().getWindow().clearFlags(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+//        getActivity().getWindow().clearFlags(
+//                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
+//
+
+//        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
+//        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_UNSPECIFIED);
+//
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.registration_page, container, false);
+
+//        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
+
 
         progressWheel = (ProgressWheel)rootView.findViewById(R.id.username_progress_wheel);
 //        progressWheel.setVisibility(View.INVISIBLE);
@@ -425,6 +446,9 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
     @Override
     public void success(UsernameCheck usernameCheck, Response response) {
 
+        if(!attachedToActivity)
+            return;
+
         //make sure we're setting the same things
         if(usernameEditText.getText().toString().equals(usernameCheck.username))
         {
@@ -458,6 +482,11 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
     }
     @Override
     public void failure(RetrofitError error) {
+
+        //if we get a response and we aren't attached to an activity
+        if(!attachedToActivity)
+            return;
+
         //TODO: decide what to do here
 
         //some sort of server error, just remove the thing
@@ -544,11 +573,32 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        switch (requestCode)
+        {
+            case REQUEST_CODE_TOKEN_AUTH:
+
+                //now we have our answer
+                if(resultCode == Activity.RESULT_OK)
+                {
+                    //go ahead and request AGAIN -- same procedure
+                    asyncRegisterEmail();
+                }
+                else
+                {
+                    showRegistrationFailure("Security Failure", "Google account authentication is required for registration");
+                }
+
+                break;
+        }
+
         super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
     public void onPause() {
+
+        attachedToActivity = false;
         super.onPause();
     }
 
@@ -665,9 +715,10 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
                         Log.e(TAG, transientEx.toString());
                     } catch (UserRecoverableAuthException e) {
                         // Recover (with e.getIntent())
-//                                    Log.e(TAG, e.toString());
-//                                    Intent recover = e.getIntent();
-//                                    startActivityForResult(recover, REQUEST_CODE_TOKEN_AUTH);
+                        Log.e(TAG, e.toString());
+                        Intent recover = e.getIntent();
+                        startActivityForResult(recover, REQUEST_CODE_TOKEN_AUTH);
+
                     } catch (GoogleAuthException authEx) {
                         // The call is not ever expected to succeed
                         // assuming you have already verified that
@@ -693,6 +744,8 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
             task.execute();
         }
     }
+
+
 
     boolean checkReadyToFinish()
     {
@@ -788,4 +841,15 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 
         return super.onOptionsItemSelected(item);
     }
+
+    void showRegistrationFailure(String errorTitle, String errorMessage)
+    {
+        new MaterialDialog.Builder(getActivity())
+                .title(errorTitle)
+                .content(Html.fromHtml(errorMessage))
+                .titleAlignment(Alignment.CENTER)
+                .contentAlignment(Alignment.CENTER)
+                .positiveText("Okay");
+    }
+
 }

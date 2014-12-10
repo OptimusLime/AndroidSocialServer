@@ -12,7 +12,7 @@
         android:theme="@style/AppBaseTheme" >
         <activity
             android:name="edu.eplex.androidsocialclient.MainLoginActivity"
-            android:windowSoftInputMode="adjustResize"
+            android:windowSoftInputMode="adjustUnspecified"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
