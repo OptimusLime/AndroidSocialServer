@@ -377,9 +377,9 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
     void applyGreenRedIcon(ImageView view, boolean validated, int drawGreen, int drawRed)
     {
         if(validated)
-            view.setBackgroundDrawable(getResources().getDrawable(drawGreen));
+            view.setImageResource(drawGreen);
         else
-            view.setBackgroundDrawable(getResources().getDrawable(drawRed));
+            view.setImageResource(drawRed);
 
         //check to see if after we've applied this validation element, we know if we're overall validated
         checkReadyToFinish();

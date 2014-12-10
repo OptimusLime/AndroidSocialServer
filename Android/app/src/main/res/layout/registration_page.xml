@@ -42,7 +42,7 @@
                 android:id="@+id/register_email_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/ic_action_mail"
+                android:src="@drawable/ic_action_mail"
                 />
 
             <com.rengwuxian.materialedittext.MaterialEditText
@@ -69,7 +69,7 @@
                 android:id="@+id/register_username_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/ic_action_user"
+                android:src="@drawable/ic_action_user"
                 />
 
             <RelativeLayout
@@ -115,7 +115,7 @@
                 android:id="@+id/register_password_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/ic_action_lock_closed"
+                android:src="@drawable/ic_action_lock_closed"
                 />
             <com.rengwuxian.materialedittext.MaterialEditText
                 android:id="@+id/password_edit_text"

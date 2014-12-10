@@ -1,5 +1,6 @@
 package edu.eplex.androidsocialclient.Login;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -9,12 +10,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 
 import com.facebook.Session;
 import com.facebook.SessionState;
 import com.facebook.UiLifecycleHelper;
 import com.facebook.widget.LoginButton;
+import com.rengwuxian.materialedittext.MaterialEditText;
 
 import java.util.Arrays;
 import java.util.logging.Handler;
@@ -44,6 +50,11 @@ public class LoginFragment extends Fragment {
     private Button registerEmailButton;
     private Button loginButton;
 
+    private MaterialEditText usernameEditText;
+    private View usernameLinearLayout;
+    private MaterialEditText passwordEditText;
+    private View passwordLinearLayout;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
 
@@ -55,6 +66,7 @@ public class LoginFragment extends Fragment {
 
         super.onCreate(savedInstanceState);
 
+        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
 
         uiHelper = new UiLifecycleHelper(getActivity(), callback);
         uiHelper.onCreate(savedInstanceState);
@@ -88,6 +100,13 @@ public class LoginFragment extends Fragment {
         registerEmailButton = (Button)rootView.findViewById(R.id.register_email_button);
         loginButton = (Button) rootView.findViewById(R.id.login_button);
 
+        usernameEditText = (MaterialEditText)rootView.findViewById(R.id.username_edit_text);
+        usernameLinearLayout = rootView.findViewById(R.id.username_linear_layout);
+
+        passwordEditText = (MaterialEditText)rootView.findViewById(R.id.password_edit_text);
+        passwordLinearLayout = rootView.findViewById(R.id.password_linear_layout);
+
+
         registerEmailButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -110,13 +129,130 @@ public class LoginFragment extends Fragment {
         });
 
 
+        loginButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showLoginViews();
+            }
+        });
+
+
         return rootView;
     }
 
+    void showLoginViews()
+    {
+        //fade out email/fb, fade in username/password combos
+        Animation fadeOutEmail = alphaAnimationFromTo(registerEmailButton, 0f, 2000, false, false);
+        Animation fadeOutFBLogin = alphaAnimationFromTo(fbLogin, 0f, 2000, true, false);
+
+        //no clicky clicky
+        registerEmailButton.setEnabled(false);
+        //when finished with this animation, focus on the username entry
+        fadeOutEmail.setAnimationListener(focusUsernameOnCompleteListener(registerEmailButton, true, false));
+        registerEmailButton.startAnimation(fadeOutEmail);
+
+        //don't click during animation!
+        fbLogin.setEnabled(false);
+        fbLogin.startAnimation(fadeOutFBLogin);
+
+        usernameLinearLayout.setVisibility(View.VISIBLE);
+        passwordLinearLayout.setVisibility(View.VISIBLE);
+
+        Animation fadeInUsername = alphaAnimationFromTo(usernameLinearLayout, 0.011f, 1.0f, 3000, false, false);
+        Animation fadeInPassword = alphaAnimationFromTo(passwordLinearLayout, 0.001f, 1.0f, 3000, false, false);
+
+        usernameLinearLayout.requestLayout();
+        usernameLinearLayout.startAnimation(fadeInUsername);
+
+        passwordLinearLayout.requestLayout();
+        passwordLinearLayout.startAnimation(fadeInPassword);
+    }
+
+    void hideLoginViews()
+    {
+
+    }
+
+    //create an alpha animation from the current value to the desired target
+    private Animation alphaAnimationFromTo(final View view, float fromValue, float toValue, int msDuration, final boolean hideOnComplete, final boolean showOnStart)
+    {
+        AlphaAnimation alphaAnimation = new AlphaAnimation(fromValue, toValue);
+        alphaAnimation.setDuration(msDuration);
+
+        if(hideOnComplete || showOnStart) {
+            alphaAnimation.setAnimationListener(defaultHideShowListener(view, hideOnComplete, showOnStart));
+        }
+
+        return alphaAnimation;
+    }
+    //create an alpha animation from the current value to the desired target
+    private Animation alphaAnimationFromTo(final View view, float toValue, int msDuration, final boolean hideOnComplete, final boolean showOnStart)
+    {
+        AlphaAnimation alphaAnimation = new AlphaAnimation(view.getAlpha(), toValue);
+        alphaAnimation.setDuration(msDuration);
+
+        if(hideOnComplete || showOnStart) {
+            alphaAnimation.setAnimationListener(defaultHideShowListener(view, hideOnComplete, showOnStart));
+        }
+
+        return alphaAnimation;
+    }
+
+    private Animation.AnimationListener focusUsernameOnCompleteListener(final View view, final boolean hideOnComplete, final boolean showOnStart)
+    {
+        return new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                if (showOnStart)
+                    view.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+
+                if (hideOnComplete)
+                    view.setVisibility(View.INVISIBLE);
+
+                //ask for focus when done
+//                usernameEditText.requestFocus();
+                //open up our keyboard when the animation finishes
+                InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.showSoftInput(usernameEditText, InputMethodManager.SHOW_IMPLICIT);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        };
+    }
+
+    private Animation.AnimationListener defaultHideShowListener(final View view, final boolean hideOnComplete, final boolean showOnStart)
+    {
+        return new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                if (showOnStart)
+                    view.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+
+                if (hideOnComplete)
+                    view.setVisibility(View.INVISIBLE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        };
+    }
+
+
     //handle register click by adding the RegisterFragment to our stack
-
-
-
     private void onSessionStateChange(Session session, SessionState state, Exception exception) {
         if (state.isOpened()) {
             Log.i(TAG, "Logged in...");
