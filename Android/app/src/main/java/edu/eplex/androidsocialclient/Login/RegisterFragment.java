@@ -390,9 +390,13 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
         return rootView;
     }
     void quickSetText(){
-        emailEditText.setText("d@do.do");
-        passwordEditText.setText("dododo");
-        usernameEditText.setText("checkface");
+        String email = UserEmailFetcher.getEmail(getActivity());
+        if(email == null)
+            email = "";
+
+        emailEditText.setText(email);
+//        passwordEditText.setText("dododo");
+//        usernameEditText.setText("checkface");
     }
 
     void applyGreenRedIcon(ImageView view, boolean validated, int drawGreen, int drawRed)

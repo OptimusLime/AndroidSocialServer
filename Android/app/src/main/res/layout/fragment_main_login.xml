@@ -167,6 +167,11 @@
             <Button android:id="@+id/login_button"
                 style="?android:textAppearanceSmall"
 
+                android:paddingLeft="@dimen/button_padding_leftright"
+                android:paddingRight="@dimen/button_padding_leftright"
+                android:paddingTop="@dimen/button_padding_topbottom"
+                android:paddingBottom="@dimen/button_padding_topbottom"
+
                 android:layout_gravity="center_horizontal"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
