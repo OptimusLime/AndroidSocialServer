@@ -11,4 +11,7 @@ public class APIToken {
 
     //sends back the user object associated with the API token
     public User user;
+
+    //what about expiration, that's important too!
+    public long expiration;
 }

@@ -20,6 +20,7 @@ import android.view.animation.Animation;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import com.afollestad.materialdialogs.Alignment;
 import com.afollestad.materialdialogs.MaterialDialog;
@@ -41,6 +42,7 @@ import edu.eplex.androidsocialclient.API.Objects.AccessToken;
 import edu.eplex.androidsocialclient.API.Objects.LoginRequest;
 import edu.eplex.androidsocialclient.API.Objects.OAuth2Signup;
 import edu.eplex.androidsocialclient.API.Objects.UsernameCheck;
+import edu.eplex.androidsocialclient.Login.CustomUI.FBLoginButton;
 import edu.eplex.androidsocialclient.R;
 import edu.eplex.androidsocialclient.Utilities.FragmentFlowManager;
 import retrofit.Callback;
@@ -63,7 +65,7 @@ public class LoginFragment extends Fragment {
 
     //Helper for life cycle maintenance in FB
     private UiLifecycleHelper uiHelper;
-    private LoginButton fbLogin;
+    private FBLoginButton fbLogin;
     private LoginAPI apiService;
 
     private Button registerEmailButton;
@@ -76,8 +78,10 @@ public class LoginFragment extends Fragment {
     private View passwordLinearLayout;
 
     private LinearLayout loginLinearLayout;
+    private RelativeLayout fbButtonHolder;
 
     private boolean readyToLogin = false;
+    private boolean facebookRequested = false;
     private float originalWeightSum = 0;
 
     @Override
@@ -103,6 +107,18 @@ public class LoginFragment extends Fragment {
 //        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 //        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
 
+        //whenever opening the login screen, kill the session if one exists please
+        Session s = Session.getActiveSession();
+        if(s != null && s.isOpened())
+            s.closeAndClearTokenInformation();
+
+        //clear out the cache as well please -- no need for FB info to be stored locally
+        s = Session.openActiveSessionFromCache(getActivity());
+
+        //clear it out please
+        if(s != null && s.isOpened())
+            s.closeAndClearTokenInformation();
+
         uiHelper = new UiLifecycleHelper(getActivity(), callback);
         uiHelper.onCreate(savedInstanceState);
     }
@@ -120,14 +136,27 @@ public class LoginFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main_login, container, false);
 
-        fbLogin = (LoginButton) rootView.findViewById(R.id.authButton);
+        fbButtonHolder = (RelativeLayout)rootView.findViewById(R.id.fbButtonHolder);
+        fbLogin = (FBLoginButton) rootView.findViewById(R.id.authButton);
         fbLogin.getBackground().setAlpha(getResources().getInteger(R.integer.percent_alpha));
 
+        //pass this fragment info onwards for calling activity with result
+        final Fragment self = this;
+        fbLogin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                facebookRequested = true;
+                //one click until resolved please
+                fbLogin.setEnabled(false);
+                fbLogin.fetchFBAccessToken(self, callback);
+            }
+        });
+
         //tie fb login button results to this fragment and would handle changing the login/logout button
-        fbLogin.setFragment(this);
+//        fbLogin.setFragment(this);
 
         //ask for public profile and email access
-        fbLogin.setReadPermissions(Arrays.asList("public_profile", "email"));
+//        fbLogin.setReadPermissions(Arrays.asList("public_profile", "email"));
 
         //if we want to register for callbacks, but not change the login/logout button
 //        fbLogin.setSessionStatusCallback(callback);
@@ -200,7 +229,7 @@ public class LoginFragment extends Fragment {
     {
         //fade out email/fb, fade in username/password combos
         Animation fadeOutEmail = alphaAnimationFromTo(registerEmailButton, 1.0f, 0.01f, FADE_OUT_BUTTON_ANIMATION_MS_DURATION, false, false);
-        Animation fadeOutFBLogin = alphaAnimationFromTo(fbLogin, 1.0f, 0.01f, FADE_OUT_BUTTON_ANIMATION_MS_DURATION, true, false);
+        Animation fadeOutFBLogin = alphaAnimationFromTo(fbButtonHolder, 1.0f, 0.01f, FADE_OUT_BUTTON_ANIMATION_MS_DURATION, true, false);
 
         //no clicky clicky
         registerEmailButton.setEnabled(false);
@@ -210,7 +239,7 @@ public class LoginFragment extends Fragment {
 
         //don't click during animation!
         fbLogin.setEnabled(false);
-        fbLogin.startAnimation(fadeOutFBLogin);
+        fbButtonHolder.startAnimation(fadeOutFBLogin);
 
         //do not enable login button till you can actually login again
         loginButton.setEnabled(false);
@@ -272,11 +301,11 @@ public class LoginFragment extends Fragment {
 
         //make sure these are visible
         registerEmailButton.setVisibility(View.VISIBLE);
-        fbLogin.setVisibility(View.VISIBLE);
+        fbButtonHolder.setVisibility(View.VISIBLE);
 
         //fade out email/fb, fade in username/password combos
         Animation fadeInEmail = alphaAnimationFromTo(registerEmailButton, 0.01f, 1.0f, FADE_IN_BUTTON_ANIMATION_MS_DURATION, false, false);
-        Animation fadeInFBLogin = alphaAnimationFromTo(fbLogin, 0.01f, 1.0f, FADE_IN_BUTTON_ANIMATION_MS_DURATION, false, false);
+        Animation fadeInFBLogin = alphaAnimationFromTo(fbButtonHolder, 0.01f, 1.0f, FADE_IN_BUTTON_ANIMATION_MS_DURATION, false, false);
 
         //no clicky clicky during
         registerEmailButton.setEnabled(false);
@@ -287,8 +316,8 @@ public class LoginFragment extends Fragment {
 
         //don't click during animation!
         fbLogin.setEnabled(false);
-        fbLogin.requestLayout();
-        fbLogin.startAnimation(fadeInFBLogin);
+        fbButtonHolder.requestLayout();
+        fbButtonHolder.startAnimation(fadeInFBLogin);
 
         loginButton.setEnabled(false);
         cancelLoginButton.setEnabled(false);
@@ -530,10 +559,78 @@ public class LoginFragment extends Fragment {
 
     //handle register click by adding the RegisterFragment to our stack
     private void onSessionStateChange(Session session, SessionState state, Exception exception) {
-        if (state.isOpened()) {
-            Log.i(TAG, "Logged in...");
 
+        if(exception != null)
+            Log.d(TAG, exception.toString());
+
+        //session state changed, re-enable
+        if(facebookRequested)
+            fbLogin.setEnabled(true);
+
+        if(facebookRequested && session.isOpened())
+        {
+            //one request per click thank you
+            facebookRequested = false;
+
+            //grab the access token, then make an async request to our servers to login
             final String fbAccessToken = session.getAccessToken();
+
+            try {
+
+                if (apiService == null)
+                    apiService = APIManager.getInstance().createLoginAPI(getActivity());
+
+
+                //now we have our api service, let's try to send out this access token
+                AccessToken at = new AccessToken();
+                at.access_token = fbAccessToken;
+
+                //syncrhonously attempt to access server with facebook info!
+                apiService.asyncFacebookLoginRequest(at, new Callback<APIToken>() {
+                    @Override
+                    public void success(APIToken apiToken, Response response) {
+                        //now we have two options
+                        //either our user exists and is initialized -- that is, we just logged in
+                        //OR we haven't been initialized yet, so we need to send this info to our servers
+                        //either way, we'll need to store this info locally so that we can transfer it between fragments
+
+                        //we don't have a user
+                        if(apiToken.user == null)
+                        {
+                            displayLoginError("Unknown Server Error", "Failed to Login with Facebook");
+                            return;
+                        }
+
+                        //we know the user exists at this point, are they initialized?
+                        if(apiToken.user.isInitialized)
+                        {
+                            //we are an existing user, thus we are logged in -- take us home please
+                            FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
+                        }
+                        else
+                        {
+                            //not initialized -- thus we must take the user to the registration page
+                            //AFTER storing the user related callbacks
+                            FragmentFlowManager.getInstance().homeSignupFacebookOrEmail(getActivity());
+                        }
+                    }
+
+                    @Override
+                    public void failure(RetrofitError error) {
+
+                        displayLoginError("Unknown Server Error", "Failed to Login with Facebook");
+                        return;
+
+                    }
+                });
+
+
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+
 
             Thread thread = new Thread()
             {
@@ -602,8 +699,8 @@ public class LoginFragment extends Fragment {
 
 
 
-        } else if (state.isClosed()) {
-            Log.i(TAG, "Logged out...");
+        } else if (session.isClosed()) {
+            Log.i(TAG, "Session is closed...");
         }
     }
 
@@ -618,11 +715,11 @@ public class LoginFragment extends Fragment {
         // For scenarios where the main activity is launched and user
         // session is not null, the session state change notification
         // may not be triggered. Trigger it if it's open/closed.
-        Session session = Session.getActiveSession();
-        if (session != null &&
-                (session.isOpened() || session.isClosed()) ) {
-            onSessionStateChange(session, session.getState(), null);
-        }
+//        Session session = Session.getActiveSession();
+//        if (session != null &&
+//                (session.isOpened() || session.isClosed()) ) {
+//            onSessionStateChange(session, session.getState(), null);
+//        }
 
         uiHelper.onResume();
     }

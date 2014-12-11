@@ -32,8 +32,11 @@ function createSignupTokenInDB(db, user_id, cb)
 
 	console.log("Token created before DB entry: ", tokenAndHash);
 
+	//what user info are we storing? Also, this will get tagged with the expiration date as well
+	var userData = {user_id: user_id};
+
 	//now we must store it in our initializiation db
-	db.setKeyWithData(tokenAndHash.tokenHash, {user_id: user_id}, function(err, stored)
+	db.setKeyWithData(tokenAndHash.tokenHash, userData, function(err, stored)
 	{
 		//errors end this real quick
 		if(err) {
@@ -59,7 +62,7 @@ function createSignupTokenInDB(db, user_id, cb)
 				if(stored)
 				{
 					//let us know about the token, that's the API access key!
-					cb(undefined, tokenAndHash.token);
+					cb(undefined, tokenAndHash.token, userData._expiration);
 				}
 				else
 				{

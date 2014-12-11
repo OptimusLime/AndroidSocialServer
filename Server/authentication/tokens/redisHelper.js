@@ -25,6 +25,9 @@ module.exports = function(redisClient, defaultTTL)
 
 		var userData = data || {};
 		userData._ts = new Date();
+		
+		//when does it expire??
+		userData._expiration = Date.now() + 1000*ttl;
 
 		//if we say ttl = 0, then the key does not expire
 		if(ttl == 0)

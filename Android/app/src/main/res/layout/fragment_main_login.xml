@@ -69,31 +69,44 @@
                     />
 
             </LinearLayout>
+    <RelativeLayout
+        android:id="@+id/fbButtonHolder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
 
-        <com.facebook.widget.LoginButton
-            android:id="@+id/authButton"
-            android:layout_width="match_parent"
+            <edu.eplex.androidsocialclient.Login.CustomUI.FBLoginButton
+                android:id="@+id/authButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:scaleType="centerInside"
+
+                android:layout_marginTop="@dimen/button_margin_topbottom"
+                android:layout_marginBottom="@dimen/button_margin_topbottom"
+                android:layout_marginLeft="@dimen/button_margin_leftright"
+                android:layout_marginRight="@dimen/button_margin_leftright"
+
+                android:paddingLeft="@dimen/button_padding_leftright"
+                android:paddingRight="@dimen/button_padding_leftright"
+                android:paddingTop="@dimen/button_padding_topbottom"
+                android:paddingBottom="@dimen/button_padding_topbottom"
+
+                android:textColor="#FFF"
+                android:text="@string/action_register_facebook"
+                />
+
+        <ImageView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:scaleType="centerInside"
-
-            android:layout_marginTop="@dimen/button_margin_topbottom"
-            android:layout_marginBottom="@dimen/button_margin_topbottom"
+            android:layout_centerVertical="true"
             android:layout_marginLeft="@dimen/button_margin_leftright"
-            android:layout_marginRight="@dimen/button_margin_leftright"
-
-            android:paddingLeft="@dimen/button_padding_leftright"
-            android:paddingRight="@dimen/button_padding_leftright"
-            android:paddingTop="@dimen/button_padding_topbottom"
-            android:paddingBottom="@dimen/button_padding_topbottom"
-
-            android:textColor="#FFF"
-            fb:login_text="@string/action_register_facebook"
-            fb:logout_text="@string/action_register_facebook"
+            android:padding="@dimen/com_facebook_loginview_compound_drawable_padding"
+            android:src="@drawable/com_facebook_inverse_icon"
             />
-        </RelativeLayout>
 
+        </RelativeLayout>
+    </RelativeLayout>
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="@dimen/login_button_height">

@@ -30,11 +30,11 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 	authRouter.use(bodyParser.urlencoded({ extended: true }));
 	authRouter.use(bodyParser.json());
 
-	function returnUser(res, user, apiToken)
+	function returnUser(res, user, apiToken, expiration)
 	{
 		//otherwise, we have discovered our user, send them back!
 		//we don't need to send the whole user back, but 
-		var rUser = {api_token: apiToken, user: UserModelClass.makeClientSafe(user)};
+		var rUser = {api_token: apiToken, user: UserModelClass.makeClientSafe(user), expiration: expiration};
 		
 		console.log("Returning user: ", rUser);
 		res.json(rUser);
@@ -79,22 +79,22 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 				if(user.isInitialized)
 				{
 					//we simply create a token for this user - new or otherwise
-					tokenAuth.createAPIToken(user.user_id, function(err, apiToken)
+					tokenAuth.createAPIToken(user.user_id, function(err, apiToken, expiration)
 					{
 						console.log("ApiToken generated: " + apiToken)
 						//we've created an api token, return with user
-						returnUser(res, user, apiToken);
+						returnUser(res, user, apiToken, expiration);
 					});
 				}
 				else
 				{
 					//otherwise, this is an uninitiated user, we create a temporary signup token for the user
 					//there is only 1 temp signup token per user
-					tokenAuth.createTemporarySignupToken(user.user_id, function(err, apiToken)
+					tokenAuth.createTemporarySignupToken(user.user_id, function(err, apiToken, expiration)
 					{
 						console.log("Temp signup token: " + apiToken);
 						//send them back with the token
-						returnUser(res, user, apiToken);
+						returnUser(res, user, apiToken, expiration);
 					});
 				}				
 
@@ -191,6 +191,12 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 	   
 	   console.log("Login request facebook: ", req.body);
 
+	   if(!req.body.access_token)
+	   {
+	   		errorOccurredCheck(res, new Error("Improper facebook login request formatting"));
+	  		return;
+	   }
+
 	   //we have a request to login, and we only have an access token, that means locally on the device we don't
 	   //have any user info/api info. Let's ask facebook for the user info, then check if we know that user
 
@@ -248,6 +254,8 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 							{service_name: 'facebook', service_id: fbRes.body.id}
 						]
 					});
+					//TODO: what if we already have this user -- that is the process failed on saving the FB Data
+					//we need to do a check for an existing user before we can save them here (potential duplicate)
 
 					//now we save the user! 
 					newUser.save(function(err, savedUser)
@@ -266,111 +274,144 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 							gender: fbRes.body.gender
 						});
 
+						//save this FB data please
 						fbData.save(function(err, fbSaved)
 						{
 							if(errorOccurredCheck(res, err))
 								return;
 
-							//finally, we create our initialization API token
-							//this is a short lived token for creating a new user and updating their information
-							//during signup -- this does not give you access to other parts of the api
-							tokenAuth.createTemporarySignupToken(newUser.user_id, function(err, apiToken)
-							{
-								if(errorOccurredCheck(res, err))
-									return;
-
-								//we've created our temporary user and our api authentications, lets send them back!
-								returnUser(res, savedUser.toObject(), apiToken);
-
-							})
-
+							//we've created our temporary user but they lack any api authentication
+							//they'll need this info to confirm their identity during signup later
+							returnUser(res, savedUser.toObject(), apiToken, expiration);
 
 						})
 					});
 				}
 			});
-
 		});
-
 	});
 
 	authRouter.post('/signup/facebook', function(req, res, next){
 	  console.log("signup request facebook: ", req.body);
 	  
-	  //need to change user information, first verify the signup api token is correct
-	  var signupToken = req.body.api_token;
-
-	  tokenAuth.verifySignupToken(signupToken, function(err, user_id)
+	  if(!req.body.api_token || !req.body.user || !req.body.user.user_id || !req.body.user.email || !req.body.user.password || !!req.body.user.username)
 	  {
-	  	//check for error finding signup token
-	  	if(errorOccurredCheck(res,err))
-	  		return;
+	  	errorOccurredCheck(res, new Error("Improper facebook signup request formatting"));
+	  	return;
+	  }
 
-	  	//no error! It was found! 
-	  	if(!user_id)
-		{
-			//TODO: this would send a not authorized callback -- the authorization does not exist anymore
-			//either is expired, or it was removed
-			errorOccurredCheck(res, new Error("Verify signup token returned empty user_id. This is wrong."));
-			return;	
-		}
+	  //need to change user information, first verify the api token is correct
+	  var fbAccessToken = req.body.api_token;
+	  var sent_user_id = req.body.user.user_id;
 
-		//we have a user id! go fetch our user, then update their info, finally sending back the information
-	  	UserModel.findOne({user_id: user_id})
-			.exec(function(err, user) {
-					
-				//uh oh, mongodb error
-	 			if(errorOccurredCheck(res, err))
+	  //the api token is actually the access token for facebook
+	  //we request the user info from facebook, then take that information and verify the user_id matches
+	   //this will also verify the access token is functional 
+
+	   //create our super agent for the request to facebook
+	   var request = superagent.agent();
+
+	   //contact the graph api -- only one call necessary and pass the token
+      request
+		.get('https://graph.facebook.com/me?access_token=' + fbAccessToken)
+		.accept('application/json')
+		.end(function(err, fbRes){
+			//uh oh, request error
+			if(errorOccurredCheck(res, err))
+				return;
+			//no body or fbid 
+			else if(!fbRes.body || !fbRes.body.id)
+			{
+				errorOccurredCheck(res, new Error("FB Response body does not exist, or there is no fb id. Are the access_token permissions set right?"));
+				return;
+			}
+
+			//what did facebook tell us about the user?
+			//now we need to determine if we know this particular user or not
+			FBDataModel.findOne({fid: fbRes.body.id}, 'user_id email', function(err, associatedUser)
+			{
+				//we have a mongodb error outside of a null result
+				if(errorOccurredCheck(res, err))
+					return;
+
+				//if we have an associated user, almost done now -- just a few checks
+				if(associatedUser)
+				{
+					//the user ids need to match to know this is an authentic request --
+					//facebook agrees they are who they say they are
+					if(associatedUser.user_id != sent_user_id)
+					{
+						errorOccurredCheck(res, new Error("UserID sent does not match access token of user"));
 						return;
-				
-				console.log("Found user: ", user.toObject());
+					}
 
-				if(!user)
-				{
-					//there is no existing user with this id, this is a weird error
-					console.error(new Error("Weird error: cannot find user during signup despire having known user_id. Malicious?"));
-					res.status(500);
-					return;
+					//we have a user id and it matches the sent ID! 
+					//go fetch our user, then update their info, finally sending back the information
+				  	UserModel.findOne({user_id: associatedUser.user_id})
+						.exec(function(err, user) {
+								
+							//uh oh, mongodb error
+				 			if(errorOccurredCheck(res, err))
+									return;
+							
+							console.log("Found user: ", user.toObject());
+
+							if(!user)
+							{
+								//there is no existing user with this id, this is a weird error
+								errorOccurredCheck(res, new Error("Weird error: cannot find user during signup despire having known user_id. Malicious?"));
+								return;
+							}
+
+							//we know the user exists, so we create a nice little token for them
+							tokenAuth.createAPIToken(user.user_id, function(err, apiToken, expiration)
+							{
+								//if we're already initialized -- we send back the object and the token
+								//they're already initialized -- they may be maliciously attempting to adjust something
+								//that time is over!
+								if(user.isInitialized)
+								{
+									//send them back with the already initialized user
+									returnUser(res, savedUser.toObject(), apiToken, expiration);
+
+									//importantly, expire all tokens associated with this user
+									tokenAuth.expireSignupTokens(savedUser.user_id, function()
+									{
+										//we don't care if this succeeds or not -- the tokens will eventually expire anyways
+									});
+
+									//all done!
+									return;
+								}
+							
+								//Create and save our user info now
+								validateAndSaveUserInformation(user, {
+									email: req.body.email,
+									username: req.body.username,
+									passowrd: req.body.password
+								}, function(err, savedUser)
+								{
+									if(errorOccurredCheck(res, err))
+										return;
+
+									//send them back with the token and the updated user
+									returnUser(res, savedUser.toObject(), apiToken, expiration);
+								})
+
+							});
+
+						});
+
 				}
-
-				if(user.isInitialized)
+				else
 				{
-					//send them back with the already initialized user
-					returnUser(res, savedUser.toObject());
-
-					//importantly, expire all tokens associated with this user
-					tokenAuth.expireSignupTokens(savedUser.user_id, function()
-					{
-						//we don't care if this succeeds or not -- the tokens will eventually expire anyways
-					});
-
-					return;
+					errorOccurredCheck(res, new Error("Invalid FB Access Token, no associated user found. "));
 				}
-
-
-				//we know the user exists, so we create a nice little token for them
-				tokenAuth.createAPIToken(user.user_id, function(err, apiToken)
-				{
-					//Create and save our user info now
-					validateAndSaveUserInformation(user, {
-						email: req.body.email,
-						username: req.body.username,
-						passowrd: req.body.password
-					}, function(err, savedUser)
-					{
-						if(errorOccurredCheck(res, err))
-							return;
-
-						//send them back with the token and the updated user
-						returnUser(res, savedUser.toObject(), apiToken);
-					})
-
-				});
-
 			});
+		});
 
-	  });
 
+	
 	  //all good 
 	   // res.status(200).json({message: "FB Signup router reached successfully"});
 	});
@@ -407,13 +448,13 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 				//now we get them an api token
 
 				//we simply create a token for this user - new or otherwise
-				tokenAuth.createAPIToken(user.user_id, function(err, apiToken)
+				tokenAuth.createAPIToken(user.user_id, function(err, apiToken, expiration)
 				{
 					if(errorOccurredCheck(res,err))
 						return;
 
 					//successful api token, send back user info
-					returnUser(res, user, apiToken);
+					returnUser(res, user, apiToken, expiration);
 				});
 			}
 			else
@@ -444,7 +485,7 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 				});
 
 				//we simply create a token for this user - new or otherwise
-				tokenAuth.createAPIToken(newUser.user_id, function(err, apiToken)
+				tokenAuth.createAPIToken(newUser.user_id, function(err, apiToken, expiration)
 				{
 					//created token
 					console.log("ApiToken generated for verified email user: " + apiToken)
@@ -465,7 +506,7 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 
 						//our user has been verified and saved,
 						//return with user
-						returnUser(res, savedUser, apiToken);
+						returnUser(res, savedUser, apiToken, expiration);
 					})
 
 				});
