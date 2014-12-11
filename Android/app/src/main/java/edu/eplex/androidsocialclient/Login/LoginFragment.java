@@ -29,6 +29,7 @@ import com.facebook.SessionState;
 import com.facebook.UiLifecycleHelper;
 import com.facebook.widget.LoginButton;
 import com.rengwuxian.materialedittext.MaterialEditText;
+import com.squareup.otto.Subscribe;
 
 import java.security.spec.ECField;
 import java.util.Arrays;
@@ -37,6 +38,7 @@ import java.util.regex.Pattern;
 
 import edu.eplex.androidsocialclient.API.LoginAPI;
 import edu.eplex.androidsocialclient.API.Manager.APIManager;
+import edu.eplex.androidsocialclient.API.Manager.UserSessionManager;
 import edu.eplex.androidsocialclient.API.Objects.APIToken;
 import edu.eplex.androidsocialclient.API.Objects.AccessToken;
 import edu.eplex.androidsocialclient.API.Objects.LoginRequest;
@@ -64,7 +66,7 @@ public class LoginFragment extends Fragment {
     private static final int FADE_IN_EDIT_ANIMATION_MS_DURATION = 1300;
 
     //Helper for life cycle maintenance in FB
-    private UiLifecycleHelper uiHelper;
+//    private UiLifecycleHelper uiHelper;
     private FBLoginButton fbLogin;
     private LoginAPI apiService;
 
@@ -104,32 +106,34 @@ public class LoginFragment extends Fragment {
             e.printStackTrace();
         }
 
+        UserSessionManager.getInstance().register(this);
+
 //        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 //        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
 
         //whenever opening the login screen, kill the session if one exists please
-        Session s = Session.getActiveSession();
-        if(s != null && s.isOpened())
-            s.closeAndClearTokenInformation();
+//        Session s = Session.getActiveSession();
+//        if(s != null && s.isOpened())
+//            s.closeAndClearTokenInformation();
+//
+//        //clear out the cache as well please -- no need for FB info to be stored locally
+//        s = Session.openActiveSessionFromCache(getActivity());
+//
+//        //clear it out please
+//        if(s != null && s.isOpened())
+//            s.closeAndClearTokenInformation();
 
-        //clear out the cache as well please -- no need for FB info to be stored locally
-        s = Session.openActiveSessionFromCache(getActivity());
-
-        //clear it out please
-        if(s != null && s.isOpened())
-            s.closeAndClearTokenInformation();
-
-        uiHelper = new UiLifecycleHelper(getActivity(), callback);
-        uiHelper.onCreate(savedInstanceState);
+//        uiHelper = new UiLifecycleHelper(getActivity(), callback);
+//        uiHelper.onCreate(savedInstanceState);
     }
 
     //callback that handles change in Login/Logout status
-    private Session.StatusCallback callback = new Session.StatusCallback() {
-        @Override
-        public void call(Session session, SessionState state, Exception exception) {
-            onSessionStateChange(session, state, exception);
-        }
-    };
+//    private Session.StatusCallback callback = new Session.StatusCallback() {
+//        @Override
+//        public void call(Session session, SessionState state, Exception exception) {
+//            onSessionStateChange(session, state, exception);
+//        }
+//    };
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -148,7 +152,9 @@ public class LoginFragment extends Fragment {
                 facebookRequested = true;
                 //one click until resolved please
                 fbLogin.setEnabled(false);
-                fbLogin.fetchFBAccessToken(self, callback);
+
+                //try to log us in please!
+                UserSessionManager.getInstance().getUserFBInformation(self);
             }
         });
 
@@ -557,152 +563,194 @@ public class LoginFragment extends Fragment {
     }
 
 
-    //handle register click by adding the RegisterFragment to our stack
-    private void onSessionStateChange(Session session, SessionState state, Exception exception) {
+    @Subscribe
+    public void readyForEvent(UserSessionManager.ReadyForEvent event) {
 
-        if(exception != null)
-            Log.d(TAG, exception.toString());
-
-        //session state changed, re-enable
-        if(facebookRequested)
-            fbLogin.setEnabled(true);
-
-        if(facebookRequested && session.isOpened())
+        switch (event.registrationType)
         {
-            //one request per click thank you
-            facebookRequested = false;
+            case UserLoginWithFacebook:
 
-            //grab the access token, then make an async request to our servers to login
-            final String fbAccessToken = session.getAccessToken();
+                //we've accessed our facebook info, now we're ready to make a request to our
+                //servers before registering a user
 
-            try {
+                //now try to login with Facebook
+                UserSessionManager.getInstance().loginUserWithFacebook(this);
 
-                if (apiService == null)
-                    apiService = APIManager.getInstance().createLoginAPI(getActivity());
+                break;
+            case UserSignupWithFacebook:
 
+                //user successfully contacted our server, now we're ready to shift to the registration page
+                FragmentFlowManager.getInstance().homeSignupFacebookOrEmail(getActivity());
 
-                //now we have our api service, let's try to send out this access token
-                AccessToken at = new AccessToken();
-                at.access_token = fbAccessToken;
-
-                //syncrhonously attempt to access server with facebook info!
-                apiService.asyncFacebookLoginRequest(at, new Callback<APIToken>() {
-                    @Override
-                    public void success(APIToken apiToken, Response response) {
-                        //now we have two options
-                        //either our user exists and is initialized -- that is, we just logged in
-                        //OR we haven't been initialized yet, so we need to send this info to our servers
-                        //either way, we'll need to store this info locally so that we can transfer it between fragments
-
-                        //we don't have a user
-                        if(apiToken.user == null)
-                        {
-                            displayLoginError("Unknown Server Error", "Failed to Login with Facebook");
-                            return;
-                        }
-
-                        //we know the user exists at this point, are they initialized?
-                        if(apiToken.user.isInitialized)
-                        {
-                            //we are an existing user, thus we are logged in -- take us home please
-                            FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
-                        }
-                        else
-                        {
-                            //not initialized -- thus we must take the user to the registration page
-                            //AFTER storing the user related callbacks
-                            FragmentFlowManager.getInstance().homeSignupFacebookOrEmail(getActivity());
-                        }
-                    }
-
-                    @Override
-                    public void failure(RetrofitError error) {
-
-                        displayLoginError("Unknown Server Error", "Failed to Login with Facebook");
-                        return;
-
-                    }
-                });
-
-
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-
-
-            Thread thread = new Thread()
-            {
-                @Override
-                public void run() {
-
-                    //now we want to exchange our fb access token for one from our server
-                    try {
-                        if(apiService == null)
-                            apiService = APIManager.getInstance().createLoginAPI(getActivity());
-
-                        //now we have our api service, let's try to send out this access token
-                        AccessToken at = new AccessToken();
-                        at.access_token = fbAccessToken;
-
-                        //syncrhonously attempt to access server with facebook info!
-                        APIToken apiTokenReturn = apiService.syncFacebookLoginRequest(at);
-
-                        Log.d(TAG, "User exists? " + apiTokenReturn.user.isInitialized);
-
-
-                        if(apiTokenReturn.user != null && apiTokenReturn.user.isInitialized)
-                        {
-                            //we're signed in! should we check we have access?
-                            APIToken confirmUserAccess = apiService.syncVerifyAPIAccess(apiTokenReturn.api_token);
-
-
-                            Log.d(TAG, "User verified? " + confirmUserAccess.user.user_id);
-
-
-                        }
-                        else if(apiTokenReturn.user != null && !apiTokenReturn.user.isInitialized)
-                        {
-                            OAuth2Signup signupInfo = new OAuth2Signup();
-                            signupInfo.api_token = apiTokenReturn.api_token;
-                            signupInfo.user_id = apiTokenReturn.user.user_id;
-                            signupInfo.username = "bobsyouruncle";
-                            signupInfo.password = "bob22";
-                            signupInfo.email = apiTokenReturn.user.email;
-
-                            //in theory we are signed up, let's also verify
-                            APIToken signupConfirmation = apiService.syncFacebookSignup(signupInfo);
-
-                            //we're signed in! should we check we have access?
-                            APIToken confirmUserAccess = apiService.syncVerifyAPIAccess(signupConfirmation.api_token);
-
-                            Log.d(TAG, "User verified after signup? " + confirmUserAccess.user.isInitialized);
-
-                        }
-
-
-
-
-//                        UsernameCheck check = apiService.syncUsernameCheck("bobsyouruncle");
-
-//                        Log.d(TAG, "Username available? " + check.isAvailable);
-
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            };
-
-//            thread.start();
-
-
-
-        } else if (session.isClosed()) {
-            Log.i(TAG, "Session is closed...");
+                break;
         }
     }
+
+    @Subscribe
+    public void loginFailure(UserSessionManager.LoginFailure failureEvent) {
+
+        switch (failureEvent.loginFailureReason)
+        {
+            case ServerNon200Status:
+                displayLoginError("Error from Server", "Error contacting server: " + failureEvent.htmlStatus);
+                break;
+            case ServerNonResponsive:
+                displayLoginError("Error from Server", "Server not responding. Try again in a moment.");
+                break;
+        }
+
+        //we can now try again
+        fbLogin.setEnabled(true);
+
+    }
+
+//
+//    //handle register click by adding the RegisterFragment to our stack
+//    private void onSessionStateChange(Session session, SessionState state, Exception exception) {
+//
+//        if(exception != null)
+//            Log.d(TAG, exception.toString());
+//
+//        //session state changed, re-enable
+//        if(facebookRequested)
+//            fbLogin.setEnabled(true);
+//
+//        if(facebookRequested && session.isOpened())
+//        {
+//            //one request per click thank you
+//            facebookRequested = false;
+//
+//            //grab the access token, then make an async request to our servers to login
+//            final String fbAccessToken = session.getAccessToken();
+//
+//            try {
+//
+//                if (apiService == null)
+//                    apiService = APIManager.getInstance().createLoginAPI(getActivity());
+//
+//
+//                //now we have our api service, let's try to send out this access token
+//                AccessToken at = new AccessToken();
+//                at.access_token = fbAccessToken;
+//
+//                //syncrhonously attempt to access server with facebook info!
+//                apiService.asyncFacebookLoginRequest(at, new Callback<APIToken>() {
+//                    @Override
+//                    public void success(APIToken apiToken, Response response) {
+//                        //now we have two options
+//                        //either our user exists and is initialized -- that is, we just logged in
+//                        //OR we haven't been initialized yet, so we need to send this info to our servers
+//                        //either way, we'll need to store this info locally so that we can transfer it between fragments
+//
+//                        //we don't have a user
+//                        if(apiToken.user == null)
+//                        {
+//                            displayLoginError("Unknown Server Error", "Failed to Login with Facebook");
+//                            return;
+//                        }
+//
+//                        //we know the user exists at this point, are they initialized?
+//                        if(apiToken.user.isInitialized)
+//                        {
+//                            //we are an existing user, thus we are logged in -- take us home please
+//                            FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
+//                        }
+//                        else
+//                        {
+//                            //not initialized -- thus we must take the user to the registration page
+//                            //AFTER storing the user related callbacks
+//                            FragmentFlowManager.getInstance().homeSignupFacebookOrEmail(getActivity());
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void failure(RetrofitError error) {
+//
+//                        displayLoginError("Unknown Server Error", "Failed to Login with Facebook");
+//                        return;
+//
+//                    }
+//                });
+//
+//
+//            }
+//            catch (Exception e)
+//            {
+//                e.printStackTrace();
+//            }
+//
+//
+//            Thread thread = new Thread()
+//            {
+//                @Override
+//                public void run() {
+//
+//                    //now we want to exchange our fb access token for one from our server
+//                    try {
+//                        if(apiService == null)
+//                            apiService = APIManager.getInstance().createLoginAPI(getActivity());
+//
+//                        //now we have our api service, let's try to send out this access token
+//                        AccessToken at = new AccessToken();
+//                        at.access_token = fbAccessToken;
+//
+//                        //syncrhonously attempt to access server with facebook info!
+//                        APIToken apiTokenReturn = apiService.syncFacebookLoginRequest(at);
+//
+//                        Log.d(TAG, "User exists? " + apiTokenReturn.user.isInitialized);
+//
+//
+//                        if(apiTokenReturn.user != null && apiTokenReturn.user.isInitialized)
+//                        {
+//                            //we're signed in! should we check we have access?
+//                            APIToken confirmUserAccess = apiService.syncVerifyAPIAccess(apiTokenReturn.api_token);
+//
+//
+//                            Log.d(TAG, "User verified? " + confirmUserAccess.user.user_id);
+//
+//
+//                        }
+//                        else if(apiTokenReturn.user != null && !apiTokenReturn.user.isInitialized)
+//                        {
+//                            OAuth2Signup signupInfo = new OAuth2Signup();
+//                            signupInfo.api_token = apiTokenReturn.api_token;
+//                            signupInfo.user_id = apiTokenReturn.user.user_id;
+//                            signupInfo.username = "bobsyouruncle";
+//                            signupInfo.password = "bob22";
+//                            signupInfo.email = apiTokenReturn.user.email;
+//
+//                            //in theory we are signed up, let's also verify
+//                            APIToken signupConfirmation = apiService.syncFacebookSignup(signupInfo);
+//
+//                            //we're signed in! should we check we have access?
+//                            APIToken confirmUserAccess = apiService.syncVerifyAPIAccess(signupConfirmation.api_token);
+//
+//                            Log.d(TAG, "User verified after signup? " + confirmUserAccess.user.isInitialized);
+//
+//                        }
+//
+//
+//
+//
+////                        UsernameCheck check = apiService.syncUsernameCheck("bobsyouruncle");
+//
+////                        Log.d(TAG, "Username available? " + check.isAvailable);
+//
+//
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            };
+//
+////            thread.start();
+//
+//
+//
+//        } else if (session.isClosed()) {
+//            Log.i(TAG, "Session is closed...");
+//        }
+//    }
 
     //Handle different App status
     @Override
@@ -721,30 +769,39 @@ public class LoginFragment extends Fragment {
 //            onSessionStateChange(session, session.getState(), null);
 //        }
 
-        uiHelper.onResume();
+//        uiHelper.onResume();
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        uiHelper.onActivityResult(requestCode, resultCode, data);
+
+        //call our session manager for handling
+        UserSessionManager.getInstance().onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        uiHelper.onPause();
+//        uiHelper.onPause();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        uiHelper.onDestroy();
+
+        //drop out of event updates please!
+        UserSessionManager.getInstance().unregister(this);
+
+//        uiHelper.onDestroy();
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        uiHelper.onSaveInstanceState(outState);
+
+        //save the current frag state in the user session
+        UserSessionManager.getInstance().onSaveInstanceState(outState);
+//        uiHelper.onSaveInstanceState(outState);
     }
 }
