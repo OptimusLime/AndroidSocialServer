@@ -50,16 +50,28 @@ public class UserSessionManager {
     }
     public enum LoginFailureReason
     {
+        ServerUserNotInitialized,
+        ServerInvalidAPIToken,
         ServerNon200Status,
-        ServerNonResponsive
+        ServerNonResponsive,
+        FacebookException
     }
     public class LoginFailure {
         public LoginFailureReason loginFailureReason;
         public int htmlStatus;
+        public String reason;
+
         public LoginFailure(LoginFailureReason lfr, int htmlStatus)
         {
             this.loginFailureReason = lfr;
             this.htmlStatus = htmlStatus;
+        }
+
+        public LoginFailure(LoginFailureReason lfr, int htmlStatus, String reason)
+        {
+            this.loginFailureReason = lfr;
+            this.htmlStatus = htmlStatus;
+            this.reason = reason;
         }
     }
     public class CurrentUserInformation
@@ -142,13 +154,29 @@ public class UserSessionManager {
             uiHelper.onSaveInstanceState(outState);
     }
 
+
+    void loadAPIService(Fragment fragment) {
+        try {
+            //will send facebook access token info and attempt to requisition an api token
+            if (apiService == null)
+                apiService = APIManager.getInstance().createLoginAPI(fragment.getActivity());
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     //we only ever open the session for reading
     public void getUserFBInformation(Fragment parentFragment)
     {
         getUserFBInformation(parentFragment, fbReadPermissions);
     }
+
+
     public void getUserFBInformation(Fragment parentFragment, List<String> permissions)
     {
+        //make sure to load up our api service for later access
+        loadAPIService(parentFragment);
+
         if(currentUILifeCycleActivity != parentFragment.getActivity())
         {
             //store this activity so that we don't keep duplicating the uiHelper object
@@ -188,9 +216,14 @@ public class UserSessionManager {
     //handle register click by adding the RegisterFragment to our stack
     private void onSessionStateChange(Session session, SessionState state, Exception exception) {
 
-        if(exception != null)
+        if(exception != null) {
             Log.d(TAG, exception.toString());
 
+            //facebook exception -- let it be known -- we've failed a login step
+            userEventBus.post(new LoginFailure(LoginFailureReason.FacebookException, 0, exception.getMessage()));
+
+            return;
+        }
         //we only care about the open sessions, that's it
         if(session.isOpened())
         {
@@ -202,30 +235,25 @@ public class UserSessionManager {
 
             //with this information, we're ready to attempt login now -- let the world know
             userEventBus.post(new ReadyForEvent(RegistrationType.UserLoginWithFacebook, lastActiveFacebookAccessToken));
+
+            //we let them know about the login readiness, but we will continue towards user login now
+            loginUserWithFacebook();
         }
     }
 
     //USER LOGIN HANDLING
-    public boolean loginUserWithFacebook(Fragment fragment)
+    boolean loginUserWithFacebook()
     {
         if(lastActiveFacebookAccessToken == null || lastActiveFacebookAccessToken.access_token == null)
         {
             //can't make a user login request without an existing access token
             return false;
         }
-        try {
-            //will send facebook access token info and attempt to requisition an api token
-            if (apiService == null)
-                apiService = APIManager.getInstance().createLoginAPI(fragment.getActivity());
 
-            apiService.asyncFacebookLoginRequest(lastActiveFacebookAccessToken, userLoginWithFacebookCallback);
-            return true;
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            return false;
-        }
+        //make an async request to the servers with this newly discovered facebook info
+        apiService.asyncFacebookLoginRequest(lastActiveFacebookAccessToken, userLoginWithFacebookCallback);
+
+        return true;
     }
 
     //handle
@@ -288,5 +316,74 @@ public class UserSessionManager {
         userEventBus.post(new UserLoggedInEvent(currentAPIToken));
     }
 
+    public boolean signupWithFacebook(OAuth2Signup signupRequest)
+    {
+        //must have all of these in order to continue -- instant fail
+        if(apiService == null
+                || lastActiveFacebookAccessToken == null
+                || lastActiveFacebookAccessToken.access_token == null
+                || currentAPIToken.user == null
+                || currentAPIToken.user.user_id == null
+                )
+            return false;
 
+        //ready to signup iwth our facebooks
+        signupRequest.api_token = lastActiveFacebookAccessToken.access_token;
+        //then we associate our request with the previously acquired user_id -- during facebook signup attempt
+        signupRequest.user_id = currentAPIToken.user.user_id;
+
+        //let our request out into the wild
+        apiService.asyncFacebookSignup(signupRequest, userSignupWithFacebookCallback);
+
+        return true;
+    }
+
+    ///USER SIGN UP HANDLING
+    //handle user signup response
+    Callback<APIToken> userSignupWithFacebookCallback = new Callback<APIToken>() {
+        @Override
+        public void success(APIToken apiToken, Response response) {
+
+            //if our user is not initialized, we're ready to register, but we are not yet loggin in
+            currentAPIToken = apiToken;
+
+            if(apiToken.user.isInitialized)
+            {
+                //the user is initialized!
+                if(apiToken.api_token != null)
+                {
+                    //we're all logged in!
+                    userOfficiallyLoggedIn();
+                }
+                else
+                    userEventBus.post(new LoginFailure(LoginFailureReason.ServerInvalidAPIToken, 0));
+            }
+            else
+                userEventBus.post(new LoginFailure(LoginFailureReason.ServerUserNotInitialized, 0));
+        }
+
+        @Override
+        public void failure(RetrofitError error) {
+
+            LoginFailure failure;
+            if(error.getResponse() != null)
+            {
+                failure = new LoginFailure(LoginFailureReason.ServerNon200Status, error.getResponse().getStatus());
+            }
+            else
+                failure = new LoginFailure(LoginFailureReason.ServerNonResponsive, 0);
+
+            //send out this login failure event
+            userEventBus.post(failure);
+        }
+    };
+
+    public void signupWithEmail()
+    {
+        //we must erase any known facebook affiliation
+        lastActiveFacebookAccessToken = null;
+
+        //then importantly we must fetch a google token for authentication
+
+    }
 }

@@ -49,6 +49,7 @@ import com.google.android.gms.auth.GoogleAuthUtil;
 import com.google.android.gms.auth.UserRecoverableAuthException;
 import com.rengwuxian.materialedittext.MaterialEditText;
 import com.rengwuxian.materialedittext.validation.RegexpValidator;
+import com.squareup.otto.Subscribe;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -60,6 +61,7 @@ import java.util.concurrent.TimeUnit;
 
 import edu.eplex.androidsocialclient.API.LoginAPI;
 import edu.eplex.androidsocialclient.API.Manager.APIManager;
+import edu.eplex.androidsocialclient.API.Manager.UserSessionManager;
 import edu.eplex.androidsocialclient.API.Objects.APIToken;
 import edu.eplex.androidsocialclient.API.Objects.AccessToken;
 import edu.eplex.androidsocialclient.API.Objects.OAuth2Signup;
@@ -99,6 +101,8 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 
     private AlphaAnimation progressAnimation;
     private boolean ignoreNextAnimationEnd;
+
+    private boolean userSentFromFacebook;
 
     ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
     ScheduledFuture scheduledAPIRequest;
@@ -143,6 +147,30 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 //        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_UNSPECIFIED);
 //
 
+    }
+
+   @Subscribe
+   public void currentUserInformation(UserSessionManager.CurrentUserInformation userInfo)
+    {
+        //we were sent with Facebook info -- best make use of it for registering
+        if(userInfo.lastKnownFacebookAccessToken != null && userInfo.lastKnownFacebookAccessToken.access_token != null)
+            userSentFromFacebook = true;
+
+        //we have our user info, let's populate!
+        if(userInfo.currentAPIToken != null && userInfo.currentAPIToken.user != null)
+        {
+            quickSetText(userInfo.currentAPIToken.user.email);
+        }
+        else
+            quickSetText(null);
+    }
+
+    @Subscribe
+    public void userLoggedIn(UserSessionManager.UserLoggedInEvent loggedInUser)
+    {
+        //only happens when we successfully get logged in
+        //therefore, we need to switch to our new account status!
+        FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
     }
 
     @Override
@@ -386,13 +414,20 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
         //confirm we want options callback
         setHasOptionsMenu(true);
 
+        //we register for callbacks, this will actually
+        UserSessionManager.getInstance().register(this);
 
         return rootView;
     }
-    void quickSetText(){
-        String email = UserEmailFetcher.getEmail(getActivity());
+    void quickSetText(String email){
+
         if(email == null)
-            email = "";
+        {
+            String potentialEmail = UserEmailFetcher.getEmail(getActivity());
+
+            //check again -- no null ness- regardless of fetching
+            email = (potentialEmail != null) ? potentialEmail : "";
+        }
 
         emailEditText.setText(email);
 //        passwordEditText.setText("dododo");
@@ -608,6 +643,9 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 
     @Override
     public void onDestroy() {
+
+        //pull out, we about to be destroyed
+        UserSessionManager.getInstance().unregister(this);
         super.onDestroy();
     }
 
@@ -666,7 +704,7 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
         }
 
         //quickly set up the entries to test faster manually
-        quickSetText();
+//        quickSetText();
 
         //set up our menu initially -- if we have everything we need, we are good to go
         //but initially, that won't be the case
@@ -683,6 +721,19 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
     {
         //locally good to go
         if(isEmailValid && isUsernameValid && isPasswordValid) {
+
+            if(userSentFromFacebook)
+            {
+                OAuth2Signup signup = new OAuth2Signup();
+                signup.email = emailEditText.getText().toString();
+                signup.username = usernameEditText.getText().toString();
+                signup.password = passwordEditText.getText().toString();
+
+                //we'll do our registering with facebook thanks!
+                UserSessionManager.getInstance().signupWithFacebook(signup);
+                return;
+            }
+
             //grab user email for google specifically to create the token
             AsyncTask<Void, Void, String> task = new AsyncTask<Void, Void, String>() {
                 @Override
@@ -750,12 +801,11 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
     }
 
 
-
     boolean checkReadyToFinish()
     {
         boolean readyToFinish = isEmailValid && isPasswordValid && isUsernameValid;
 
-        if(completeMenuButton.isEnabled() != readyToFinish)
+        if(completeMenuButton!= null && completeMenuButton.isEnabled() != readyToFinish)
             completeMenuButton.setEnabled(readyToFinish);
 
         return readyToFinish;

@@ -282,7 +282,7 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 
 							//we've created our temporary user but they lack any api authentication
 							//they'll need this info to confirm their identity during signup later
-							returnUser(res, savedUser.toObject(), apiToken, expiration);
+							returnUser(res, savedUser.toObject());
 
 						})
 					});
@@ -294,7 +294,7 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 	authRouter.post('/signup/facebook', function(req, res, next){
 	  console.log("signup request facebook: ", req.body);
 	  
-	  if(!req.body.api_token || !req.body.user || !req.body.user.user_id || !req.body.user.email || !req.body.user.password || !!req.body.user.username)
+	  if(!req.body.api_token || !req.body.user_id || !req.body.email || !req.body.password || !req.body.username)
 	  {
 	  	errorOccurredCheck(res, new Error("Improper facebook signup request formatting"));
 	  	return;
@@ -302,7 +302,7 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 
 	  //need to change user information, first verify the api token is correct
 	  var fbAccessToken = req.body.api_token;
-	  var sent_user_id = req.body.user.user_id;
+	  var sent_user_id = req.body.user_id;
 
 	  //the api token is actually the access token for facebook
 	  //we request the user info from facebook, then take that information and verify the user_id matches
@@ -388,7 +388,7 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 								validateAndSaveUserInformation(user, {
 									email: req.body.email,
 									username: req.body.username,
-									passowrd: req.body.password
+									password: req.body.password
 								}, function(err, savedUser)
 								{
 									if(errorOccurredCheck(res, err))

@@ -571,10 +571,9 @@ public class LoginFragment extends Fragment {
             case UserLoginWithFacebook:
 
                 //we've accessed our facebook info, now we're ready to make a request to our
-                //servers before registering a user
+                //servers before registering a user -- we are simply being informed of the readiness
+                //nothing to be done here!
 
-                //now try to login with Facebook
-                UserSessionManager.getInstance().loginUserWithFacebook(this);
 
                 break;
             case UserSignupWithFacebook:
@@ -587,10 +586,21 @@ public class LoginFragment extends Fragment {
     }
 
     @Subscribe
+    public void userLoggedIn(UserSessionManager.UserLoggedInEvent loggedInUser)
+    {
+        //only happens when we successfully get logged in
+        //therefore, we need to switch to our new account status!
+        FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
+    }
+
+    @Subscribe
     public void loginFailure(UserSessionManager.LoginFailure failureEvent) {
 
         switch (failureEvent.loginFailureReason)
         {
+            case FacebookException:
+                displayLoginError("Facebook Login Error", "Unknown error while logging into Facebook");
+                break;
             case ServerNon200Status:
                 displayLoginError("Error from Server", "Error contacting server: " + failureEvent.htmlStatus);
                 break;
