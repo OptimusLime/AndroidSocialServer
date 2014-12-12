@@ -106,7 +106,7 @@ public class LoginFragment extends Fragment {
             e.printStackTrace();
         }
 
-        UserSessionManager.getInstance().register(this);
+        UserSessionManager.getInstance().register(this, this);
 
 
 //        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
@@ -790,7 +790,7 @@ public class LoginFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        UserSessionManager.getInstance().register(this);
+        UserSessionManager.getInstance().register(this, this);
 
 
         // For scenarios where the main activity is launched and user
@@ -819,7 +819,7 @@ public class LoginFragment extends Fragment {
         super.onPause();
 //        uiHelper.onPause();
         //drop out of event updates please!
-        UserSessionManager.getInstance().unregister(this);
+        UserSessionManager.getInstance().unregister(this, this);
     }
 
     @Override

@@ -15,18 +15,22 @@ import android.os.Build;
 import android.view.Window;
 
 import com.facebook.widget.LoginButton;
+import com.squareup.otto.Subscribe;
 
 import java.util.Arrays;
 
 import edu.eplex.androidsocialclient.API.Manager.APIManager;
+import edu.eplex.androidsocialclient.API.Manager.UserSessionManager;
 import edu.eplex.androidsocialclient.Login.LoginFragment;
+import edu.eplex.androidsocialclient.MainUI.UserSettingsFragment;
 
 
 public class MainLoginActivity extends ActionBarActivity {
 
     private static final String TAG = "MainLoginActivity";
 
-    private LoginFragment loginFragment;
+    private android.support.v4.app.Fragment uiFragment;
+    private boolean userLoggedIn;
 
     @Override
     protected void onResume() {
@@ -38,53 +42,58 @@ public class MainLoginActivity extends ActionBarActivity {
 
         super.onCreate(savedInstanceState);
 
-        //TODO: check if user is logged in, then just open up the appropriate fragment/activity combo
+        //register for user info BEFORE we choose which screen to load
+        UserSessionManager.getInstance().register(this, this);
+
+        //TODO: Open true main activity -- not this fragment BS
         if (savedInstanceState == null) {
-            // Add the fragment on initial activity setup
-            loginFragment = new LoginFragment();
+
+            android.support.v4.app.Fragment uiFragment;
+
+            //we're already logged in -- route us more appropriately
+            if(userLoggedIn)
+                uiFragment = new UserSettingsFragment();
+            else
+                //not logged in -  Add the fragment on initial activity setup
+                uiFragment = new LoginFragment();
 
             getSupportFragmentManager()
                     .beginTransaction()
-                    .add(android.R.id.content, loginFragment)
+                    .add(android.R.id.content, uiFragment)
                     .commit();
         } else {
             // Or set the fragment from restored state info
-            loginFragment = (LoginFragment) getSupportFragmentManager()
+            uiFragment = getSupportFragmentManager()
                     .findFragmentById(android.R.id.content);
         }
     }
 
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_main_login);
-//        if (savedInstanceState == null) {
-//            getFragmentManager().beginTransaction()
-//                    .add(R.id.container, new LoginFragment())
-//                    .commit();
-//        }
-//    }
-//
-//
-//    @Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        // Inflate the menu; this adds items to the action bar if it is present.
-//        getMenuInflater().inflate(R.menu.menu_main_login, menu);
-//        return true;
-//    }
-//
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        // Handle action bar item clicks here. The action bar will
-//        // automatically handle clicks on the Home/Up button, so long
-//        // as you specify a parent activity in AndroidManifest.xml.
-//        int id = item.getItemId();
-//
-//        //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
-//
-//        return super.onOptionsItemSelected(item);
-//    }
+    @Override
+    public void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        UserSessionManager.getInstance().unregister(this, this);
+    }
+
+    @Subscribe
+    public void currentUserInformation(UserSessionManager.CurrentUserInformation userInformation)
+    {
+        if(userInformation.currentAPIToken != null)
+            userLoggedIn = true;
+        else
+            userLoggedIn = false;
+    }
+
+    @Subscribe
+    public void userLoggedIn(UserSessionManager.UserLoggedInEvent userLoggedInEvent)
+    {
+        //we are officially in!
+        userLoggedIn = true;
+    }
+
+    @Subscribe
+    public void userLoggedOut(UserSessionManager.UserLoggedOutEvent userInformation)
+    {
+        //officially out!
+        userLoggedIn = false;
+    }
 }

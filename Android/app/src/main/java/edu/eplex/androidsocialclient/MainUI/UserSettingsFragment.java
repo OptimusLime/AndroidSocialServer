@@ -113,7 +113,7 @@ public class UserSettingsFragment extends Fragment {
         //confirm we want options callback
         setHasOptionsMenu(true);
 
-        UserSessionManager.getInstance().register(this);
+        UserSessionManager.getInstance().register(this, this);
 
         return rootView;
     }
@@ -123,12 +123,12 @@ public class UserSettingsFragment extends Fragment {
         super.onPause();
 
         //when we're getting paused -- not shown, just unregister -- no zombie calls please
-        UserSessionManager.getInstance().unregister(this);
+        UserSessionManager.getInstance().unregister(this, this);
     }
 
     @Override
     public void onResume() {
-        UserSessionManager.getInstance().register(this);
+        UserSessionManager.getInstance().register(this, this);
         super.onResume();
     }
 

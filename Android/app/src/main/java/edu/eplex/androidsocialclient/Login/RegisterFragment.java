@@ -453,7 +453,7 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
         setHasOptionsMenu(true);
 
         //we register for callbacks, this will actually
-        UserSessionManager.getInstance().register(this);
+        UserSessionManager.getInstance().register(this, this);
 
         return rootView;
     }
@@ -646,7 +646,7 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
     @Override
     public void onResume()
     {
-        UserSessionManager.getInstance().register(this);
+        UserSessionManager.getInstance().register(this, this);
         super.onResume();
     }
 
@@ -683,7 +683,7 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
         super.onPause();
 
         //drop out of event updates please!
-        UserSessionManager.getInstance().unregister(this);
+        UserSessionManager.getInstance().unregister(this, this);
 
     }
 

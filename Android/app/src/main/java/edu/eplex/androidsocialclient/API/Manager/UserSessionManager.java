@@ -2,7 +2,9 @@ package edu.eplex.androidsocialclient.API.Manager;
 
 import android.animation.ObjectAnimator;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -11,6 +13,9 @@ import android.util.Log;
 import com.facebook.Session;
 import com.facebook.SessionState;
 import com.facebook.UiLifecycleHelper;
+import com.fasterxml.jackson.core.PrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.android.gms.auth.GoogleAuthException;
 import com.google.android.gms.auth.GoogleAuthUtil;
 import com.google.android.gms.auth.UserRecoverableAuthException;
@@ -41,25 +46,23 @@ import retrofit.client.Response;
  */
 public class UserSessionManager {
 
-    public enum RegistrationType
-    {
+    public enum RegistrationType {
         UserLoginWithFacebook,
         UserSignupWithFacebook,
         UserSignupWithEmail
     }
-    public class ReadyForEvent
-    {
+
+    public class ReadyForEvent {
         public RegistrationType registrationType;
         public Object eventObject;
 
-        public ReadyForEvent(RegistrationType rt, Object eventObject)
-        {
+        public ReadyForEvent(RegistrationType rt, Object eventObject) {
             this.registrationType = rt;
             this.eventObject = eventObject;
         }
     }
-    public enum LoginFailureReason
-    {
+
+    public enum LoginFailureReason {
         ServerUserNotInitialized,
         ServerInvalidAPIToken,
         ServerNon200Status,
@@ -72,58 +75,57 @@ public class UserSessionManager {
         UnauthorizedGoogleUser,
         UnknownGoogleTokenError
     }
+
     public class LoginFailure {
         public LoginFailureReason loginFailureReason;
         public int htmlStatus;
         public String reason;
 
-        public LoginFailure(LoginFailureReason lfr, int htmlStatus)
-        {
+        public LoginFailure(LoginFailureReason lfr, int htmlStatus) {
             this.loginFailureReason = lfr;
             this.htmlStatus = htmlStatus;
         }
 
-        public LoginFailure(LoginFailureReason lfr, int htmlStatus, String reason)
-        {
+        public LoginFailure(LoginFailureReason lfr, int htmlStatus, String reason) {
             this.loginFailureReason = lfr;
             this.htmlStatus = htmlStatus;
             this.reason = reason;
         }
     }
-    public class CurrentUserInformation
-    {
+
+    public class CurrentUserInformation {
         public APIToken currentAPIToken;
         public AccessToken lastKnownFacebookAccessToken;
-        public CurrentUserInformation(APIToken userInfo, AccessToken fbInfo)
-        {
+
+        public CurrentUserInformation(APIToken userInfo, AccessToken fbInfo) {
             this.currentAPIToken = userInfo;
-            this.lastKnownFacebookAccessToken =  fbInfo;
+            this.lastKnownFacebookAccessToken = fbInfo;
         }
     }
-    public class UserLoggedInEvent
-    {
+
+    public class UserLoggedInEvent {
         public APIToken apiToken;
-        public UserLoggedInEvent(APIToken currentToken)
-        {
+
+        public UserLoggedInEvent(APIToken currentToken) {
             this.apiToken = currentToken;
         }
     }
 
-    public class UserLoggedOutEvent
-    {
+    public class UserLoggedOutEvent {
     }
 
     //tag it up
     private static String TAG = "UserSessionManager";
 
     //for handling call to google token auth function
-    private static final int REQUEST_CODE_TOKEN_AUTH =  1;
+    private static final int REQUEST_CODE_TOKEN_AUTH = 1;
+    private static final String CACHE_SESSION_NAME = "USER_SESSION";
+    private static final String USER_JSON_KEY = "USER_INFO";
+    private static final String USER_FB_JSON_KEY = "USER_FB_INFO";
 
 
     //change this for more permissions
     private List<String> fbReadPermissions = Arrays.asList("public_profile", "email");
-
-
 
     //handle all user related calls across the app
     Bus userEventBus = new Bus();
@@ -142,6 +144,8 @@ public class UserSessionManager {
     UiLifecycleHelper uiHelper;
 
     boolean userIsLoggedIn;
+    boolean attemptedLoadFromCache = false;
+    boolean cacheOutdated = true;
 
     private static UserSessionManager instance = null;
 
@@ -149,11 +153,11 @@ public class UserSessionManager {
         // Exists only to defeat instantiation.
         //register ourself for the event bus -- to produce things
         userEventBus.register(this);
-
+        attemptedLoadFromCache = false;
     }
 
     public static UserSessionManager getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new UserSessionManager();
         }
         return instance;
@@ -162,29 +166,35 @@ public class UserSessionManager {
     //this gets called each time someone subscribes to the usereventbus
     //this way, you get an immediate callback of the user info -- to sycnrhonously decide
     //how to proceed inside the fragment/activity
-    @Produce public CurrentUserInformation currentUserInformation()
-    {
+    @Produce
+    public CurrentUserInformation currentUserInformation() {
         //TODO: Pull user info from cached information if it's null
         return new CurrentUserInformation(currentAPIToken, lastActiveFacebookAccessToken);
     }
 
-    private void userOfficiallyLoggedIn()
-    {
+    private void userOfficiallyLoggedIn() {
         //let's go ahead and let anyone interested know that the user is offficially logged in
         userIsLoggedIn = true;
+
+        //to be safe, all user logins trigger an outdated cache -- no checking if the user info matches
+        //just save the info next time some object unregisters (i.e. something is being paused/resumed)
+        cacheOutdated = true;
 
         //sound out the current api token in an events
         userEventBus.post(new UserLoggedInEvent(currentAPIToken));
     }
 
-    public void logoutUser(Fragment parentFragment)
-    {
+    public void logoutUser(Fragment parentFragment) {
+        logoutUser(parentFragment.getActivity());
+    }
+    public void logoutUser(Activity parentActivity) {
         //let's go ahead and let anyone interested know that the user is GONE
         userIsLoggedIn = false;
 
         //clear out facebook
         lastActiveFacebookAccessToken = null;
-        clearFacebookSessions(parentFragment);
+        clearFacebookSessions(parentActivity);
+        clearUserSessionCache(parentActivity);
 
         //delete our local tokens
         currentAPIToken = null;
@@ -193,25 +203,143 @@ public class UserSessionManager {
         userEventBus.post(new UserLoggedOutEvent());
     }
 
+    public void register(Object eventObject, Fragment parentFragment) {
+        register(eventObject, parentFragment.getActivity());
+    }
+
     //register/unregister on the bus
-    public void register(Object eventObject)
-    {
+    public void register(Object eventObject, Activity parentActivity) {
+        loadFromCache(parentActivity);
+
         //no duplicate registering
-        if(registeredObjects.contains(eventObject))
+        if (registeredObjects.contains(eventObject))
             return;
 
         //register to our list and to the bus
         registeredObjects.add(eventObject);
         userEventBus.register(eventObject);
     }
-    public void unregister(Object eventObject)
+
+    //we take in a fragment or an activity -- whichever is present
+    public void unregister(Object eventObject, Fragment parentFragment)
+    {
+        unregister(eventObject, parentFragment.getActivity());
+    }
+    public void unregister(Object eventObject, Activity parentActivity)
     {
         if(!registeredObjects.contains(eventObject))
             return;
 
+        //if we're unregistering, and our cache is out of date, this is a good time to fix that
+        saveToCache(parentActivity);
+
         //unregister and remove from our list of existing registered objects
         registeredObjects.remove(eventObject);
+
         userEventBus.unregister(eventObject);
+    }
+
+    void saveToCache(Activity parentActivity)
+    {
+        if(!cacheOutdated)
+            return;
+
+        try {
+            SharedPreferences userSessionInformation = parentActivity.getSharedPreferences(CACHE_SESSION_NAME, Context.MODE_PRIVATE);
+
+            if (currentAPIToken != null || lastActiveFacebookAccessToken != null) {
+
+                SharedPreferences.Editor editPreferences = userSessionInformation.edit();
+
+                //1. Convert Java object to JSON format
+                ObjectWriter ow = new ObjectMapper().writer();
+
+                if(currentAPIToken != null) {
+
+                    String json = ow.writeValueAsString(currentAPIToken);
+
+                    //store our user json inside
+                    editPreferences.putString(USER_JSON_KEY, json);
+
+                }
+
+                if(lastActiveFacebookAccessToken != null)
+                {
+                    String json = ow.writeValueAsString(lastActiveFacebookAccessToken);
+                    editPreferences.putString(USER_FB_JSON_KEY, json);
+                }
+
+                //save our changes back to the shared pref editor
+                editPreferences.commit();
+            }
+
+            cacheOutdated = false;
+        }
+        catch (Exception e)
+        {
+            Log.d(TAG, e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    void loadFromCache(Activity parentActivity)
+    {
+        if(attemptedLoadFromCache)
+            return;
+
+        //only load from cache ONCE -- at the beginning before anyone registers
+        attemptedLoadFromCache = true;
+
+        try {
+            // fragment stores reference
+            SharedPreferences userSessionInformation = parentActivity.getSharedPreferences(CACHE_SESSION_NAME, Context.MODE_PRIVATE);
+
+            String userJSON = userSessionInformation.getString(USER_JSON_KEY, null);
+            String fbJSON = userSessionInformation.getString(USER_FB_JSON_KEY, null);
+
+            if(userJSON != null || fbJSON != null) {
+                //we have a user in some form! Need to parse the user info, and return it
+                ObjectMapper objectMapper = new ObjectMapper();
+
+                //is our user here?
+                if (userJSON != null) {
+                    currentAPIToken = objectMapper.readValue(userJSON, APIToken.class);
+                }
+
+                //do they have fb info?
+                if (fbJSON != null) {
+                    lastActiveFacebookAccessToken = objectMapper.readValue(fbJSON, AccessToken.class);
+                }
+            }
+
+            //all loaded -- we're not out of date!
+            cacheOutdated = false;
+        }
+        catch (Exception e)
+        {
+            Log.d(TAG, e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    void clearUserSessionCache(Activity parentActivity)
+    {
+        try {
+
+            // fragment stores reference
+            SharedPreferences userSessionInformation = parentActivity.getSharedPreferences(CACHE_SESSION_NAME, Context.MODE_PRIVATE);
+
+            //clear out all the cache entries-- thank yoU!
+            userSessionInformation.edit().clear().commit();
+
+            //nothing left in cache -- all up to date
+            cacheOutdated = false;
+        }
+        catch (Exception e)
+        {
+            Log.d(TAG, e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     //FACEBOOK LOGIN HANDLING
@@ -259,7 +387,7 @@ public class UserSessionManager {
         getUserFBInformation(parentFragment, fbReadPermissions);
     }
 
-    void clearFacebookSessions(Fragment parentFragment)
+    void clearFacebookSessions(Activity parentActivity)
     {
         //we check if we're already logging in for a session, if so, we kill the session
         Session openSession = Session.getActiveSession();
@@ -270,7 +398,7 @@ public class UserSessionManager {
             openSession.closeAndClearTokenInformation();
 
         //clear out the cache as well please -- no need for FB info to be stored locally
-        openSession = Session.openActiveSessionFromCache(parentFragment.getActivity());
+        openSession = Session.openActiveSessionFromCache(parentActivity);
 
         //clear it out please
         if(openSession != null && openSession.isOpened())
@@ -293,7 +421,7 @@ public class UserSessionManager {
         }
 
         //clear out any previous sessions that existed
-        clearFacebookSessions(parentFragment);
+        clearFacebookSessions(parentFragment.getActivity());
 
         //allowloginui == true because we want to open the session no matter what -- whether we have something cached or not
         Session.openActiveSession(parentFragment.getActivity(), parentFragment, true, permissions, callback);
