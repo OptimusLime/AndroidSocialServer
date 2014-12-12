@@ -173,6 +173,39 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
         FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
     }
 
+    @Subscribe
+    public void loginFailure(UserSessionManager.LoginFailure failureEvent) {
+
+        switch (failureEvent.loginFailureReason)
+        {
+            case GoogleAuthorizationRecovered:
+//                showRegistrationFailure("Google Authorized", "Please try again, Google authorization is now working.");
+                asyncRegisterEmail();
+                break;
+            case GoogleNetworkError:
+                showRegistrationFailure("Registration Failed", "Network error authorizing Google account. Try again.");
+                break;
+            case ServerNon200Status:
+
+                switch (failureEvent.htmlStatus)
+                {
+                    //TODO: this should be the correct html status number from the server
+                    case 500:
+                        showRegistrationFailure("Signup Failed", "Server error. Try again in a moment.");
+                        break;
+
+                    default:
+                        showRegistrationFailure("Error from Server", "Error contacting server: " + failureEvent.htmlStatus);
+                        break;
+                }
+                break;
+            case ServerNonResponsive:
+                showRegistrationFailure("Error from Server", "Server not responding. Try again in a moment.");
+                break;
+        }
+
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -613,6 +646,8 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
+        UserSessionManager.getInstance().onActivityResult(requestCode, resultCode, data);
+
         switch (requestCode)
         {
             case REQUEST_CODE_TOKEN_AUTH:
@@ -722,6 +757,7 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
         //locally good to go
         if(isEmailValid && isUsernameValid && isPasswordValid) {
 
+            //did we come in with facebook info?
             if(userSentFromFacebook)
             {
                 OAuth2Signup signup = new OAuth2Signup();
@@ -731,72 +767,80 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 
                 //we'll do our registering with facebook thanks!
                 UserSessionManager.getInstance().signupWithFacebook(signup);
-                return;
+            }
+            else
+            {
+                OAuth2Signup signup = new OAuth2Signup();
+                signup.email = emailEditText.getText().toString();
+                signup.username = usernameEditText.getText().toString();
+                signup.password = passwordEditText.getText().toString();
+
+                UserSessionManager.getInstance().signupWithEmail(this, signup);
             }
 
             //grab user email for google specifically to create the token
-            AsyncTask<Void, Void, String> task = new AsyncTask<Void, Void, String>() {
-                @Override
-                protected String doInBackground(Void... params) {
-
-                    String email = UserEmailFetcher.getEmail(getActivity());
-                    String token = null;
-
-                    try {
-
-                        token = GoogleAuthUtil.getToken(getActivity(),
-                                email,
-                                "audience:server:client_id:694834200067-1l6lrta2d4lfbdmiv1tosinoq91cnp51.apps.googleusercontent.com");
-//                                                    "audience:server:client_id:694834200067-jv9qgnu0eb5pr95cc4gva5i4f2qjcok6.apps.googleusercontent.com");
-
-                        OAuth2Signup signup = new OAuth2Signup();
-                        signup.api_token = token;
-                        signup.email = emailEditText.getText().toString();
-                        signup.username = usernameEditText.getText().toString();
-                        signup.password = passwordEditText.getText().toString();
-
-                        APIToken apiToken = apiService.syncEmailSignup(signup);
-                        if(apiToken.user != null && apiToken.api_token != null)
-                        {
-                            Log.d("TokenRetrieve", apiToken.api_token);
-
-                            //launch into the actual app now (temporarily user settings)
-                            FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
-                        }
-
-
-                    } catch (IOException transientEx) {
-                        // Network or server error, try later
-                        Log.e(TAG, transientEx.toString());
-                    } catch (UserRecoverableAuthException e) {
-                        // Recover (with e.getIntent())
-                        Log.e(TAG, e.toString());
-                        Intent recover = e.getIntent();
-                        startActivityForResult(recover, REQUEST_CODE_TOKEN_AUTH);
-
-                    } catch (GoogleAuthException authEx) {
-                        // The call is not ever expected to succeed
-                        // assuming you have already verified that
-                        // Google Play services is installed.
-                        Log.e(TAG, authEx.toString());
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-
-                    return token;
-                }
-
-                @Override
-                protected void onPostExecute(String token) {
-                    Log.i(TAG, "Access token retrieved:" + token);
-                }
-
-            };
-
-            //start it up!
-            task.execute();
+//            AsyncTask<Void, Void, String> task = new AsyncTask<Void, Void, String>() {
+//                @Override
+//                protected String doInBackground(Void... params) {
+//
+//                    String email = UserEmailFetcher.getEmail(getActivity());
+//                    String token = null;
+//
+//                    try {
+//
+//                        token = GoogleAuthUtil.getToken(getActivity(),
+//                                email,
+//                                "audience:server:client_id:" + getResources().getString(R.string.google_client_id));
+////                                                    "audience:server:client_id:694834200067-jv9qgnu0eb5pr95cc4gva5i4f2qjcok6.apps.googleusercontent.com");
+//
+//                        OAuth2Signup signup = new OAuth2Signup();
+//                        signup.api_token = token;
+//                        signup.email = emailEditText.getText().toString();
+//                        signup.username = usernameEditText.getText().toString();
+//                        signup.password = passwordEditText.getText().toString();
+//
+//                        APIToken apiToken = apiService.syncEmailSignup(signup);
+//                        if(apiToken.user != null && apiToken.api_token != null)
+//                        {
+//                            Log.d("TokenRetrieve", apiToken.api_token);
+//
+//                            //launch into the actual app now (temporarily user settings)
+//                            FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
+//                        }
+//
+//
+//                    } catch (IOException transientEx) {
+//                        // Network or server error, try later
+//                        Log.e(TAG, transientEx.toString());
+//                    } catch (UserRecoverableAuthException e) {
+//                        // Recover (with e.getIntent())
+//                        Log.e(TAG, e.toString());
+//                        Intent recover = e.getIntent();
+//                        startActivityForResult(recover, REQUEST_CODE_TOKEN_AUTH);
+//
+//                    } catch (GoogleAuthException authEx) {
+//                        // The call is not ever expected to succeed
+//                        // assuming you have already verified that
+//                        // Google Play services is installed.
+//                        Log.e(TAG, authEx.toString());
+//                    }
+//                    catch (Exception e)
+//                    {
+//                        e.printStackTrace();
+//                    }
+//
+//                    return token;
+//                }
+//
+//                @Override
+//                protected void onPostExecute(String token) {
+//                    Log.i(TAG, "Access token retrieved:" + token);
+//                }
+//
+//            };
+//
+//            //start it up!
+//            task.execute();
         }
     }
 
@@ -895,6 +939,7 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 
         return super.onOptionsItemSelected(item);
     }
+
 
     void showRegistrationFailure(String errorTitle, String errorMessage)
     {

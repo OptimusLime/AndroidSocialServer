@@ -454,7 +454,7 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 						return;
 
 					//successful api token, send back user info
-					returnUser(res, user, apiToken, expiration);
+					returnUser(res, user.toObject(), apiToken, expiration);
 				});
 			}
 			else
@@ -506,7 +506,7 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 
 						//our user has been verified and saved,
 						//return with user
-						returnUser(res, savedUser, apiToken, expiration);
+						returnUser(res, savedUser.toObject(), apiToken, expiration);
 					})
 
 				});

@@ -39,15 +39,22 @@ var clientKeys = require("./clientKeys.js");
 
 db.once('open', function() {
 
+	console.log("MongoDB Connection opened");
+
 	// Our database connection is open, we can now do our router setup and handle model creation 
 	tokenAuth.initializeRedisConnections(redisDBLocation, redisDefaultTTL, function(err)
 	{
+
 		//catch any errors from redis before starting
 		if(err) throw err;
+
+		console.log("Redis Connections initialized.");
 
 		googleAuth.initializeGoogleVerification(clientKeys, function(err)
 		{
 			if(err) throw err;
+
+			console.log("Google Auth Initialized");
 
 			// a route for handling authentication -- just send it in with our db connections and some params [later]
 			app.use('/auth', new AuthRouting(tokenAuth, googleAuth, db, {keys: clientKeys}));

@@ -367,50 +367,54 @@ public class LoginFragment extends Fragment {
             invalidPasswordLength();
         else
         {
-            try {
-                //attempt login please
-                apiService.asyncLoginRequest(new LoginRequest(usernameEditText.getText().toString(), passwordEditText.getText().toString()), new Callback<APIToken>() {
-                    @Override
-                    public void success(APIToken apiToken, Response response) {
-
-                        if (apiToken.user != null && apiToken.api_token != null) {
-                            //hide keyboard from the user, no more logging in for them!
-                            hideKeyboard(usernameEditText);
-                            //success! save the user, then log us in for real!
-                            //temporary flow to next activity here
-                            FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
-                        } else {
-                            //display the error to the user
-                            displayLoginError("Login Failed", "Unknown Server Error");
-                        }
-                    }
-
-                    @Override
-                    public void failure(RetrofitError error) {
-
-//                        switch (error.getResponse().getStatus()) {
-//                            case 500:
-                                //server error -- but for now, ALL ERRORS -- TODO: fix that please
-
-                                //display the error to the user
-                                displayLoginError("Login Failed", "Invalid username/password");
-
-//                                break;
-//                            default:
-//                                //display the error to the user
-//                                displayLoginError("Login Failed", "Unknown Server Error");
+            //Attempt login with username password -- need to be told of failure!
+            UserSessionManager.getInstance().loginWithUsernamePassword(
+                    this,
+                    new LoginRequest(usernameEditText.getText().toString(), passwordEditText.getText().toString()));
+//            try {
+//                //attempt login please
+//                apiService.asyncLoginRequest(new LoginRequest(usernameEditText.getText().toString(), passwordEditText.getText().toString()), new Callback<APIToken>() {
+//                    @Override
+//                    public void success(APIToken apiToken, Response response) {
 //
-//                                break;
+//                        if (apiToken.user != null && apiToken.api_token != null) {
+//                            //hide keyboard from the user, no more logging in for them!
+//                            hideKeyboard(usernameEditText);
+//                            //success! save the user, then log us in for real!
+//                            //temporary flow to next activity here
+//                            FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
+//                        } else {
+//                            //display the error to the user
+//                            displayLoginError("Login Failed", "Unknown Server Error");
 //                        }
-
-                    }
-                });
-            }
-            catch (Exception e)
-            {
-                //why did this fail!
-                e.printStackTrace();
-            }
+//                    }
+//
+//                    @Override
+//                    public void failure(RetrofitError error) {
+//
+////                        switch (error.getResponse().getStatus()) {
+////                            case 500:
+//                                //server error -- but for now, ALL ERRORS -- TODO: fix that please
+//
+//                                //display the error to the user
+//                                displayLoginError("Login Failed", "Invalid username/password");
+//
+////                                break;
+////                            default:
+////                                //display the error to the user
+////                                displayLoginError("Login Failed", "Unknown Server Error");
+////
+////                                break;
+////                        }
+//
+//                    }
+//                });
+//            }
+//            catch (Exception e)
+//            {
+//                //why did this fail!
+//                e.printStackTrace();
+//            }
         }
 
     }
@@ -589,6 +593,10 @@ public class LoginFragment extends Fragment {
     public void userLoggedIn(UserSessionManager.UserLoggedInEvent loggedInUser)
     {
         //only happens when we successfully get logged in
+
+        //hide keyboard from the user -- if it exists, no more logging in for them!
+        hideKeyboard(usernameEditText);
+
         //therefore, we need to switch to our new account status!
         FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
     }
@@ -602,7 +610,18 @@ public class LoginFragment extends Fragment {
                 displayLoginError("Facebook Login Error", "Unknown error while logging into Facebook");
                 break;
             case ServerNon200Status:
-                displayLoginError("Error from Server", "Error contacting server: " + failureEvent.htmlStatus);
+
+                switch (failureEvent.htmlStatus)
+                {
+                    //TODO: this should be the correct html status number from the server
+                    case 500:
+                        displayLoginError("Login Failed!", "Invalid username/password");
+                        break;
+
+                    default:
+                        displayLoginError("Error from Server", "Error contacting server: " + failureEvent.htmlStatus);
+                        break;
+                }
                 break;
             case ServerNonResponsive:
                 displayLoginError("Error from Server", "Server not responding. Try again in a moment.");

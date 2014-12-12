@@ -3,6 +3,7 @@ package edu.eplex.androidsocialclient.API.Manager;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -10,17 +11,25 @@ import android.util.Log;
 import com.facebook.Session;
 import com.facebook.SessionState;
 import com.facebook.UiLifecycleHelper;
+import com.google.android.gms.auth.GoogleAuthException;
+import com.google.android.gms.auth.GoogleAuthUtil;
+import com.google.android.gms.auth.UserRecoverableAuthException;
 import com.squareup.otto.Bus;
 import com.squareup.otto.Produce;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import edu.eplex.androidsocialclient.API.LoginAPI;
 import edu.eplex.androidsocialclient.API.Objects.APIToken;
 import edu.eplex.androidsocialclient.API.Objects.AccessToken;
+import edu.eplex.androidsocialclient.API.Objects.LoginRequest;
 import edu.eplex.androidsocialclient.API.Objects.OAuth2Signup;
 import edu.eplex.androidsocialclient.API.Objects.User;
+import edu.eplex.androidsocialclient.R;
+import edu.eplex.androidsocialclient.Utilities.FragmentFlowManager;
+import edu.eplex.androidsocialclient.Utilities.UserEmailFetcher;
 import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
@@ -54,7 +63,13 @@ public class UserSessionManager {
         ServerInvalidAPIToken,
         ServerNon200Status,
         ServerNonResponsive,
-        FacebookException
+
+        FacebookException,
+
+        GoogleAuthorizationRecovered,
+        GoogleNetworkError,
+        UnauthorizedGoogleUser,
+        UnknownGoogleTokenError
     }
     public class LoginFailure {
         public LoginFailureReason loginFailureReason;
@@ -96,6 +111,10 @@ public class UserSessionManager {
     //tag it up
     private static String TAG = "UserSessionManager";
 
+    //for handling call to google token auth function
+    private static final int REQUEST_CODE_TOKEN_AUTH =  1;
+
+
     //change this for more permissions
     private List<String> fbReadPermissions = Arrays.asList("public_profile", "email");
 
@@ -130,6 +149,24 @@ public class UserSessionManager {
         return instance;
     }
 
+    //this gets called each time someone subscribes to the usereventbus
+    //this way, you get an immediate callback of the user info -- to sycnrhonously decide
+    //how to proceed inside the fragment/activity
+    @Produce public CurrentUserInformation currentUserInformation()
+    {
+        //TODO: Pull user info from cached information if it's null
+        return new CurrentUserInformation(currentAPIToken, lastActiveFacebookAccessToken);
+    }
+
+    private void userOfficiallyLoggedIn()
+    {
+        //let's go ahead and let anyone interested know that the user is offficially logged in
+        userIsLoggedIn = true;
+
+        //sound out the current api token in an events
+        userEventBus.post(new UserLoggedInEvent(currentAPIToken));
+    }
+
     //register/unregister on the bus
     public void register(Object eventObject)
     {
@@ -148,6 +185,20 @@ public class UserSessionManager {
 
         if(uiHelper != null)
             uiHelper.onActivityResult(requestCode, resultCode, data);
+
+        switch (requestCode)
+        {
+            case REQUEST_CODE_TOKEN_AUTH:
+
+                //now we have our answer
+                if(resultCode == Activity.RESULT_OK)
+                {
+                    //go ahead and request AGAIN -- same procedure -- let an error be known though for repeat attempts
+                    userEventBus.post(new LoginFailure(LoginFailureReason.GoogleAuthorizationRecovered, 0));
+                }
+
+                break;
+        }
     }
     public void onSaveInstanceState(Bundle outState) {
         if(uiHelper != null)
@@ -242,6 +293,9 @@ public class UserSessionManager {
     }
 
     //USER LOGIN HANDLING
+
+
+
     boolean loginUserWithFacebook()
     {
         if(lastActiveFacebookAccessToken == null || lastActiveFacebookAccessToken.access_token == null)
@@ -255,6 +309,7 @@ public class UserSessionManager {
 
         return true;
     }
+
 
     //handle
     Callback<APIToken> userLoginWithFacebookCallback = new Callback<APIToken>() {
@@ -297,23 +352,14 @@ public class UserSessionManager {
         }
     };
 
+    //USER LOGIN USERNAME/PASSWORD
+    public void loginWithUsernamePassword(Fragment parentFragment, LoginRequest loginRequest) {
 
-    //this gets called each time someone subscribes to the usereventbus
-    //this way, you get an immediate callback of the user info -- to sycnrhonously decide
-    //how to proceed inside the fragment/activity
-    @Produce public CurrentUserInformation currentUserInformation()
-    {
-        //TODO: Pull user info from cached information if it's null
-        return new CurrentUserInformation(currentAPIToken, lastActiveFacebookAccessToken);
-    }
+        //make sure to load up our api service for later access
+        loadAPIService(parentFragment);
 
-    private void userOfficiallyLoggedIn()
-    {
-        //let's go ahead and let anyone interested know that the user is offficially logged in
-        userIsLoggedIn = true;
-
-        //sound out the current api token in an events
-        userEventBus.post(new UserLoggedInEvent(currentAPIToken));
+        //attempt login please
+        apiService.asyncLoginRequest(loginRequest, userLoginUsernamePasswordCallback);
     }
 
     public boolean signupWithFacebook(OAuth2Signup signupRequest)
@@ -339,27 +385,136 @@ public class UserSessionManager {
     }
 
     ///USER SIGN UP HANDLING
-    //handle user signup response
-    Callback<APIToken> userSignupWithFacebookCallback = new Callback<APIToken>() {
-        @Override
-        public void success(APIToken apiToken, Response response) {
+    public void signupWithEmail(Fragment parentFragment, final OAuth2Signup signupRequest)
+    {
+        //need to fetch api service using fragment -- signup with email has never used it before
+        loadAPIService(parentFragment);
 
-            //if our user is not initialized, we're ready to register, but we are not yet loggin in
-            currentAPIToken = apiToken;
+        //we must erase any known facebook affiliation
+        lastActiveFacebookAccessToken = null;
 
-            if(apiToken.user.isInitialized)
-            {
-                //the user is initialized!
-                if(apiToken.api_token != null)
-                {
-                    //we're all logged in!
-                    userOfficiallyLoggedIn();
+        //then importantly we must fetch a google token for authentication
+
+        asyncRetrieveGoogleToken(parentFragment, new GoogleTokenCallback() {
+            @Override
+            public void onGoogleTokenRetrieved(String token) {
+                //google token retrieved, time for some good old fashioned async email signup
+                signupRequest.api_token = token;
+
+                //send it out!
+                apiService.asyncEmailSignup(signupRequest, userSignupWithEmailCallback);
+
+            }
+
+            @Override
+            public void onGoogleTokenError(Exception e) {
+                if (e instanceof IOException) {
+                    // Network or server error, try later
+                    Log.e(TAG, e.toString());
+                    userEventBus.post(new LoginFailure(LoginFailureReason.GoogleNetworkError, 0));
+
+                } else if (e instanceof GoogleAuthException) {
+                    // The call is not ever expected to succeed
+                    // assuming you have already verified that
+                    // Google Play services is installed.
+                    Log.e(TAG, e.toString());
+                    userEventBus.post(new LoginFailure(LoginFailureReason.UnauthorizedGoogleUser, 0));
+
+                } else {
+                    e.printStackTrace();
+                    Log.e(TAG, e.toString());
+                    userEventBus.post(new LoginFailure(LoginFailureReason.UnknownGoogleTokenError, 0));
+
                 }
-                else
-                    userEventBus.post(new LoginFailure(LoginFailureReason.ServerInvalidAPIToken, 0));
+
+            }
+        });
+
+    }
+
+
+    //GOOGLE TOKEN SECTION --
+    private interface GoogleTokenCallback
+    {
+        public void onGoogleTokenRetrieved(String token);
+        public void onGoogleTokenError(Exception e);
+    }
+
+    //We must retrieve a Google token asyncrhonously
+    void asyncRetrieveGoogleToken(final Fragment parentFragment, final GoogleTokenCallback callback)
+    {
+        //grab user email for google specifically to create the token
+        AsyncTask<Void, Void, String> task = new AsyncTask<Void, Void, String>() {
+            @Override
+            protected String doInBackground(Void... params) {
+
+                String email = UserEmailFetcher.getEmail(parentFragment.getActivity());
+                String token = null;
+
+                try {
+
+                    token = GoogleAuthUtil.getToken(parentFragment.getActivity(),
+                            email,
+                            "audience:server:client_id:" + parentFragment.getResources().getString(R.string.google_client_id));
+
+                } catch (UserRecoverableAuthException e) {
+                    // Recover (with e.getIntent())
+                    Log.e(TAG, e.toString());
+                    Intent recover = e.getIntent();
+                    parentFragment.startActivityForResult(recover, REQUEST_CODE_TOKEN_AUTH);
+
+                }
+                catch (Exception e)
+                {
+                    //handle all other unrecoverable exceptions here
+                    callback.onGoogleTokenError(e);
+                }
+
+                callback.onGoogleTokenRetrieved(token);
+
+                return token;
+            }
+
+            @Override
+            protected void onPostExecute(String token) {
+                Log.i(TAG, "Access token retrieved:" + token);
+            }
+
+        };
+
+        //start it up!
+        task.execute();
+    }
+
+    //USER LOGIN/FBSIGNUP/EMAILSIGNUP RETROFIT CALLBACKS ----
+
+    //this is where all the successful cases go! We check the api token info to see
+    //if we're actually logged in successfully -- no weird errors
+    void onUserLoginSuccess(APIToken apiToken, Response response)
+    {
+        //if our user is not initialized, we're ready to register, but we are not yet loggin in
+        currentAPIToken = apiToken;
+
+        if(apiToken.user.isInitialized)
+        {
+            //the user is initialized!
+            if(apiToken.api_token != null)
+            {
+                //we're all logged in!
+                userOfficiallyLoggedIn();
             }
             else
-                userEventBus.post(new LoginFailure(LoginFailureReason.ServerUserNotInitialized, 0));
+                userEventBus.post(new LoginFailure(LoginFailureReason.ServerInvalidAPIToken, 0));
+        }
+        else
+            userEventBus.post(new LoginFailure(LoginFailureReason.ServerUserNotInitialized, 0));
+    }
+
+    //handle user login response
+    Callback<APIToken> userLoginUsernamePasswordCallback = new Callback<APIToken>() {
+        @Override
+        public void success(APIToken apiToken, Response response) {
+            onUserLoginSuccess(apiToken, response);
         }
 
         @Override
@@ -378,12 +533,50 @@ public class UserSessionManager {
         }
     };
 
-    public void signupWithEmail()
-    {
-        //we must erase any known facebook affiliation
-        lastActiveFacebookAccessToken = null;
+    //handle success/errors from signup with email
+    Callback<APIToken> userSignupWithEmailCallback = new Callback<APIToken>() {
+        @Override
+        public void success(APIToken apiToken, Response response) {
+           onUserLoginSuccess(apiToken, response);
+        }
 
-        //then importantly we must fetch a google token for authentication
+        @Override
+        public void failure(RetrofitError error) {
 
-    }
+            LoginFailure failure;
+            if(error.getResponse() != null)
+            {
+                failure = new LoginFailure(LoginFailureReason.ServerNon200Status, error.getResponse().getStatus());
+            }
+            else
+                failure = new LoginFailure(LoginFailureReason.ServerNonResponsive, 0);
+
+            //send out this login failure event
+            userEventBus.post(failure);
+        }
+    };
+
+    //handle user signup response with facebook related errors
+    Callback<APIToken> userSignupWithFacebookCallback = new Callback<APIToken>() {
+        @Override
+        public void success(APIToken apiToken, Response response) {
+            onUserLoginSuccess(apiToken, response);
+        }
+
+
+        @Override
+        public void failure(RetrofitError error) {
+
+            LoginFailure failure;
+            if(error.getResponse() != null)
+            {
+                failure = new LoginFailure(LoginFailureReason.ServerNon200Status, error.getResponse().getStatus());
+            }
+            else
+                failure = new LoginFailure(LoginFailureReason.ServerNonResponsive, 0);
+
+            //send out this login failure event
+            userEventBus.post(failure);
+        }
+    };
 }
