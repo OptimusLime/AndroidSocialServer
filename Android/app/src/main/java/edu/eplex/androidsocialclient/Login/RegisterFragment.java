@@ -202,6 +202,9 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
             case ServerNonResponsive:
                 showRegistrationFailure("Error from Server", "Server not responding. Try again in a moment.");
                 break;
+            default:
+                showRegistrationFailure("Error from Server", "Unkmown error signing up.");
+                break;
         }
 
     }
@@ -639,7 +642,9 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 
     //Handle different App status
     @Override
-    public void onResume() {
+    public void onResume()
+    {
+        UserSessionManager.getInstance().register(this);
         super.onResume();
     }
 
@@ -674,15 +679,12 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
 
         attachedToActivity = false;
         super.onPause();
-    }
 
-    @Override
-    public void onDestroy() {
-
-        //pull out, we about to be destroyed
+        //drop out of event updates please!
         UserSessionManager.getInstance().unregister(this);
-        super.onDestroy();
+
     }
+
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
@@ -948,7 +950,8 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
                 .content(Html.fromHtml(errorMessage))
                 .titleAlignment(Alignment.CENTER)
                 .contentAlignment(Alignment.CENTER)
-                .positiveText("Okay");
+                .positiveText("Okay")
+                .show();
     }
 
 }

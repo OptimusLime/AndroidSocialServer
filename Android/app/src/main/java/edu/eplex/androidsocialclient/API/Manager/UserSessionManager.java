@@ -18,6 +18,7 @@ import com.squareup.otto.Bus;
 import com.squareup.otto.Produce;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -108,6 +109,10 @@ public class UserSessionManager {
         }
     }
 
+    public class UserLoggedOutEvent
+    {
+    }
+
     //tag it up
     private static String TAG = "UserSessionManager";
 
@@ -118,8 +123,12 @@ public class UserSessionManager {
     //change this for more permissions
     private List<String> fbReadPermissions = Arrays.asList("public_profile", "email");
 
+
+
     //handle all user related calls across the app
     Bus userEventBus = new Bus();
+    private List<Object> registeredObjects = new ArrayList<Object>();
+
     LoginAPI apiService;
 
     //contains all the user information required!
@@ -140,6 +149,7 @@ public class UserSessionManager {
         // Exists only to defeat instantiation.
         //register ourself for the event bus -- to produce things
         userEventBus.register(this);
+
     }
 
     public static UserSessionManager getInstance() {
@@ -167,13 +177,40 @@ public class UserSessionManager {
         userEventBus.post(new UserLoggedInEvent(currentAPIToken));
     }
 
+    public void logoutUser(Fragment parentFragment)
+    {
+        //let's go ahead and let anyone interested know that the user is GONE
+        userIsLoggedIn = false;
+
+        //clear out facebook
+        lastActiveFacebookAccessToken = null;
+        clearFacebookSessions(parentFragment);
+
+        //delete our local tokens
+        currentAPIToken = null;
+
+        //sound out the current api token in an events
+        userEventBus.post(new UserLoggedOutEvent());
+    }
+
     //register/unregister on the bus
     public void register(Object eventObject)
     {
+        //no duplicate registering
+        if(registeredObjects.contains(eventObject))
+            return;
+
+        //register to our list and to the bus
+        registeredObjects.add(eventObject);
         userEventBus.register(eventObject);
     }
     public void unregister(Object eventObject)
     {
+        if(!registeredObjects.contains(eventObject))
+            return;
+
+        //unregister and remove from our list of existing registered objects
+        registeredObjects.remove(eventObject);
         userEventBus.unregister(eventObject);
     }
 
@@ -222,6 +259,24 @@ public class UserSessionManager {
         getUserFBInformation(parentFragment, fbReadPermissions);
     }
 
+    void clearFacebookSessions(Fragment parentFragment)
+    {
+        //we check if we're already logging in for a session, if so, we kill the session
+        Session openSession = Session.getActiveSession();
+
+        //we always clear this info because we don't want outdated tokens during signup/login
+        //the user won't mind calling facebook again, it's expected
+        if(openSession != null)
+            openSession.closeAndClearTokenInformation();
+
+        //clear out the cache as well please -- no need for FB info to be stored locally
+        openSession = Session.openActiveSessionFromCache(parentFragment.getActivity());
+
+        //clear it out please
+        if(openSession != null && openSession.isOpened())
+            openSession.closeAndClearTokenInformation();
+
+    }
 
     public void getUserFBInformation(Fragment parentFragment, List<String> permissions)
     {
@@ -237,20 +292,8 @@ public class UserSessionManager {
             uiHelper = new UiLifecycleHelper(parentFragment.getActivity(), callback);
         }
 
-        //we check if we're already logging in for a session, if so, we kill the session
-        Session openSession = Session.getActiveSession();
-
-        //we always clear this info because we don't want outdated tokens during signup/login
-        //the user won't mind calling facebook again, it's expected
-        if(openSession != null)
-            openSession.closeAndClearTokenInformation();
-
-        //clear out the cache as well please -- no need for FB info to be stored locally
-        openSession = Session.openActiveSessionFromCache(parentFragment.getActivity());
-
-        //clear it out please
-        if(openSession != null && openSession.isOpened())
-            openSession.closeAndClearTokenInformation();
+        //clear out any previous sessions that existed
+        clearFacebookSessions(parentFragment);
 
         //allowloginui == true because we want to open the session no matter what -- whether we have something cached or not
         Session.openActiveSession(parentFragment.getActivity(), parentFragment, true, permissions, callback);

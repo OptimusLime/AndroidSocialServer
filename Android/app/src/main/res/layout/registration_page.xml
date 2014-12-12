@@ -8,16 +8,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     >
-<android.support.v7.widget.Toolbar
-    android:id="@+id/registrationToolbar"
-    android:layout_height="wrap_content"
-    android:layout_width="match_parent"
-    android:layout_marginBottom="0dp"
-    android:paddingBottom="0dp"
-    android:background="@color/registration_toolbar_background"
-    android:title="@string/register_title"
-    app:theme="@style/RegistrationToolbarTheme"
-    />
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/registrationToolbar"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_marginBottom="0dp"
+        android:paddingBottom="0dp"
+        android:background="@color/registration_toolbar_background"
+        android:title="@string/register_title"
+        app:theme="@style/RegistrationToolbarTheme"
+        />
 
 <ScrollView
     android:layout_width="match_parent"
@@ -35,7 +35,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
-            android:layout_margin="15dp"
+            android:layout_margin="5dp"
             >
 
             <ImageView
@@ -49,7 +49,7 @@
                 android:id="@+id/email_edit_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="15dp"
+                android:layout_margin="8dp"
                 android:hint="Email"
                 app:floatingLabel="highlight"
                 app:primaryColor="#982360"/>
@@ -62,7 +62,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
-            android:layout_margin="15dp"
+            android:layout_margin="5dp"
 
             >
             <ImageView
@@ -80,7 +80,7 @@
                     android:id="@+id/username_edit_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="15dp"
+                    android:layout_margin="8dp"
                     android:hint="Username"
                     android:paddingBottom="10dp"
                     app:floatingLabel="highlight"
@@ -108,7 +108,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
-            android:layout_margin="15dp"
+            android:layout_margin="5dp"
 
             >
             <ImageView
@@ -121,7 +121,7 @@
                 android:id="@+id/password_edit_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="15dp"
+                android:layout_margin="8dp"
                 android:inputType="textPassword"
                 android:hint="Password"
                 app:floatingLabel="highlight"

@@ -26,7 +26,7 @@ public class FragmentFlowManager {
         return instance;
     }
 
-    public void logoutUser(FragmentActivity activity)
+    public void returnToLoginScreen(FragmentActivity activity)
     {
         //TODO: figure out login/main activity issues
         //we need to drop back to whatever activity is holding this

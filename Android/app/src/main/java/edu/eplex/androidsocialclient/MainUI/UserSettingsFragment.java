@@ -22,9 +22,11 @@ import android.widget.TextView;
 
 import com.afollestad.materialdialogs.Alignment;
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.squareup.otto.Subscribe;
 
 import java.util.Arrays;
 
+import edu.eplex.androidsocialclient.API.Manager.UserSessionManager;
 import edu.eplex.androidsocialclient.R;
 import edu.eplex.androidsocialclient.Utilities.FragmentFlowManager;
 
@@ -111,9 +113,24 @@ public class UserSettingsFragment extends Fragment {
         //confirm we want options callback
         setHasOptionsMenu(true);
 
+        UserSessionManager.getInstance().register(this);
+
         return rootView;
     }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        //when we're getting paused -- not shown, just unregister -- no zombie calls please
+        UserSessionManager.getInstance().unregister(this);
+    }
+
+    @Override
+    public void onResume() {
+        UserSessionManager.getInstance().register(this);
+        super.onResume();
+    }
 
     private class SettingsListAdapter extends BaseAdapter {
         public SettingsListAdapter(Context context) {
@@ -214,14 +231,21 @@ public class UserSettingsFragment extends Fragment {
             })
             .show();
     }
+
     void logoutUser()
     {
         //TODO: more officially log user out
-        //we need to drop back to login page
-        FragmentFlowManager.getInstance().logoutUser(getActivity());
-
+        UserSessionManager.getInstance().logoutUser(this);
     }
 
+    @Subscribe
+    public void userLoggedOut(UserSessionManager.UserLoggedOutEvent event)
+    {
+        //its official, the user has been logged out of the system
+
+        //we need to drop back to login page
+        FragmentFlowManager.getInstance().returnToLoginScreen(getActivity());
+    }
 
     //This is the menu options handling
     @Override

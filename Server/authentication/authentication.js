@@ -102,9 +102,17 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 		
 	}
 
-	function asyncValidateEmail()
+	function asyncValidateEmail(email, cb)
 	{
-
+		//this is actual email validation
+		UserModel.findOne({email: email}).lean().exec(function(err, user)
+		{
+			if(err){cb(err); return;}
+			if(user)
+				cb(null, false);
+			else
+				cb(null, true);
+		});
 	}
 	function validatePassword(pw)
 	{
@@ -112,9 +120,17 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 		console.log("Fake validate password happened");
 		return pw.length >= 6;
 	}
-	function asyncValidateUsername()
+	function asyncValidateUsername(username, cb)
 	{
-
+		//this is actual email validation
+		UserModel.findOne({username: username}).lean().exec(function(err, user)
+		{
+			if(err){cb(err); return;}
+			if(user)
+				cb(null, false);
+			else
+				cb(null, true);
+		});
 	}
 
 	function validateAndSaveUserInformation(user, userJSON, cb)
@@ -138,7 +154,31 @@ module.exports = function(tokenAuth, googleAuth, mongoDB, params)
 		//successfully initilaized our user! Save this sexy user to the DB
 		user.isInitialized = true;
 
-		user.save(cb);
+
+		if(!validatePassword(user.password))
+			cb(new Error("Password validation failed."));
+		else
+		{
+			asyncValidateUsername(user.username, function(err, isValid)
+			{
+				if(err){cb(err); return;}
+
+				if(isValid)
+				{
+					asyncValidateEmail(user.email, function(err, isValid)
+					{
+						if(err){cb(err); return;}
+
+						if(isValid)
+							user.save(cb);
+						else
+							cb(new Error("Email already in use."));
+					})
+				}
+				else
+					cb(new Error("Username already taken."));
+			});
+		}
 	}
 
 	//temporary route to verify api access

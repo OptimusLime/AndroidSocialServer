@@ -786,7 +786,7 @@ public class LoginFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-
+        UserSessionManager.getInstance().register(this);
 
 
         // For scenarios where the main activity is launched and user
@@ -809,18 +809,25 @@ public class LoginFragment extends Fragment {
         UserSessionManager.getInstance().onActivityResult(requestCode, resultCode, data);
     }
 
+
     @Override
     public void onPause() {
         super.onPause();
 //        uiHelper.onPause();
+        //drop out of event updates please!
+        UserSessionManager.getInstance().unregister(this);
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
 
-        //drop out of event updates please!
-        UserSessionManager.getInstance().unregister(this);
 
 //        uiHelper.onDestroy();
     }
