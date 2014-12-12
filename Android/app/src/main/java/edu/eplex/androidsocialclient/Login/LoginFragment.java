@@ -108,6 +108,7 @@ public class LoginFragment extends Fragment {
 
         UserSessionManager.getInstance().register(this);
 
+
 //        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 //        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
 
@@ -188,6 +189,9 @@ public class LoginFragment extends Fragment {
         registerEmailButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                //logout the user -- clear anything in there before heading to register with email
+                UserSessionManager.getInstance().logoutUser(self);
 
                 //transfer over to registered please
                 FragmentFlowManager.getInstance().homeSignupFacebookOrEmail(getActivity());

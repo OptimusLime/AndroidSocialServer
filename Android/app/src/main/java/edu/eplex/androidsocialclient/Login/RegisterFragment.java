@@ -155,6 +155,8 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
         //we were sent with Facebook info -- best make use of it for registering
         if(userInfo.lastKnownFacebookAccessToken != null && userInfo.lastKnownFacebookAccessToken.access_token != null)
             userSentFromFacebook = true;
+        else
+            userSentFromFacebook = false;
 
         //we have our user info, let's populate!
         if(userInfo.currentAPIToken != null && userInfo.currentAPIToken.user != null)
