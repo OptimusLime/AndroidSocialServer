@@ -14,6 +14,9 @@
     <string name="register_title">Register</string>
     <string name="as_toolbar_title">ACCOUNT SETTINGS</string>
 
+    <string name="user_login_message">Welcome,</string>
+    <string name="user_back_message">Welcome back,</string>
+
     <integer name="percent_alpha">40</integer>
 
 </resources>

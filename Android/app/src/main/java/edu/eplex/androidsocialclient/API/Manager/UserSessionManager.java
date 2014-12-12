@@ -94,12 +94,14 @@ public class UserSessionManager {
     }
 
     public class CurrentUserInformation {
+        public boolean userLoadedFromCache;
         public APIToken currentAPIToken;
         public AccessToken lastKnownFacebookAccessToken;
 
-        public CurrentUserInformation(APIToken userInfo, AccessToken fbInfo) {
+        public CurrentUserInformation(APIToken userInfo, AccessToken fbInfo, boolean userLoadedFromCache) {
             this.currentAPIToken = userInfo;
             this.lastKnownFacebookAccessToken = fbInfo;
+            this.userLoadedFromCache = userLoadedFromCache;
         }
     }
 
@@ -146,6 +148,7 @@ public class UserSessionManager {
     boolean userIsLoggedIn;
     boolean attemptedLoadFromCache = false;
     boolean cacheOutdated = true;
+    boolean userLoadedFromCache = false;
 
     private static UserSessionManager instance = null;
 
@@ -169,7 +172,7 @@ public class UserSessionManager {
     @Produce
     public CurrentUserInformation currentUserInformation() {
         //TODO: Pull user info from cached information if it's null
-        return new CurrentUserInformation(currentAPIToken, lastActiveFacebookAccessToken);
+        return new CurrentUserInformation(currentAPIToken, lastActiveFacebookAccessToken, userLoadedFromCache);
     }
 
     private void userOfficiallyLoggedIn() {
@@ -195,6 +198,9 @@ public class UserSessionManager {
         lastActiveFacebookAccessToken = null;
         clearFacebookSessions(parentActivity);
         clearUserSessionCache(parentActivity);
+
+        //all gone
+        userLoadedFromCache = false;
 
         //delete our local tokens
         currentAPIToken = null;
@@ -260,14 +266,17 @@ public class UserSessionManager {
 
                     //store our user json inside
                     editPreferences.putString(USER_JSON_KEY, json);
-
                 }
+                else
+                    editPreferences.remove(USER_JSON_KEY);
 
                 if(lastActiveFacebookAccessToken != null)
                 {
                     String json = ow.writeValueAsString(lastActiveFacebookAccessToken);
                     editPreferences.putString(USER_FB_JSON_KEY, json);
                 }
+                else
+                    editPreferences.remove(USER_FB_JSON_KEY);
 
                 //save our changes back to the shared pref editor
                 editPreferences.commit();
@@ -310,7 +319,13 @@ public class UserSessionManager {
                 if (fbJSON != null) {
                     lastActiveFacebookAccessToken = objectMapper.readValue(fbJSON, AccessToken.class);
                 }
+
+                //we came froma  cache, nbody loves us
+                userLoadedFromCache = true;
+
             }
+
+
 
             //all loaded -- we're not out of date!
             cacheOutdated = false;
@@ -489,6 +504,7 @@ public class UserSessionManager {
 
             //if our user is not initialized, we're ready to register, but we are not yet loggin in
             currentAPIToken = apiToken;
+            userLoadedFromCache = false;
 
             if(!apiToken.user.isInitialized)
             {
@@ -665,6 +681,7 @@ public class UserSessionManager {
     {
         //if our user is not initialized, we're ready to register, but we are not yet loggin in
         currentAPIToken = apiToken;
+        userLoadedFromCache = false;
 
         if(apiToken.user.isInitialized)
         {

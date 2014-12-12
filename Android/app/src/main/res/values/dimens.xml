@@ -21,6 +21,8 @@
 
 
 
+    <dimen name="all_toolbar_height">70dp</dimen>
+
 
     <!--Account settings layout-->
 

@@ -5,9 +5,13 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 
+import de.keyboardsurfer.android.widget.crouton.Crouton;
+import de.keyboardsurfer.android.widget.crouton.Style;
+import edu.eplex.androidsocialclient.API.Manager.UserSessionManager;
 import edu.eplex.androidsocialclient.Login.LoginFragment;
 import edu.eplex.androidsocialclient.Login.RegisterFragment;
 import edu.eplex.androidsocialclient.MainUI.UserSettingsFragment;
+import edu.eplex.androidsocialclient.R;
 
 /**
  * Created by paul on 12/9/14.
@@ -63,7 +67,7 @@ public class FragmentFlowManager {
                 .commit();
     }
 
-    public void tempLaunchUserSettings(FragmentActivity activity)
+    public void tempLaunchUserSettings(FragmentActivity activity, String username)
     {
         //importantly, we cannot go back to anything else in our history
         //we are at the user settings and logged in, there is no back -- just out of the app
@@ -74,12 +78,18 @@ public class FragmentFlowManager {
 //            fm.popBackStack();
 //        }
 
+        UserSettingsFragment userEntryPoint = new UserSettingsFragment();
+        userEntryPoint.shouldWelcomeUsers(true);
+
         //add register fragment to the stack
         activity.getSupportFragmentManager()
                 .beginTransaction()
-                .replace(android.R.id.content, new UserSettingsFragment())
+                .replace(android.R.id.content, userEntryPoint)
                 .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .commit();
+
+        //only happens when we successfully get logged in
+
     }
 
 

@@ -1,5 +1,6 @@
 package edu.eplex.androidsocialclient.MainUI;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -17,7 +18,9 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.afollestad.materialdialogs.Alignment;
@@ -26,6 +29,8 @@ import com.squareup.otto.Subscribe;
 
 import java.util.Arrays;
 
+import de.keyboardsurfer.android.widget.crouton.Crouton;
+import de.keyboardsurfer.android.widget.crouton.Style;
 import edu.eplex.androidsocialclient.API.Manager.UserSessionManager;
 import edu.eplex.androidsocialclient.R;
 import edu.eplex.androidsocialclient.Utilities.FragmentFlowManager;
@@ -72,6 +77,36 @@ public class UserSettingsFragment extends Fragment {
         public ButtonActionEnum action;
     }
 
+    private boolean userFromCache = false;
+    private boolean welcomeUser = false;
+    private String currentUser;
+    public void shouldWelcomeUsers(boolean welcomeUser)
+    {
+        this.welcomeUser = welcomeUser;
+    }
+    void welcomeUserCrouton(String username)
+    {
+        if(!welcomeUser && !userFromCache)
+            return;
+
+        if(userFromCache)
+            Crouton.makeText(getActivity(),
+                    getActivity().getResources().getString(R.string.user_back_message) + " " + username,
+                    Style.INFO,
+                    R.id.crouton_handle).show();
+        else
+            Crouton.makeText(getActivity(),
+                    getActivity().getResources().getString(R.string.user_login_message) + " " + username,
+                    Style.INFO,
+                    R.id.crouton_handle).show();
+
+//        (RelativeLayout)getActivity().findViewById(R.id.crouton_toolbar_layout)).show();
+
+        //no more of this thank you!
+        welcomeUser = false;
+        userFromCache = false;
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -115,6 +150,7 @@ public class UserSettingsFragment extends Fragment {
 
         UserSessionManager.getInstance().register(this, this);
 
+
         return rootView;
     }
 
@@ -130,6 +166,20 @@ public class UserSettingsFragment extends Fragment {
     public void onResume() {
         UserSessionManager.getInstance().register(this, this);
         super.onResume();
+
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        Crouton.clearCroutonsForActivity(getActivity());
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+
+
     }
 
     private class SettingsListAdapter extends BaseAdapter {
@@ -239,6 +289,13 @@ public class UserSettingsFragment extends Fragment {
     }
 
     @Subscribe
+    public void currentUserInformation(UserSessionManager.CurrentUserInformation currentUserInfo)
+    {
+        currentUser = currentUserInfo.currentAPIToken.user.username;
+        userFromCache = currentUserInfo.userLoadedFromCache;
+    }
+
+    @Subscribe
     public void userLoggedOut(UserSessionManager.UserLoggedOutEvent event)
     {
         //its official, the user has been logged out of the system
@@ -252,6 +309,10 @@ public class UserSettingsFragment extends Fragment {
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         getActivity().getMenuInflater().inflate(R.menu.menu_account_settings, menu);
+
+        //got our current user -- welcome if we should
+        welcomeUserCrouton(currentUser);
+
     }
 
     @Override

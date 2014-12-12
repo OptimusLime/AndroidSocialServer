@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.logging.Handler;
 import java.util.regex.Pattern;
 
+import de.keyboardsurfer.android.widget.crouton.Crouton;
 import edu.eplex.androidsocialclient.API.LoginAPI;
 import edu.eplex.androidsocialclient.API.Manager.APIManager;
 import edu.eplex.androidsocialclient.API.Manager.UserSessionManager;
@@ -596,13 +597,12 @@ public class LoginFragment extends Fragment {
     @Subscribe
     public void userLoggedIn(UserSessionManager.UserLoggedInEvent loggedInUser)
     {
-        //only happens when we successfully get logged in
 
         //hide keyboard from the user -- if it exists, no more logging in for them!
         hideKeyboard(usernameEditText);
 
         //therefore, we need to switch to our new account status!
-        FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity());
+        FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity(), loggedInUser.apiToken.user.username);
     }
 
     @Subscribe
@@ -831,7 +831,6 @@ public class LoginFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-
 
 //        uiHelper.onDestroy();
     }
