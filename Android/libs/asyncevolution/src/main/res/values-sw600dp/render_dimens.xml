@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="cppn_render_width">200</integer>
+    <integer name="cppn_render_height">200</integer>
+
+    <integer name="cppn_parent_render_width">90</integer>
+    <integer name="cppn_parent_render_height">90</integer>
+</resources>

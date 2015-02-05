@@ -1,2 +1,4 @@
-include ':app', ':facebook'
+include ':app', ':facebook', ':FastCPPNJava', ':FastNEATJava'
 project(':facebook').projectDir = new File('libs/facebook')
+project(':FastCPPNJava').projectDir = new File('libs/FastCPPNJava')
+project(':FastNEATJava').projectDir = new File('libs/FastNEATJava')
