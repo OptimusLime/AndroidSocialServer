@@ -7,5 +7,6 @@ public interface ActivationFunction {
 
     public String functionID();
     public double calculate(double val);
+    public String gpuFunctionString();
 
 }

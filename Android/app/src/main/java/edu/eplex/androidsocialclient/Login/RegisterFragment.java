@@ -172,7 +172,9 @@ public class RegisterFragment extends Fragment implements Callback<UsernameCheck
     {
         //only happens when we successfully get logged in
         //therefore, we need to switch to our new account status!
-        FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity(), loggedInUser.apiToken.user.username);
+        FragmentFlowManager.getInstance().launchLoginLanding(getActivity(), loggedInUser.apiToken.user.username);
+
+//        FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity(), loggedInUser.apiToken.user.username);
     }
 
     @Subscribe

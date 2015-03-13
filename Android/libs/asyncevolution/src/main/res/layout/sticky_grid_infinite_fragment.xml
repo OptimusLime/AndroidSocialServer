@@ -25,7 +25,7 @@
               android:layout_height="match_parent"
                android:background="@android:color/white">
 
-   <cardUI.StickyCardGridView
+   <edu.eplex.AsyncEvolution.cardUI.StickyCardGridView
        android:layout_width="match_parent"
        android:layout_height="match_parent"
        android:columnWidth="@dimen/card_grid_render_width"

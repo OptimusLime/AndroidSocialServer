@@ -15,4 +15,9 @@ public class Gaussian implements ActivationFunction {
     public double calculate(double val) {
         return 2 * Math.exp(-Math.pow(val * 2.5, 2)) - 1;
     }
+
+    @Override
+    public String gpuFunctionString() {
+        return "2.0 * exp(-pow(val * 2.5, 2.0)) - 1.0;";
+    }
 }

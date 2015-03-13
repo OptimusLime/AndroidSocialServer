@@ -15,4 +15,9 @@ public class StepFunction implements ActivationFunction {
     public double calculate(double val) {
         return (val<=0 ? 0.0 : 1.0);
     }
+
+    @Override
+    public String gpuFunctionString() {
+        return "(val<=0 ? 0.0 : 1.0);";
+    }
 }

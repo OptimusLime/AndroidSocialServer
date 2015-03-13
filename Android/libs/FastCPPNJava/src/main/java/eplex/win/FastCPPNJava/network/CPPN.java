@@ -1,5 +1,6 @@
 package eplex.win.FastCPPNJava.network;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -7,8 +8,15 @@ import java.util.Map;
 
 import eplex.win.FastCPPNJava.activation.ActivationFunction;
 import eplex.win.FastCPPNJava.activation.CPPNActivationFactory;
+import eplex.win.FastCPPNJava.activation.functions.BipolarSigmoid;
+import eplex.win.FastCPPNJava.activation.functions.Cos;
+import eplex.win.FastCPPNJava.activation.functions.Gaussian;
+import eplex.win.FastCPPNJava.activation.functions.Linear;
+import eplex.win.FastCPPNJava.activation.functions.Sine;
 
 public class CPPN {
+
+    public static double DEFAULT_BIAS_VALUE = 1.0;
 
     // must be in the same order as neuronSignals. Has null entries for neurons that are inputs or outputs of a module.
     ActivationFunction[] activationFunctions;
@@ -347,4 +355,329 @@ public class CPPN {
 
         return false;
     }
+
+    //0.21 R + 0.72 G + 0.07 B
+    public static final String THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_ACTIVATIONS = "" +
+            "float Sine(float val){ return " + new Sine().gpuFunctionString() + " }\n" +
+            "float BipolarSigmoid(float val){ return " + new BipolarSigmoid().gpuFunctionString() + " }\n" +
+            "float Gaussian(float val){ return " + new Gaussian().gpuFunctionString() + " }\n" +
+            "float Cos(float val){ return " + new Cos().gpuFunctionString() + " }\n" +
+            "float Linear(float val){ return " + new Linear().gpuFunctionString() + " }\n" +
+            "float grayscale(vec4 color){ return 0.21*color.x + 0.72*color.y + .07*color.z; }\n";
+
+
+    public static final String THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_VARIABLES = "" +
+            "precision highp float;\n" +
+            "\n" +
+            "uniform sampler2D inputImageTexture;\n" +
+            "\n" +
+            "uniform mediump mat3 convolutionMatrix;\n" +
+            "\n" +
+            "varying vec2 textureCoordinate;\n" +
+            "varying vec2 leftTextureCoordinate;\n" +
+            "varying vec2 rightTextureCoordinate;\n" +
+            "\n" +
+            "varying vec2 topTextureCoordinate;\n" +
+            "varying vec2 topLeftTextureCoordinate;\n" +
+            "varying vec2 topRightTextureCoordinate;\n" +
+            "\n" +
+            "varying vec2 bottomTextureCoordinate;\n" +
+            "varying vec2 bottomLeftTextureCoordinate;\n" +
+            "varying vec2 bottomRightTextureCoordinate;\n";
+
+    public static final String THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_MAIN_START = "" +
+            "void main()\n" +
+            "{\n" +
+            "    mediump vec4 bottomColor = texture2D(inputImageTexture, bottomTextureCoordinate);\n" +
+            "    mediump vec4 bottomLeftColor = texture2D(inputImageTexture, bottomLeftTextureCoordinate);\n" +
+            "    mediump vec4 bottomRightColor = texture2D(inputImageTexture, bottomRightTextureCoordinate);\n" +
+            "    mediump vec4 centerColor = texture2D(inputImageTexture, textureCoordinate);\n" +
+            "    mediump vec4 leftColor = texture2D(inputImageTexture, leftTextureCoordinate);\n" +
+            "    mediump vec4 rightColor = texture2D(inputImageTexture, rightTextureCoordinate);\n" +
+            "    mediump vec4 topColor = texture2D(inputImageTexture, topTextureCoordinate);\n" +
+            "    mediump vec4 topRightColor = texture2D(inputImageTexture, topRightTextureCoordinate);\n" +
+            "    mediump vec4 topLeftColor = texture2D(inputImageTexture, topLeftTextureCoordinate);\n";
+
+    public static final String THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_MAIN_INPUT_COLORS = "" +
+            "bottomColor, bottomLeftColor, bottomRightColor, centerColor, leftColor, rightColor, topColor, topRightColor, topLeftColor";
+
+    public static final String THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_MAIN_END = "" +
+            "\n" +
+            "    gl_FragColor = resultColor;\n" +
+            "}";
+
+    static String nodeFunctionName(int ix)
+    {
+        return "#node_function-" + ix + "-$#";
+    }
+    static String inputFunctionName(int ix)
+    {
+        return "%input_function-" + ix + "-%";
+    }
+    static String biasFunctionName(int ix)
+    {
+        return "%bias_function-" + ix + "-%";
+    }
+    static String connectionName(int sourceIdx, int targetIdx)
+    {
+        return  sourceIdx + ","+ targetIdx;
+    }
+
+    static String shaderOutputFunctionName(int outputIx)
+    {
+        return "outputFunction_" + outputIx;
+    }
+
+    String shaderFunctionWrap(String functionName, String innerFunction, int inputCount)
+    {
+        String shaderFunction = "float " + functionName + "(";
+        for(int i=0; i < inputCount; i++)
+        {
+            shaderFunction += "float x" + i;
+            if(i != inputCount - 1)
+                shaderFunction += ",";
+            else //close up the function
+                shaderFunction += "){";
+        }
+
+        shaderFunction += "\n";
+        shaderFunction += "return " + innerFunction;
+        shaderFunction += "\n}\n";
+
+        //send it all back now!
+        return  shaderFunction;
+    }
+
+    static String colorOutputFunction(String functionName, int inputCount, int outputCount, int totalInputNeuronCount)
+    {
+        String colorFunction = "vec4 " + functionName + "(";
+
+        for(int i=0; i < inputCount; i++)
+        {
+            colorFunction += "vec4 x_" + i;
+            if(i != inputCount - 1)
+                colorFunction += ", ";
+            else //close up the function
+                colorFunction += "){";
+        }
+
+        colorFunction += "\n";
+
+        //lets make grayscale conversions for all color inputs
+        for(int i=0; i < inputCount; i++)
+        {
+            colorFunction += "float gs_x_" + i + " = grayscale(x_" + i + ");\n";
+        }
+
+        colorFunction += "\n";
+
+        //now we're ready to activate the network
+        for(int i=0; i < outputCount; i++)
+        {
+            colorFunction += "float output_" + i + " = abs(" + shaderOutputFunctionName(i + totalInputNeuronCount) + "(";
+            for(int x=0; x < inputCount; x++)
+            {
+                colorFunction += "gs_x_" + x;
+                if(x != inputCount - 1)
+                    colorFunction += ", ";
+                else //close up the function
+                    colorFunction += ")";
+            }
+
+            //close up the abs function
+            colorFunction += ");\n";
+
+            //now we have each output as the product of its function
+        }
+
+        //we need to create our final color
+        //this is how we interpret our outputs
+        //we do basic stuff here just for an example
+
+        colorFunction += "vec4 finalColor = ";
+
+        for(int i=0; i < outputCount; i++) {
+            colorFunction += "output_" + i + "*x_" + i;
+            if(i != outputCount -1)
+                colorFunction += " + ";
+        }
+
+        colorFunction += ";\n";
+
+        colorFunction += "return finalColor;\n}\n";
+
+        //all done up in this function!
+        return colorFunction;
+    }
+
+    public String cppnToShader()
+    {
+        //shader bo bader
+        String cppnShader = "";
+
+        cppnShader += THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_VARIABLES;
+        cppnShader += THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_ACTIVATIONS;
+
+        Map<String, CppnConnection> connectionMap = new HashMap<String, CppnConnection>();
+        for(int i=0; i < this.connections.size(); i++)
+        {
+            CppnConnection conn = this.connections.get(i);
+            String cIx = connectionName(conn.sourceIdx, conn.targetIdx);
+            connectionMap.put(cIx, conn);
+        }
+
+        //lets go through each node and create a string for it
+        String[] nodeFunctions = new String[this.totalNeuronCount];
+
+        //each node has a function
+        for(int i =0; i < this.biasNeuronCount; i++)
+            nodeFunctions[i] = biasFunctionName(i);
+
+        for(int i =this.biasNeuronCount; i < this.totalInputNeuronCount; i++)
+            nodeFunctions[i] = inputFunctionName(i);
+
+
+        //now for other node functions, we only need to determine what their inputs are and the activation functions
+        for(int i= this.totalInputNeuronCount; i < this.totalNeuronCount; i++)
+        {
+            //grab our inputs
+            int[] incomingNodes = reverseAdjacentList[i];
+
+            int tgtNode = i;
+
+            if(incomingNodes == null || incomingNodes.length == 0) {
+                nodeFunctions[tgtNode] = "0.0";
+                continue;
+            }
+
+            //these are all of our incoming
+            //let's build a function!
+            String innerFunction = "";
+            innerFunction += activationFunctions[i].functionID() + "(";
+
+            for(int x=0; x < incomingNodes.length; x++)
+            {
+                //this is our src
+                int srcNode = incomingNodes[x];
+
+                //there is a connection between the src and tgt -- otherwise this wouldn't exist in the adjaceny list
+                String cIx = connectionName(srcNode, tgtNode);
+
+                //get our connection
+                CppnConnection conn = connectionMap.get(cIx);
+
+                if(x > 0)
+                    innerFunction += " + ";
+
+                if(srcNode < this.biasNeuronCount)
+                    innerFunction += conn.weight + "*" + biasFunctionName(srcNode);
+                else if(srcNode < this.totalInputNeuronCount)
+                    innerFunction += conn.weight + "*" +inputFunctionName(srcNode);
+                else
+                    innerFunction += conn.weight + "*" + nodeFunctionName(srcNode);
+
+            }
+
+            innerFunction += ")";
+
+            //now we have our inner function -- store it!
+            nodeFunctions[tgtNode] = innerFunction;
+        }
+
+        //now we have all the node functions -- we want to calculate the final node functions for the outputs
+        for(int i= this.totalInputNeuronCount; i < this.totalInputNeuronCount + this.outputNeuronCount; i++)
+        {
+            //we have our output node
+            int outputIx = i;
+
+            //check it out yo
+            String outputFunction = nodeFunctions[outputIx];
+            String[] componentFunctions;
+            String reconstructed;
+
+            //we go until we have replaced ALL the node functions
+            while(outputFunction.contains("$"))
+            {
+                //we need to replace any node functions with functions of the inputs and bias node strictly
+                componentFunctions = outputFunction.split("#");
+
+                reconstructed = "";
+
+                for(int s=0; s < componentFunctions.length; s++)
+                {
+                    String inner = componentFunctions[s];
+                    //if we're a node function, we must replace
+                    if(inner.contains("node_function"))
+                    {
+                        //get the node number
+                        int replaceIx = Integer.parseInt(inner.split("-")[1]);
+                        componentFunctions[s] = nodeFunctions[replaceIx];
+                    }
+
+                    //reconstruct the string!
+                    reconstructed += componentFunctions[s];
+                }
+
+                //now replace
+                outputFunction = reconstructed;
+            }
+
+            //now save our output functions -- these are our precious outputs of course!
+            nodeFunctions[outputIx] = outputFunction;
+
+            //now lets break it apart
+            //we need to replace any node functions with functions of the inputs and bias node strictly
+            componentFunctions = outputFunction.split("%");
+
+            reconstructed = "";
+
+            for(int s=0; s < componentFunctions.length; s++)
+            {
+                String inner = componentFunctions[s];
+                //if we're a node function, we must replace
+                if(inner.contains("input") || inner.contains("bias"))
+                {
+                    //convert to input ix
+                    //get the node number
+                    int nodeIx = Integer.parseInt(inner.split("-")[1]);
+
+                    if(nodeIx < this.biasNeuronCount)
+                        componentFunctions[s] = "" + DEFAULT_BIAS_VALUE;
+                    else //what inputs to read from
+                        componentFunctions[s] = "x" + (nodeIx - this.biasNeuronCount);
+                }
+                //that should simplify our input and bias functions -- down to either hardcoded values -- or input value
+                reconstructed += componentFunctions[s];
+            }
+
+            //finish it up!
+            reconstructed += ";";
+
+            //that's a full network!
+            //Now we need to build the shader parts
+            String wrappedFunction = shaderFunctionWrap(shaderOutputFunctionName(outputIx), reconstructed, this.inputNeuronCount);
+
+            //includes some spaces too, so no need to pad it out
+            cppnShader += wrappedFunction;
+        }
+
+        //we need to add in a final function, that will take the inputs of the convolution filter -- then get all the outputs
+        //finally converting it into a pixel value
+        String colorFunctionName = "pixelColor";
+        cppnShader += colorOutputFunction(colorFunctionName, inputNeuronCount, outputNeuronCount, totalInputNeuronCount);
+
+        //now we add in the start to our main function -- setting our convolution filter 3x3
+        cppnShader += THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_MAIN_START;
+
+        //now we need to pipe in the inputs into our network, then translate the outputs
+        cppnShader += "vec4 resultColor = " + colorFunctionName + "(" + THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_MAIN_INPUT_COLORS + ");\n";
+
+        //we have our color!
+        cppnShader += THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_MAIN_END;
+
+        return  cppnShader;
+
+    }
+
+
 }

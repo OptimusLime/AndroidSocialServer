@@ -15,4 +15,9 @@ public class AbsoluteValue implements ActivationFunction {
     public double calculate(double val) {
         return Math.abs(val);
     }
+
+    @Override
+    public String gpuFunctionString() {
+        return "abs(val);";
+    }
 }

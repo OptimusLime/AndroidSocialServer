@@ -15,4 +15,9 @@ public class NullFn implements ActivationFunction {
     public double calculate(double val) {
         return 0.0;
     }
+
+    @Override
+    public String gpuFunctionString() {
+        return "0.0;";
+    }
 }

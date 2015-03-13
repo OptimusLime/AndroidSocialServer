@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+    <!-- A shape that uses our select_image_button color, and
+        has rounded corners (defined by android:radius) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/select_image_button" />
+    <corners android:radius="10dp" />
+</shape>

@@ -602,7 +602,8 @@ public class LoginFragment extends Fragment {
         hideKeyboard(usernameEditText);
 
         //therefore, we need to switch to our new account status!
-        FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity(), loggedInUser.apiToken.user.username);
+        FragmentFlowManager.getInstance().launchLoginLanding(getActivity(), loggedInUser.apiToken.user.username);
+//        FragmentFlowManager.getInstance().tempLaunchUserSettings(getActivity(), loggedInUser.apiToken.user.username);
     }
 
     @Subscribe

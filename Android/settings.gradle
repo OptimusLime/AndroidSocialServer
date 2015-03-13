@@ -1,4 +1,6 @@
-include ':app', ':facebook', ':FastCPPNJava', ':FastNEATJava'
+include ':app', ':facebook', ':FastCPPNJava', ':FastNEATJava', ':AsyncEvolution', ':win-backbone'
 project(':facebook').projectDir = new File('libs/facebook')
 project(':FastCPPNJava').projectDir = new File('libs/FastCPPNJava')
 project(':FastNEATJava').projectDir = new File('libs/FastNEATJava')
+project(':AsyncEvolution').projectDir = new File('libs/AsyncEvolution')
+project(':win-backbone').projectDir = new File('libs/win-backbone')

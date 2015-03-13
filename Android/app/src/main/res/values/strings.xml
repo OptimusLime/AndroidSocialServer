@@ -13,10 +13,17 @@
     <string name="action_register_facebook">Login with Facebook</string>
     <string name="register_title">Register</string>
     <string name="as_toolbar_title">ACCOUNT SETTINGS</string>
+    <string name="ch_toolbar_title">CAMERA</string>
 
     <string name="user_login_message">Welcome,</string>
     <string name="user_back_message">Welcome back,</string>
 
     <integer name="percent_alpha">40</integer>
+
+
+    <string name="image_album_name">#filters</string>
+    <string name="evolution_cache_name">EvoCache</string>
+
+    <integer name="default_preview_square_size">100</integer>
 
 </resources>

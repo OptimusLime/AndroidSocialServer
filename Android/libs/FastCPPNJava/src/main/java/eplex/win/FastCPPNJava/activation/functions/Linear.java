@@ -16,4 +16,9 @@ public class Linear implements ActivationFunction {
     public double calculate(double val) {
         return val;
     }
+
+    @Override
+    public String gpuFunctionString() {
+        return "val;";
+    }
 }

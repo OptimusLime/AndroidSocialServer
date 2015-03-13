@@ -16,4 +16,9 @@ public class Sine implements ActivationFunction {
     public double calculate(double val) {
         return Math.sin(val);
     }
+
+    @Override
+    public String gpuFunctionString() {
+        return "sin(val);";
+    }
 }

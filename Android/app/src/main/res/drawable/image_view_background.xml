@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+   <!--When pressed, we show the rounded rectangle shape -->
+    <item
+        android:drawable="@drawable/rounded_rectangle"
+        android:state_pressed="true"/>
+    <!--Similarly, when selected, we also show rounded rectangle shape-->
+    <item
+        android:drawable="@drawable/rounded_rectangle"
+        android:state_selected="true"/>
+
+    <!-- Under normal circumstances,
+        we show a transparent color (nothing) -->
+    <item android:drawable="@color/transparent"/>
+
+</selector>

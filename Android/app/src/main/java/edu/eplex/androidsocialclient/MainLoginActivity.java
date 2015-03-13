@@ -22,6 +22,7 @@ import java.util.Arrays;
 import edu.eplex.androidsocialclient.API.Manager.APIManager;
 import edu.eplex.androidsocialclient.API.Manager.UserSessionManager;
 import edu.eplex.androidsocialclient.Login.LoginFragment;
+import edu.eplex.androidsocialclient.MainUI.TakePictureFragment;
 import edu.eplex.androidsocialclient.MainUI.UserSettingsFragment;
 
 
@@ -50,9 +51,12 @@ public class MainLoginActivity extends ActionBarActivity {
 
             android.support.v4.app.Fragment uiFragment;
 
+            //log out the user please -- this is for testing purposes
+//            UserSessionManager.getInstance().logoutUser(this);
+
             //we're already logged in -- route us more appropriately
             if(userLoggedIn)
-                uiFragment = new UserSettingsFragment();
+                uiFragment = new TakePictureFragment();
             else
                 //not logged in -  Add the fragment on initial activity setup
                 uiFragment = new LoginFragment();

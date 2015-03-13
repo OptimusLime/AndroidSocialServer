@@ -15,4 +15,9 @@ public class PlainSigmoid implements ActivationFunction {
     public double calculate(double val) {
         return 1.0/(1.0+(Math.exp(-val)));
     }
+
+    @Override
+    public String gpuFunctionString() {
+        return "1.0/(1.0+(exp(-val)));";
+    }
 }

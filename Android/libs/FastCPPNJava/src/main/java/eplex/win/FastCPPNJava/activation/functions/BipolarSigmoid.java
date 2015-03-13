@@ -16,4 +16,9 @@ public class BipolarSigmoid implements ActivationFunction {
     public double calculate(double val) {
         return (2.0 / (1.0 + Math.exp(-1.0 * val))) - 1.0;
     }
+
+    @Override
+    public String gpuFunctionString() {
+        return "(2.0/ (1.0 + exp(-1.0*val))) - 1.0;";
+    }
 }

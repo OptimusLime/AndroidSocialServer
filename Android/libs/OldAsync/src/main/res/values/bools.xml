@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <bool name="carddemo_staggered_cache">true</bool>
+</resources>
