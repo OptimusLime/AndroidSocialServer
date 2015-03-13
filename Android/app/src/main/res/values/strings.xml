@@ -23,7 +23,9 @@
 
     <string name="image_album_name">#filters</string>
     <string name="evolution_cache_name">EvoCache</string>
+    <string name="evolution_small_cache_name">EvoCacheSmall</string>
 
-    <integer name="default_preview_square_size">100</integer>
+    <integer name="default_preview_square_size">150</integer>
+    <integer name="default_max_image_square_size">600</integer>
 
 </resources>

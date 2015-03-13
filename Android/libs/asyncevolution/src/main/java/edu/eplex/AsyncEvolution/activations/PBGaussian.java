@@ -18,6 +18,6 @@ public class PBGaussian implements ActivationFunction {
 
     @Override
     public String gpuFunctionString() {
-        return "2 * exp(-pow(val, 2)) - 1;";
+        return "2.0 * exp(-pow(val, 2.0)) - 1.0;";
     }
 }

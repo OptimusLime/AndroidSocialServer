@@ -22,6 +22,11 @@ public class NeatParameters
     public double connectionWeightRange;
     public boolean disallowRecurrence;
 
+
+    public int postAsexualMutations = 5;
+    public int postSexualMutations = 5;
+    public int seedMutateConnectionCount = 15;
+
     //----- High level mutation proportions
     public double pMutateConnectionWeights = DEFAULT_P_MUTATE_CONNECTION_WEIGHTS;
     public double pMutateAddNode = DEFAULT_P_MUTATE_ADD_NODE;
@@ -209,6 +214,9 @@ public class NeatParameters
         self.noveltyFixed = copyFrom.noveltyFixed;
         self.noveltyFloat = copyFrom.noveltyFloat;
 
+        self.postAsexualMutations = copyFrom.postAsexualMutations;
+        self.postSexualMutations = copyFrom.postSexualMutations;
+        self.seedMutateConnectionCount = copyFrom.seedMutateConnectionCount;
 
         self.allowSelfConnections = copyFrom.allowSelfConnections;
 

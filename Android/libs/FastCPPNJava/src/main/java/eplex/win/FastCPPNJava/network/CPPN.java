@@ -474,7 +474,7 @@ public class CPPN {
         //now we're ready to activate the network
         for(int i=0; i < outputCount; i++)
         {
-            colorFunction += "float output_" + i + " = abs(" + shaderOutputFunctionName(i + totalInputNeuronCount) + "(";
+            colorFunction += "float output_" + i + " = (" + shaderOutputFunctionName(i + totalInputNeuronCount) + "(";
             for(int x=0; x < inputCount; x++)
             {
                 colorFunction += "gs_x_" + x;
@@ -510,13 +510,15 @@ public class CPPN {
         return colorFunction;
     }
 
-    public String cppnToShader()
+    public String cppnToShader(String additionalActivations)
     {
         //shader bo bader
         String cppnShader = "";
 
         cppnShader += THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_VARIABLES;
         cppnShader += THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_ACTIVATIONS;
+        if(additionalActivations != null)
+            cppnShader += additionalActivations;
 
         Map<String, CppnConnection> connectionMap = new HashMap<String, CppnConnection>();
         for(int i=0; i < this.connections.size(); i++)

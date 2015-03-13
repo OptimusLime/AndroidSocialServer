@@ -1123,7 +1123,7 @@ public class NeatGenome
         return false;
     }
 
-    void mutate_ConnectionWeights(NeatParameters np) {
+    public void mutate_ConnectionWeights(NeatParameters np) {
         // Determine the type of weight mutation to perform.
         double[] probabilties = new double[np.connectionMutationParameterGroupList.size()];
 
@@ -1385,6 +1385,8 @@ public class NeatGenome
         {
             NodeLookupHelper lookup = nodeConnectionLookup.get(lookupKey);
 
+            if(lookup == null)
+                continue;
 
             // If we test the connection count with <=1 then we also pick up neurons that are in dead-end circuits,
             // RemoveSimpleNeuron is then able to delete these neurons from the network structure along with any

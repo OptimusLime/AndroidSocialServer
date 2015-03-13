@@ -18,12 +18,18 @@ import edu.eplex.AsyncEvolution.activations.PBGaussian;
 import edu.eplex.AsyncEvolution.activations.pbLinear;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncSeedLoader;
 import bolts.Task;
+import edu.eplex.AsyncEvolution.main.NEATInitializer;
+import eplex.win.FastCPPNJava.activation.functions.BipolarSigmoid;
+import eplex.win.FastCPPNJava.activation.functions.Cos;
+import eplex.win.FastCPPNJava.activation.functions.Gaussian;
+import eplex.win.FastCPPNJava.activation.functions.Linear;
 import eplex.win.FastCPPNJava.activation.functions.NullFn;
 import eplex.win.FastCPPNJava.activation.functions.Sine;
 import eplex.win.FastCPPNJava.network.NodeType;
 import eplex.win.FastNEATJava.genome.NeatConnection;
 import eplex.win.FastNEATJava.genome.NeatGenome;
 import eplex.win.FastNEATJava.genome.NeatNode;
+import eplex.win.FastNEATJava.utils.NeatParameters;
 import eplex.win.FastNEATJava.utils.cuid;
 import eplex.win.winBackbone.Artifact;
 import edu.eplex.AsyncEvolution.backbone.Connection;
@@ -39,6 +45,7 @@ public class AsyncLocalRandomSeedLoader implements AsyncSeedLoader{
 
     public AssetManager assetManager;
     public List<NEATArtifact> customSeeds;
+    public String seedFileLocation = "seeds/basicSeed.json";
 
     @Override
     public Task<List<Artifact>> asyncLoadSeeds(JsonNode params) {
@@ -133,7 +140,7 @@ public class AsyncLocalRandomSeedLoader implements AsyncSeedLoader{
     {
         ArrayList<Artifact> seeds =  new ArrayList<Artifact>();
 
-        Artifact a = loadSeed("seeds/basicSeed.json");
+        Artifact a = loadSeed(seedFileLocation);
 
         seeds.add(a);
 
@@ -142,7 +149,21 @@ public class AsyncLocalRandomSeedLoader implements AsyncSeedLoader{
 
     static String activationToClassName(String actFun)
     {
-        if(actFun.equals(pbLinear.class.getSimpleName()))
+        if(actFun.equals(Linear.class.getSimpleName()))
+        {
+            return Linear.class.getName();
+        }
+        else if(actFun.equals(BipolarSigmoid.class.getSimpleName()))
+        {
+            return BipolarSigmoid.class.getName();
+        }
+        else if(actFun.equals(Gaussian.class.getSimpleName())) {
+            return Gaussian.class.getName();
+        }
+        else if(actFun.equals(Cos.class.getSimpleName())) {
+            return Cos.class.getName();
+        }
+        else if(actFun.equals(pbLinear.class.getSimpleName()))
         {
             return pbLinear.class.getName();
         }
@@ -247,6 +268,12 @@ public class AsyncLocalRandomSeedLoader implements AsyncSeedLoader{
                     inCount,
                     outCount
             );
+
+            NeatParameters np = NEATInitializer.DefaultNEATParameters();
+
+            //use default params to issue mutations on connection weights originally
+            for(int i=0; i < np.seedMutateConnectionCount; i++)
+                loadedArtifact.genome.mutate_ConnectionWeights(np);
 
             //check our genome to see if it was seeded or not
             JsonNode gParents = genome.get("parents");

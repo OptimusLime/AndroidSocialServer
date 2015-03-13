@@ -77,7 +77,7 @@ public class FragmentFlowManager {
                 .commit();
     }
 
-    public void tempLaunchIEC(FragmentActivity activity, Bitmap squareSelected)
+    public void tempLaunchIEC(FragmentActivity activity, Bitmap squareSelected, Bitmap smallSquareSelected)
     {
         //importantly, we cannot go back to anything else in our history
         //we are at the user settings and logged in, there is no back -- just out of the app
@@ -94,14 +94,21 @@ public class FragmentFlowManager {
 
         ObjectMapper mapper = new ObjectMapper();
         String imageName = activity.getResources().getString(R.string.evolution_cache_name);
+        String smallImageName = activity.getResources().getString(R.string.evolution_small_cache_name);
         uiParams.set("image", mapper.convertValue(imageName, JsonNode.class));
+        uiParams.set("small_image", mapper.convertValue(smallImageName, JsonNode.class));
 
         //now save the square version of the bitmap -- at some point we will ask the user to do this
 //        Bitmap squareSelected = squareBitmap(selectedImage);
         EvolutionBitmapManager.getInstance().setBitmap(imageName, squareSelected);
+        EvolutionBitmapManager.getInstance().setBitmap(smallImageName, smallSquareSelected);
 
         //create our parameters
         NeatParameters np = NEATInitializer.DefaultNEATParameters();
+        //higher mutations after creating children plz
+        //-- for now
+        np.postSexualMutations = 15;
+        np.postAsexualMutations = 15;
 
         //initialize (only happens once no worries)
         NEATInitializer.InitializeActivationFunctions();

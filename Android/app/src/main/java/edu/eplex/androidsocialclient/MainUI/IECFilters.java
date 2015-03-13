@@ -54,6 +54,7 @@ import dagger.ObjectGraph;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncArtifactToUI;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncFetchBitmaps;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncInteractiveEvolution;
+import edu.eplex.AsyncEvolution.backbone.NEATArtifact;
 import edu.eplex.AsyncEvolution.cache.implementations.EvolutionBitmapManager;
 import edu.eplex.AsyncEvolution.cardUI.EndlessGridScrollListener;
 import edu.eplex.AsyncEvolution.cardUI.ExternalCardGridArrayAdapter;
@@ -63,8 +64,12 @@ import edu.eplex.AsyncEvolution.cardUI.cards.GridCard;
 import edu.eplex.AsyncEvolution.interfaces.PhenotypeCache;
 import edu.eplex.AsyncEvolution.main.NEATInitializer;
 import edu.eplex.AsyncEvolution.views.HorizontalListView;
+import edu.eplex.androidsocialclient.GPU.GPUNetworkFilter;
 import edu.eplex.androidsocialclient.MainUI.Adapters.BitmapAdapter;
 import edu.eplex.androidsocialclient.R;
+import eplex.win.FastCPPNJava.network.CPPN;
+import eplex.win.FastNEATJava.decode.DecodeToFloatFastConcurrentNetwork;
+import eplex.win.FastNEATJava.genome.NeatGenome;
 import eplex.win.FastNEATJava.utils.NeatParameters;
 import eplex.win.winBackbone.Artifact;
 import it.gmariotti.cardslib.library.internal.Card;
@@ -385,6 +390,44 @@ public class IECFilters extends Fragment implements GridCard.GridCardButtonHandl
                 });
     }
 
+
+    Task<Void> CreateCardTask(final Artifact selected, Bitmap inputImage)
+    {
+        //create filter object
+        GPUNetworkFilter gpuNetworkFilter = new GPUNetworkFilter();
+
+        return gpuNetworkFilter.AsyncFilterBitmapGPU(getActivity(), inputImage, selected, iecParams.get("ui"))
+                .continueWith(new Continuation<Bitmap, Void>() {
+                    @Override
+                    public Void then(Task<Bitmap> task) throws Exception {
+
+                        if (task.isCancelled()) {
+                            throw new RuntimeException("Converting object to UI was cancelled!");
+                        } else if (task.isFaulted()) {
+                            Toast.makeText(getActivity(), "Error creating card from Artifact", Toast.LENGTH_SHORT).show();
+                            Log.d("IEC: ArtifactToUIError", "Error creating UI from Artifact: " + task.getError().getMessage());
+                            throw task.getError();
+                        }
+                        //great success!
+                        else {
+
+                            final Bitmap filtered = task.getResult();
+                            getActivity().runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+
+                                    Integer ix = filterImageAdapter.getCount();
+                                    filterArrayIndex.put(ix, selected.wid());
+                                    //add the card please!
+                                    filterImageAdapter.add(filtered);
+                                }
+                            });
+
+                        }
+                        return null;
+                    }
+                });
+    }
     //we've been summoned to fetch new card objects
     //this is the crucial function for async IEC
     //this means creating artifacts, eating their children, then turning them into cards for the UI
@@ -415,6 +458,10 @@ public class IECFilters extends Fragment implements GridCard.GridCardButtonHandl
 
         final GridCard.GridCardButtonHandler self = this;
 
+        //original image plzzzzz -- use the small one!
+        String imageName = getActivity().getResources().getString(R.string.evolution_small_cache_name);
+        Bitmap inputImage = EvolutionBitmapManager.getInstance().getBitmap(imageName);
+
         //now that we have our offspring, we go about our real businazzzz
         //lets make some cards ... biatch!
         for(Artifact a : offspring)
@@ -422,50 +469,53 @@ public class IECFilters extends Fragment implements GridCard.GridCardButtonHandl
             //artifact? ... check!
             allArtifactMap.put(a.wid(), a);
 
-            //asynch convert artifact to UI Card Object? ... Check!
-            tasks.add(asyncArtifactToUIMapper.asyncConvertArtifactToUI(getActivity(), a, iecParams.get("ui"))
-                    .continueWith(new Continuation<GridCard, Void>() {
-                        @Override
-                        public Void then(Task<GridCard> task) throws Exception {
 
-                            if(task.isCancelled())
-                            {
-                                throw new RuntimeException("Converting object to UI was cancelled!");
-                            }
-                            else if(task.isFaulted())
-                            {
-                                Toast.makeText(getActivity(), "Error creating card from Artifact", Toast.LENGTH_SHORT).show();
-                                Log.d("IEC: ArtifactToUIError", "Error creating UI from Artifact: " + task.getError().getMessage());
-                                throw task.getError();
-                            }
-                            //great success!
-                            else
-                            {
-                                final GridCard c = task.getResult();
-
-                                if (c != null) {
-
-                                    gridCardCache.cachePhenotype(c.wid, c);
-                                    c.setButtonHandler(self);
-
-                                    getActivity().runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-
-                                            Integer ix = filterImageAdapter.getCount();
-                                            filterArrayIndex.put(ix, c.wid);
-                                            //add the card please!
-                                            filterImageAdapter.add(c.getThumbnailBitmap());
-                                        }
-                                    });
+            tasks.add(CreateCardTask(a, inputImage));
 
 
-                                }
-                            }
-
-                            return null;
-                        }
-                    }));
+//            tasks.add(asyncArtifactToUIMapper.asyncConvertArtifactToUI(getActivity(), a, iecParams.get("ui"))
+//                    .continueWith(new Continuation<GridCard, Void>() {
+//                        @Override
+//                        public Void then(Task<GridCard> task) throws Exception {
+//
+//                            if(task.isCancelled())
+//                            {
+//                                throw new RuntimeException("Converting object to UI was cancelled!");
+//                            }
+//                            else if(task.isFaulted())
+//                            {
+//                                Toast.makeText(getActivity(), "Error creating card from Artifact", Toast.LENGTH_SHORT).show();
+//                                Log.d("IEC: ArtifactToUIError", "Error creating UI from Artifact: " + task.getError().getMessage());
+//                                throw task.getError();
+//                            }
+//                            //great success!
+//                            else
+//                            {
+//                                final GridCard c = task.getResult();
+//
+//                                if (c != null) {
+//
+//                                    gridCardCache.cachePhenotype(c.wid, c);
+//                                    c.setButtonHandler(self);
+//
+//                                    getActivity().runOnUiThread(new Runnable() {
+//                                        @Override
+//                                        public void run() {
+//
+//                                            Integer ix = filterImageAdapter.getCount();
+//                                            filterArrayIndex.put(ix, c.wid);
+//                                            //add the card please!
+//                                            filterImageAdapter.add(c.getThumbnailBitmap());
+//                                        }
+//                                    });
+//
+//
+//                                }
+//                            }
+//
+//                            return null;
+//                        }
+//                    }));
         }
 
         //now that we've created all those promises, when they're all done,
@@ -493,6 +543,9 @@ public class IECFilters extends Fragment implements GridCard.GridCardButtonHandl
                 //TIME FOR EVOLUTION!
                 Artifact selected = allArtifactMap.get(filterArrayIndex.get(ix));
 
+                Bitmap existing = filterImageAdapter.getItem(ix);
+
+
                 setSelectedIndexAsMainImage(ix);
 
                 evolution.clearParents();
@@ -501,6 +554,10 @@ public class IECFilters extends Fragment implements GridCard.GridCardButtonHandl
                 //clear it out, then fill it up!
                 filterImageAdapter.clear();
                 filterArrayIndex.clear();
+
+                //we keep around our original selection -- kind of like elitism
+                filterImageAdapter.add(existing);
+                filterArrayIndex.put(0, selected.wid());
 
                 //go get more please!
                 asyncGetMoreCards(5);
@@ -539,43 +596,72 @@ public class IECFilters extends Fragment implements GridCard.GridCardButtonHandl
         String imageName = getActivity().getResources().getString(R.string.evolution_cache_name);
         uiParams.set("image", mapper.convertValue(imageName, JsonNode.class));
 
+        //original image plzzzzz
+        Bitmap inputImage = EvolutionBitmapManager.getInstance().getBitmap(imageName);
 
-        //now convert selected into a BIG image plz
-        asyncArtifactToUIMapper.asyncConvertArtifactToUI(getActivity(), selected, uiParams)
-                .continueWith(new Continuation<GridCard, Void>() {
+        //create filter object
+        GPUNetworkFilter gpuNetworkFilter = new GPUNetworkFilter();
+
+        gpuNetworkFilter.AsyncFilterBitmapGPU(getActivity(), inputImage, selected, uiParams)
+                .continueWith(new Continuation<Bitmap, Void>() {
                     @Override
-                    public Void then(Task<GridCard> task) throws Exception {
+                    public Void then(Task<Bitmap> task) throws Exception {
 
-                        if(task.isCancelled())
-                        {
+                        if (task.isCancelled()) {
                             throw new RuntimeException("Converting object to UI was cancelled!");
-                        }
-                        else if(task.isFaulted())
-                        {
+                        } else if (task.isFaulted()) {
                             Toast.makeText(getActivity(), "Error creating card from Artifact", Toast.LENGTH_SHORT).show();
                             Log.d("IEC: ArtifactToUIError", "Error creating UI from Artifact: " + task.getError().getMessage());
                             throw task.getError();
                         }
                         //great success!
-                        else
-                        {
-                            final GridCard c = task.getResult();
+                        else {
 
+                            final Bitmap filtered = task.getResult();
                             getActivity().runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
 
                                     //grab the image from the card -- hack for now
-                                    mainImageView.setImageBitmap(c.getThumbnailBitmap());
+                                    mainImageView.setImageBitmap(filtered);
                                 }
                             });
-
-
                         }
-
                         return null;
                     }
                 });
+        //now convert selected into a BIG image plz
+//        asyncArtifactToUIMapper.asyncConvertArtifactToUI(getActivity(), selected, uiParams)
+//                .continueWith(new Continuation<GridCard, Void>() {
+//                    @Override
+//                    public Void then(Task<GridCard> task) throws Exception {
+//
+//                        if (task.isCancelled()) {
+//                            throw new RuntimeException("Converting object to UI was cancelled!");
+//                        } else if (task.isFaulted()) {
+//                            Toast.makeText(getActivity(), "Error creating card from Artifact", Toast.LENGTH_SHORT).show();
+//                            Log.d("IEC: ArtifactToUIError", "Error creating UI from Artifact: " + task.getError().getMessage());
+//                            throw task.getError();
+//                        }
+//                        //great success!
+//                        else {
+//                            final GridCard c = task.getResult();
+//
+//                            getActivity().runOnUiThread(new Runnable() {
+//                                @Override
+//                                public void run() {
+//
+//                                    //grab the image from the card -- hack for now
+//                                    mainImageView.setImageBitmap(c.getThumbnailBitmap());
+//                                }
+//                            });
+//
+//
+//                        }
+//
+//                        return null;
+//                    }
+//                });
     }
 
     /**

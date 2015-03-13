@@ -89,6 +89,7 @@ public class FilterAsyncLocalIECModule {
         //pull the asset manager from our set (I hope) activity
         seedLoader.assetManager = activity.getAssets();
         seedLoader.customSeeds = seeds;
+        seedLoader.seedFileLocation = "testseeds/basicSeed.json";
 
         return seedLoader;
     }

@@ -272,7 +272,7 @@ public class TakePictureFragment extends Fragment {
         }
 
         //otherwise, we're ready to IEC!
-        FragmentFlowManager.getInstance().tempLaunchIEC(getActivity(), squareBitmap(fullImageBitmap));
+        FragmentFlowManager.getInstance().tempLaunchIEC(getActivity(), squareBitmap(fullImageBitmap), squareBitmap(mSampleBitmap));
     }
     void notifyUserMissingPicture()
     {
@@ -354,10 +354,14 @@ public class TakePictureFragment extends Fragment {
             //this is only for debuggin purposes, so adjusting this number is not a big concern
             int previewWidthHeight = getResources().getInteger(R.integer.default_preview_square_size);
 
+            int maxImageWidthHeight = getResources().getInteger(R.integer.default_max_image_square_size);
 
             //grab the full image please
-            fullImageBitmap = BitmapFactory.decodeFile(mCurrentImageSaveLocation);
+//            fullImageBitmap = BitmapFactory.decodeFile(mCurrentImageSaveLocation);
 
+            fullImageBitmap = FileUtilities.decodeSampledBitmapFromResource(mCurrentImageSaveLocation,
+                    maxImageWidthHeight,
+                    maxImageWidthHeight);
 
 
             //we decode using file utilities and our desired width/height
@@ -376,7 +380,7 @@ public class TakePictureFragment extends Fragment {
 
             //DEBUG
             //TEST AWAY
-            NEATTestGPUShader.TestShader(getActivity(), mSampleBitmap);
+//            NEATTestGPUShader.TestShader(getActivity(), mSampleBitmap);
 
             //we must alert the system that an image has been added
             handlePhotoTaken();

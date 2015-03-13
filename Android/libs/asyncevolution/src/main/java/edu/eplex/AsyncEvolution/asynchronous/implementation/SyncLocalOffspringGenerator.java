@@ -57,7 +57,7 @@ public class SyncLocalOffspringGenerator implements ArtifactOffspringGenerator {
         na.genome.parents = Arrays.asList(gParent);
 
         //add some extra mutations for good show!
-        for(int i=0; i < 5; i++)
+        for(int i=0; i < np.postAsexualMutations; i++)
             na.genome.mutate(newNodeTable, newConnectionTable, np);
 
         //set the new clone artifact id as a new uuid
@@ -85,7 +85,7 @@ public class SyncLocalOffspringGenerator implements ArtifactOffspringGenerator {
         o1.genome.parents = Arrays.asList(p1GID, p2.genome.gid);
 
         //add some extra mutations for good show!
-        for(int i=0; i < 5; i++)
+        for(int i=0; i < np.postSexualMutations; i++)
             o1.genome.mutate(newNodeTable, newConnectionTable, np);
 
         //set the new clone artifact id as a new uuid

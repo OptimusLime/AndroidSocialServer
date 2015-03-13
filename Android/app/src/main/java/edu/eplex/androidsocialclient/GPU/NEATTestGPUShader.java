@@ -35,6 +35,7 @@ import eplex.win.FastNEATJava.genome.NeuronGeneStruct;
 import eplex.win.FastNEATJava.utils.NeatParameters;
 import eplex.win.FastNEATJava.utils.cuid;
 import jp.co.cyberagent.android.gpuimage.GPUImage;
+import jp.co.cyberagent.android.gpuimage.GPUImage3x3TextureSamplingFilter;
 import jp.co.cyberagent.android.gpuimage.GPUImageView;
 
 /**
@@ -69,18 +70,18 @@ public class NEATTestGPUShader {
         CPPN decoded = DecodeToFloatFastConcurrentNetwork.DecodeNeatGenomeToCPPN(ng);
 
         //now decode please!
-        String buildShader = decoded.cppnToShader();
+        String buildShader = decoded.cppnToShader(null);
 
-        GPUNetworkFilter gpuShader = new GPUNetworkFilter(buildShader);
+        GPUImage3x3TextureSamplingFilter cppnFilter = new GPUImage3x3TextureSamplingFilter(buildShader);
 
         //now we have a filter! Let's try and do things with it!
-        GPUImageView gpuView = (GPUImageView)mContext.findViewById(R.id.gpuimage);
+        GPUImageView gpuView = null;// (GPUImageView)mContext.findViewById(R.id.gpuimage);
 
 //        gpuView.setLayoutParams(new LinearLayout.LayoutParams(200, 200));
         gpuView.setScaleType(GPUImage.ScaleType.CENTER_CROP);
 //        gpuView.setImage(bitmapLocation);
         gpuView.setImage(originalImage);
-        gpuView.setFilter(gpuShader);
+        gpuView.setFilter(cppnFilter);
 
         gpuView.requestRender();
 
