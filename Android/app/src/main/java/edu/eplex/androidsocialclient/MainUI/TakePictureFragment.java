@@ -207,7 +207,7 @@ public class TakePictureFragment extends Fragment {
         super.onStart();
 
         //Make sure the status bar is hidden on app launch or resume
-        hideStatusBar();
+//        hideStatusBar();
     }
 
     //A function to hide the status bar according to different Android versions

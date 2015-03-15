@@ -123,7 +123,7 @@
     <style name="HiddenActionTheme" parent="AppBaseTheme">
         <!-- Customize your theme here. -->
         <item name="android:windowActionBar">false</item>
-        <item name="android:windowTitleSize">0dp</item>
+        <!--<item name="android:windowTitleSize">0dp</item>-->
     </style>
 
 </resources>
