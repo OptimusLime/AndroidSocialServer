@@ -23,7 +23,7 @@
             android:layout_width="match_parent"
             android:layout_height="48dp"
             app:iconColor="#FFFFFF"
-            app:materialTabsPrimaryColor="#490490"
+            app:materialTabsPrimaryColor="@color/primary_app_blue"
             app:accentColor="#F3F3F0"
             app:hasIcons="true"
             />

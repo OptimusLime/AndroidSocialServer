@@ -3,6 +3,11 @@
 
     <color name="select_image_button">#DDD</color>
 
+    <color name="primary_app_light_blue">#26468A</color>
+    <color name="primary_app_medium_blue">#072D85</color>
+    <color name="primary_app_overlay_blue">#120F30</color>
+    <color name="primary_app_blue">#03103B</color>
+
     <color name="transparent">#0000</color>
     <color name="indigo_500">#3f51b5</color>
     <color name="indigo_700">#303f9f</color>

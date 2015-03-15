@@ -16,7 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:background="#8C1132"
+            android:background="@color/primary_app_light_blue"
             android:gravity="center"
             android:paddingLeft="10dp"
             android:paddingRight="10dp" >
@@ -44,7 +44,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:background="#730E20"
+            android:background="@color/primary_app_medium_blue"
             android:gravity="center"
              >
 
