@@ -9,6 +9,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 
+import edu.eplex.androidsocialclient.MainUI.Main.Tabs.SelectPictureFragment;
 import edu.eplex.androidsocialclient.MainUI.TakePictureFragment;
 import edu.eplex.androidsocialclient.MainUI.UserSettingsFragment;
 import edu.eplex.androidsocialclient.R;
@@ -106,7 +107,7 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
             switch (num)
             {
                 case 0:
-                    return new UserSettingsFragment();
+                    return new SelectPictureFragment();
                 case 1:
                     return new TakePictureFragment();
                 case 2:

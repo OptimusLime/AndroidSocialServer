@@ -7,6 +7,7 @@
 
     <!--We must get permission from the User for our app to access external storage for image writing -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
 
     <application

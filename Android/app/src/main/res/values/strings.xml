@@ -28,4 +28,14 @@
     <integer name="default_preview_square_size">150</integer>
     <integer name="default_max_image_square_size">600</integer>
 
+    <!-- App Main Framgents-->
+
+    <string name="take_photo_camera">Take photo</string>
+    <string name="choose_from_gallery">Choose image</string>
+    <string name="img_desc">Images</string>
+    <string name="or">or</string>
+    <string name="no_media">Error: your SD-Card/Gallery is not available.</string>
+    <string name="error_img_not_found">Oops! please try again.</string>
+
+
 </resources>

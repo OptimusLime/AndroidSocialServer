@@ -135,6 +135,7 @@ public class TakePictureFragment extends Fragment {
         //We must grab our image button so we can attach a click listener -- to launch the camera intent
         ImageButton imgButton = (ImageButton) rootView.findViewById(R.id.launch_camera_button);
 
+
         //we wire our image button to launch
         imgButton.setOnClickListener(mCameraCaptureCallback);
 

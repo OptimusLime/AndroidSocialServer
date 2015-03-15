@@ -30,6 +30,8 @@ android {
         exclude 'META-INF/license.txt'
         exclude 'META-INF/dependencies.txt'
         exclude 'META-INF/LGPL2.1'
+        exclude 'META-INF/services/javax.annotation.processing.Processor'
+
     }
 }
 dependencies {
@@ -41,6 +43,8 @@ dependencies {
     //Material tabs with icons plz
 //    compile 'it.neokree:MaterialTabs:0.11'
 
+    //For quick view injection -- makes for clearner frag code
+    compile 'com.jakewharton:butterknife:6.1.0'
 
     //square API helpers
     compile 'com.squareup.retrofit:retrofit:1.8.0'
