@@ -1,6 +1,7 @@
-include ':app', ':facebook', ':FastCPPNJava', ':FastNEATJava', ':AsyncEvolution', ':win-backbone'
+include ':app', ':facebook', ':FastCPPNJava', ':FastNEATJava', ':AsyncEvolution', ':win-backbone', ':MaterialTabsModule'
 project(':facebook').projectDir = new File('libs/facebook')
 project(':FastCPPNJava').projectDir = new File('libs/FastCPPNJava')
 project(':FastNEATJava').projectDir = new File('libs/FastNEATJava')
 project(':AsyncEvolution').projectDir = new File('libs/AsyncEvolution')
 project(':win-backbone').projectDir = new File('libs/win-backbone')
+project(':MaterialTabsModule').projectDir = new File('libs/MaterialTabsModule')

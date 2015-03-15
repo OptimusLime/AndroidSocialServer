@@ -50,7 +50,26 @@ public class UserSettingsFragment extends Fragment {
 
     public final TitleActionPair[] ACTIONLIST = {
             new TitleActionPair("ACCOUNT"),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
             new TitleActionPair("Log Out", ButtonActionEnum.LogOff)
+
     };
 
     private static final Integer LIST_HEADER = 0;
