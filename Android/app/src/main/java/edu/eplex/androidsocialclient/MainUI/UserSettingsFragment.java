@@ -45,8 +45,11 @@ public class UserSettingsFragment extends Fragment {
 
     ListView listView;
 
-    public static final int HDR_POS1 = 0;
-    public static final int HDR_POS2 = 5;
+
+    public static final int[] HDR_LOC = {
+            0,
+            6
+    };
 
     public final TitleActionPair[] ACTIONLIST = {
             new TitleActionPair("ACCOUNT"),
@@ -55,7 +58,7 @@ public class UserSettingsFragment extends Fragment {
             new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
             new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
             new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
-            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Wonky"),
             new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
             new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
             new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
@@ -265,9 +268,9 @@ public class UserSettingsFragment extends Fragment {
 
         private String getHeader(int position) {
 
-            if(position == HDR_POS1  || position == HDR_POS2) {
-                return ACTIONLIST[position].title;
-            }
+            for(int i=0;i< HDR_LOC.length; i++)
+                if(position == HDR_LOC[i])
+                    return ACTIONLIST[position].title;
 
             return null;
         }

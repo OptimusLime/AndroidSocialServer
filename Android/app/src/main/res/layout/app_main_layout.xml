@@ -14,7 +14,7 @@
         <!--android:background="@color/registration_toolbar_background"-->
         <!--app:theme="@style/RegistrationToolbarTheme"-->
         <!--/>-->
-    
+
 
         <!-- for icon tabs -->
         <it.neokree.materialtabs.MaterialTabHost
