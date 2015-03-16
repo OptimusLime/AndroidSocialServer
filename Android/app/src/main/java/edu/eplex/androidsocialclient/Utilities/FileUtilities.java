@@ -86,6 +86,40 @@ public class FileUtilities {
     //From Android documentation: http://developer.android.com/training/displaying-bitmaps/load-bitmap.html
     //Allows the loading of a bitmap from file with a certain requested width and height
     //It's meant to allow for more efficient bitmap reads into memory
+    public static Bitmap decodeSampledBitmapFromResource(String strPath, int maxDimension) {
+
+        // First decode with inJustDecodeBounds=true to check dimensions
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+
+        //we decode the bitmap, but only looking for the true width/height
+        options.inJustDecodeBounds = true;
+
+        //here we decode into options
+        BitmapFactory.decodeFile(strPath, options);
+
+        int rawHeight = options.outHeight;
+        int rawWidth = options.outWidth;
+
+        double scale = (double)maxDimension/Math.min(rawHeight, rawWidth);
+
+        //load the scaled version -- thx
+        int reqWidth = (int)Math.round(scale*rawWidth);
+        int reqHeight = (int)Math.round(scale*rawHeight);
+
+        // Calculate inSampleSize -- this will determine how our bitmap is cropped during actual decode
+        options.inSampleSize = calculateInSampleSize(options,reqWidth,
+                reqHeight);
+
+        // Decode bitmap with inSampleSize set
+        options.inJustDecodeBounds = false;
+
+        //decode to the appropriate size
+        return BitmapFactory.decodeFile(strPath, options);
+    }
+
+    //From Android documentation: http://developer.android.com/training/displaying-bitmaps/load-bitmap.html
+    //Allows the loading of a bitmap from file with a certain requested width and height
+    //It's meant to allow for more efficient bitmap reads into memory
     public static Bitmap decodeSampledBitmapFromResource(String strPath, int reqWidth, int reqHeight) {
 
         // First decode with inJustDecodeBounds=true to check dimensions

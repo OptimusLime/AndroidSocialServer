@@ -10,6 +10,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 
 import edu.eplex.androidsocialclient.MainUI.Main.Tabs.SelectPictureFragment;
+import edu.eplex.androidsocialclient.MainUI.Main.Tabs.TabFlowManager;
 import edu.eplex.androidsocialclient.MainUI.TakePictureFragment;
 import edu.eplex.androidsocialclient.MainUI.UserSettingsFragment;
 import edu.eplex.androidsocialclient.R;
@@ -23,15 +24,27 @@ import it.neokree.materialtabs.MaterialTabListener;
 public class MainScreen extends ActionBarActivity implements MaterialTabListener {
     MaterialTabHost tabHost;
     ViewPager pager;
-    ViewPagerAdapter adapter;
+    TabFlowManager.ViewPagerAdapter adapter;
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //make sure to set our tab activity as us on create!
+        TabFlowManager.getInstance().setTabActivity(this);
+
         setContentView(R.layout.app_main_layout);
 
 //        Toolbar toolbar = (android.support.v7.widget.Toolbar) this.findViewById(R.id.app_main_toolbar);
 //        this.setSupportActionBar(toolbar);
+
+        TabFlowManager tfm = TabFlowManager.getInstance();
 
         tabHost = (MaterialTabHost) this.findViewById(R.id.materialTabHost);
 
@@ -39,7 +52,7 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
         pager = (ViewPager) this.findViewById(R.id.app_main_pager);
 
         // init view pager
-        adapter = new ViewPagerAdapter(getSupportFragmentManager());
+        adapter = new TabFlowManager.ViewPagerAdapter(getSupportFragmentManager());
         pager.setAdapter(adapter);
         pager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
@@ -54,14 +67,25 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
         for (int i = 0; i < adapter.getCount(); i++) {
             tabHost.addTab(
                     tabHost.newTab()
-                            .setIcon(getIcon(i))//adapter.getPageTitle(i))
+                            .setIcon(tfm.getTabIcons(i))//adapter.getPageTitle(i))
                             .setTabListener(this)
             );
-
         }
 
+        //no need to be graceful, just switch immediately
+        switchToTab(tfm.DefaultStartingTab(), false);
     }
 
+    public void switchToTab(TabFlowManager.TabID tab, boolean smooth)
+    {
+        switchToTab(tab.ordinal(), smooth);
+    }
+
+    //simple switch call -- smooth if you want it
+    public void switchToTab(int pos, boolean smooth)
+    {
+        pager.setCurrentItem(pos, smooth);
+    }
 
     @Override
     public void onTabSelected(MaterialTab tab) {
@@ -75,76 +99,6 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
 
     @Override
     public void onTabUnselected(MaterialTab tab) {
-
-    }
-    /*
-       * It doesn't matter the color of the icons, but they must have solid colors
-       */
-    private Drawable getIcon(int position) {
-        switch(position) {
-            case 0:
-                return getResources().getDrawable(R.drawable.camsilhouette);
-            case 1:
-                return getResources().getDrawable(R.drawable.galleryicon);
-            case 2:
-                return getResources().getDrawable(R.drawable.videosilhouette);
-            case 3:
-                return getResources().getDrawable(R.drawable.ic_action_mail);
-            case 4:
-                return getResources().getDrawable(R.drawable.ic_action_lock_closed);
-        }
-        return null;
-    }
-
-    private class ViewPagerAdapter extends FragmentStatePagerAdapter {
-
-        public ViewPagerAdapter(FragmentManager fm) {
-            super(fm);
-
-        }
-
-        public Fragment getItem(int num) {
-            switch (num)
-            {
-                case 0:
-                    return new SelectPictureFragment();
-                case 1:
-                    return new TakePictureFragment();
-                case 2:
-                    return new UserSettingsFragment();
-                case 3:
-                    return new UserSettingsFragment();
-                case 4:
-                    return new UserSettingsFragment();
-                default:
-                    return new UserSettingsFragment();
-            }
-        }
-
-        @Override
-        public int getCount() {
-            return 5;
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-
-            switch (position)
-            {
-                case 0:
-                    return "" + position;
-                case 1:
-                    return "" + position;
-                case 2:
-                    return "" + position;
-                case 3:
-                    return "" + position;
-                case 4:
-                    return "" + position;
-                default:
-                    return "" + position;
-            }
-        }
 
     }
 

@@ -21,10 +21,10 @@
             android:id="@+id/materialTabHost"
             android:layout_alignParentBottom="true"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            app:iconColor="#FFFFFF"
+            android:layout_height="@dimen/app_bottom_tab_height"
+            app:iconColor="@color/app_bottom_tab_icon"
             app:materialTabsPrimaryColor="@color/primary_app_blue"
-            app:accentColor="#F3F3F0"
+            app:accentColor="@color/app_bottom_tab_accent"
             app:hasIcons="true"
             />
 

@@ -23,6 +23,7 @@ import javax.inject.Inject;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import butterknife.OnClick;
+import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
 import edu.eplex.androidsocialclient.R;
 import edu.eplex.androidsocialclient.Utilities.Constants;
 import edu.eplex.androidsocialclient.Utilities.UriToUrl;
@@ -31,6 +32,9 @@ import edu.eplex.androidsocialclient.Utilities.UriToUrl;
  * Created by paul on 3/15/15.
  */
 public class SelectPictureFragment extends Fragment {
+
+    public static final TabFlowManager.TabID TAB = TabFlowManager.TabID.Camera;
+
     private Animation animation;
 
     @InjectView(R.id.top_holder)
@@ -45,6 +49,7 @@ public class SelectPictureFragment extends Fragment {
     private Uri imageUri;
     private boolean click_status = true;
 
+    private boolean flyingIn = false;
 
     //take a picture
     @OnClick(R.id.top_holder) void cameraClick() {
@@ -62,13 +67,8 @@ public class SelectPictureFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
         View rootView = inflater.inflate(R.layout.app_fragment_take_picture, container, false);
-
-//        top_holder = (RelativeLayout) rootView.findViewById(R.id.top_holder);
-//        bottom_holder = (RelativeLayout) rootView.findViewById(R.id.bottom_holder);
-//        step_number = (RelativeLayout) rootView.findViewById(R.id.step_number);
-
         ButterKnife.inject(this, rootView);
-//        ButterKnife.inject(rootView);
+        TabFlowManager.getInstance().registerUIEvents(this);
 
 
         return rootView;
@@ -84,7 +84,7 @@ public class SelectPictureFragment extends Fragment {
     @Override
     public void onStart() {
         getActivity().overridePendingTransition(0, 0);
-        flyIn();
+        flyIn(null);
         super.onStart();
     }
 
@@ -151,13 +151,29 @@ public class SelectPictureFragment extends Fragment {
         return getActivity().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
     }
 
-    private void displayPhotoActivity(int source_id) {
+    private void displayPhotoActivity(int source_id) throws Exception {
+
+        //create our new composite -- then peace outta here -- we der dunnn yo'
+//        for(int i=0; i < 10; i++)
+        FilterManager.getInstance().createNewComposite(UriToUrl.get(getActivity(), imageUri));
+
+        switchTabs();
+        //fly out and away!
+//        flyIn("switchTabs");
+
+
 //        Intent intent = new Intent(getActivity(), PhotoActivity.class);
 //        intent.putExtra(Constants.EXTRA_KEY_IMAGE_SOURCE, source_id);
 //        intent.setData(imageUri);
 //        startActivity(intent);
 //        getActivity().overridePendingTransition(0, 0);
 //        finish();
+    }
+
+    public void switchTabs() throws Exception
+    {
+        //need to do something with the uri for the image -- but nothing for now
+        TabFlowManager.getInstance().switchToTab(TAB, TabFlowManager.TabID.Workshop);
     }
 
     private void flyOut(final String method_name) {
@@ -209,16 +225,40 @@ public class SelectPictureFragment extends Fragment {
 //        super.onBackPressed();
 //    }
 
-    private void flyIn() {
-        click_status = true;
+    private void flyIn(final String method_name) {
 
-        animation = AnimationUtils.loadAnimation(getActivity(), R.anim.holder_top);
-        top_holder.startAnimation(animation);
+        if(!flyingIn){
 
-        animation = AnimationUtils.loadAnimation(getActivity(), R.anim.holder_bottom);
-        bottom_holder.startAnimation(animation);
+            flyingIn = true;
+            click_status = true;
 
-        animation = AnimationUtils.loadAnimation(getActivity(), R.anim.step_number);
-        step_number.startAnimation(animation);
+            animation = AnimationUtils.loadAnimation(getActivity(), R.anim.holder_top);
+            top_holder.startAnimation(animation);
+
+            animation = AnimationUtils.loadAnimation(getActivity(), R.anim.holder_bottom);
+            bottom_holder.startAnimation(animation);
+
+            animation = AnimationUtils.loadAnimation(getActivity(), R.anim.step_number);
+            step_number.startAnimation(animation);
+
+            animation.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation arg0) {
+                }
+
+                @Override
+                public void onAnimationRepeat(Animation arg0) {
+                }
+
+                @Override
+                public void onAnimationEnd(Animation arg0) {
+                    flyingIn = false;
+
+                    if (method_name != null && method_name != "") {
+                        callMethod(method_name);
+                    }
+                }
+            });
+        }
     }
 }

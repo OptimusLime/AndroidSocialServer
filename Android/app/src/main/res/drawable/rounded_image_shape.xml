@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#00ffffff" />
+    <padding android:left="@dimen/workshop_preview_rounded_corner"
+        android:top="@dimen/workshop_preview_rounded_corner"
+        android:right="@dimen/workshop_preview_rounded_corner"
+        android:bottom="@dimen/workshop_preview_rounded_corner" />
+    <corners android:radius="@dimen/workshop_preview_rounded_corner_2x" />
+    <stroke android:width="@dimen/workshop_preview_rounded_corner" android:color="#ff000000" />
+</shape>

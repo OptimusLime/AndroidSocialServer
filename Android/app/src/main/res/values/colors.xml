@@ -3,6 +3,9 @@
 
     <color name="select_image_button">#DDD</color>
 
+
+    <color name="app_bottom_tab_accent">#F3F3F0</color>
+    <color name="app_bottom_tab_icon">#FFFFFF</color>
     <color name="primary_app_light_blue">#26468A</color>
     <color name="primary_app_medium_blue">#072D85</color>
     <color name="primary_app_overlay_blue">#120F30</color>
@@ -35,5 +38,6 @@
     <color name="as_divider_color">#6333</color>
 
     <color name="asListItemBackgroundSelectedColor">#6333</color>
+
 
 </resources>

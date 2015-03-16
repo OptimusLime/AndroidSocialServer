@@ -44,4 +44,18 @@
     <dimen name="asSectionDividerMarginTop">5dp</dimen>
     <dimen name="asSectionDividerPaddingLeftRight">15dp</dimen>
 
+
+    <!-- Tab Settings -->
+    <dimen name="app_bottom_tab_height">54dp</dimen>
+    <!-- Workshop previews -->
+    <dimen name="workshop_preview_text_list">25dp</dimen>
+    <dimen name="workshop_preview_image_margin">12dp</dimen>
+    <dimen name="workshop_preview_text_next_image_left">8dp</dimen>
+    <dimen name="workshop_preview_rounded_corner">3dp</dimen>
+    <dimen name="workshop_preview_rounded_corner_2x">6dp</dimen>
+
+    <!-- Workshop thumbnails in the preview - how big??? -->
+    <!--<integer name="workshop_preview_thumbnail_size">150</integer>-->
+    <dimen name="workshop_preview_thumbnail_size">80dp</dimen>
+
 </resources>

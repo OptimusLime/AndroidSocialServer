@@ -40,6 +40,12 @@ dependencies {
     //NEED for GPU filters
     compile 'jp.co.cyberagent.android.gpuimage:gpuimage-library:1.2.3'
 
+    //for presenting and caching images
+    compile 'com.squareup.picasso:picasso:2.5.0'
+
+    //for presenting the user with a nice action button at all times for certain locations in the app -- it floats
+    compile 'com.melnykov:floatingactionbutton:1.2.0'
+
     //Material tabs with icons plz
 //    compile 'it.neokree:MaterialTabs:0.11'
 
