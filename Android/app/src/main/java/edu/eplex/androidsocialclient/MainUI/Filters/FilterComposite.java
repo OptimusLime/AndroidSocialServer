@@ -6,6 +6,8 @@ import java.util.concurrent.Callable;
 import java.util.logging.Filter;
 import bolts.Continuation;
 import bolts.Task;
+import edu.eplex.androidsocialclient.MainUI.Cache.BitmapCacheManager;
+import eplex.win.FastNEATJava.utils.cuid;
 
 /**
  * Created by paul on 3/15/15.
@@ -106,12 +108,34 @@ public class FilterComposite {
         //create an empty artifact plz! Defaults galore!
         setClassConstruction(imageURL, new FilterArtifact(), uniqueID, readableName);
     }
-
     public FilterComposite(String imageURL, FilterArtifact artifact, String uniqueID, String readableName)
     {
         //set the values up -- need all 4 unfortunately
         setClassConstruction(imageURL, artifact, uniqueID, readableName);
     }
+    public FilterComposite(String imageURL, FilterArtifact artifact, String readableName)
+    {
+        //set the values up -- need all 4 unfortunately
+        setClassConstruction(imageURL, artifact, cuid.getInstance().generate(), readableName);
+    }
+
+    public void setFilteredBitmap(Bitmap bm)
+    {
+        //repalce this filtered bitmap -- plz
+        if(this.filteredBitmap != null && !this.filteredBitmap.isRecycled())
+            BitmapCacheManager.getInstance().replaceCachedBitmap(this.getImageURL(), this.filteredBitmap.getWidth(), this.filteredBitmap.getHeight(), true, bm);
+
+        //then save the new image as our filtered image
+        this.filteredBitmap = bm;
+
+    }
+    public void setCurrentBitmap(Bitmap bm)
+    {
+        this.currentBitmap = bm;
+    }
+    public void setThumbnailBitmap(Bitmap bm){this.thumbnailBitmap = bm;}
+    public void setFilteredThumbnailBitmap(Bitmap bm){this.filteredThumbnailBitmap = bm;}
+
 
     //set our internal strings and what have you
     void setClassConstruction(String imageURL, FilterArtifact artifact, String uniqueID, String readableName)

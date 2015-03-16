@@ -42,9 +42,38 @@ public class BitmapCacheManager {
         return instance;
     }
 
+    //we have an image we want replaced
+//    public void replaceCachedBitmap(String url, int width, int height, Bitmap replace)
+//    {
+//        replaceCachedBitmap(url, width, height, replace, false);
+//    }
+    public void replaceCachedBitmap(String url, int width, int height,boolean isFiltered, Bitmap replace)
+    {
+        //cccccccache name plz?
+        String cacheName = urlCacheName(url, width, height, isFiltered);
+
+        //do we need to replace anything?
+        Bitmap bm = null;
+
+        //need to do this safely please
+        synchronized (allCached)
+        {
+            if(allCached.contains(cacheName))
+            {
+                bm = cachedBitmaps.get(cacheName);
+                //replace in the cache
+                cachedBitmaps.put(cacheName, replace);
+            }
+        }
+
+        //clear out our bitmap -- it's removed
+        if(bm != null && !bm.isRecycled())
+            bm.recycle();
+    }
+
     //need to lazy load images
-    public void lazyLoadBitmap(String url, int squareSize, LazyLoadedCallback callback) {
-        lazyLoadBitmap(url, squareSize, squareSize, callback);
+    public void lazyLoadBitmap(String url, int squareSize, boolean filtered, LazyLoadedCallback callback) {
+        lazyLoadBitmap(url, squareSize, squareSize, filtered, callback);
     }
 
     //finish it up
@@ -145,10 +174,10 @@ public class BitmapCacheManager {
 
     }
 
-    public void lazyLoadBitmap(final String url, int width,  int height, final LazyLoadedCallback callback)
+    public void lazyLoadBitmap(final String url, int width,  int height, boolean filtered, final LazyLoadedCallback callback)
     {
         //what is the cache name?
-        final String cached = urlCacheName(url, width, height);
+        final String cached = urlCacheName(url, width, height, filtered);
 
         synchronized (allCached)
         {
@@ -200,10 +229,14 @@ public class BitmapCacheManager {
 
     String urlCacheName(String url, int width, int height)
     {
+        return urlCacheName(url, width,height, false);
+    }
+    String urlCacheName(String url, int width, int height, boolean filtered)
+    {
         if(width == height)
-            return url + "_square_"+width;
+            return url + "_square_" + width + (filtered ? "_filtered" : "");
         else
-            return url + "_w_" + width + "_h_" + height;
+            return url + "_w_" + width + "_h_" + height + (filtered ? "_filtered" : "");
     }
 
 

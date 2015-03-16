@@ -25,6 +25,7 @@ import butterknife.OnClick;
 import edu.eplex.androidsocialclient.MainUI.Adapters.WorkshopCompositeAdapter;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFlowManager;
 import edu.eplex.androidsocialclient.R;
 
 /**
@@ -61,6 +62,8 @@ public class WorkshopFragment extends Fragment implements WorkshopCompositeAdapt
     public void selectCompositeFilter(FilterComposite filter, int position) {
         //we select a filter yo! What do?
 
+        //we start our new edit activity!
+        getActivity().startActivity(EditFlowManager.getInstance().createEditIntent(getActivity(), filter));
     }
 
     @Override

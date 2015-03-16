@@ -14,6 +14,7 @@ import edu.eplex.AsyncEvolution.activations.PBGaussian;
 import edu.eplex.AsyncEvolution.activations.pbLinear;
 import edu.eplex.AsyncEvolution.backbone.NEATArtifact;
 import edu.eplex.AsyncEvolution.cache.implementations.EvolutionBitmapManager;
+import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
 import eplex.win.FastCPPNJava.activation.functions.BipolarSigmoid;
 import eplex.win.FastCPPNJava.activation.functions.Cos;
 import eplex.win.FastCPPNJava.activation.functions.Gaussian;
@@ -56,7 +57,23 @@ public class GPUNetworkFilter {
     Bitmap GPUNetworkToImage(Context context, Bitmap originalImage, Artifact artifact, JsonNode params)
     {
         //grab genome
-        NeatGenome g = ((NEATArtifact)artifact).genome;
+        NeatGenome g;
+
+        //check which type of artifact
+        try {
+            NEATArtifact n = ((NEATArtifact) artifact);
+            if (n == null) {
+                throw new Exception("Null artfact");
+            }
+            g = n.genome;
+        }
+        catch (Exception e)
+        {
+            FilterArtifact fa = (FilterArtifact) artifact;
+            g = fa.genomeFilters.get(0);
+        }
+
+//        NeatGenome g = ((NEATArtifact)artifact).genome;
 
         //decode
         CPPN decoded = DecodeToFloatFastConcurrentNetwork.DecodeNeatGenomeToCPPN(g);

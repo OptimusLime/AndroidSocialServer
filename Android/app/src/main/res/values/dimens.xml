@@ -57,5 +57,6 @@
     <!-- Workshop thumbnails in the preview - how big??? -->
     <!--<integer name="workshop_preview_thumbnail_size">150</integer>-->
     <dimen name="workshop_preview_thumbnail_size">80dp</dimen>
+    <dimen name="app_edit_iec_thumbnail_size">80dp</dimen>
 
 </resources>

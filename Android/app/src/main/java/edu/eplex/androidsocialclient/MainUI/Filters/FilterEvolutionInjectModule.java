@@ -1,4 +1,4 @@
-package edu.eplex.androidsocialclient.MainUI;
+package edu.eplex.androidsocialclient.MainUI.Filters;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
@@ -16,15 +16,13 @@ import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncArtifactToUI;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncInteractiveEvolution;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncPhenotypeToUI;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncSeedLoader;
-import edu.eplex.AsyncEvolution.asynchronous.main.AsyncInfiniteIEC;
 import edu.eplex.AsyncEvolution.backbone.NEATArtifact;
 import edu.eplex.AsyncEvolution.cache.implementations.LRUBitmapCache;
 import edu.eplex.AsyncEvolution.cardUI.cards.GridCard;
-import edu.eplex.AsyncEvolution.cppn.implementations.AsyncArtifactToCPPN;
-import edu.eplex.AsyncEvolution.cppn.implementations.AsyncCPPNOutputToCard;
 import edu.eplex.AsyncEvolution.cppn.implementations.Filters.AsyncArtifactToCPPNFilter;
 import edu.eplex.AsyncEvolution.cppn.implementations.Filters.AsyncCPPNToFilterCard;
 import edu.eplex.AsyncEvolution.interfaces.PhenotypeCache;
+import edu.eplex.androidsocialclient.MainUI.IECFilters;
 import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFilterIEC;
 import eplex.win.FastNEATJava.utils.NeatParameters;
 import eplex.win.winBackbone.Artifact;
@@ -41,19 +39,19 @@ import eplex.win.winBackbone.ArtifactOffspringGenerator;
                 AsyncLocalIEC.class,
                 AsyncArtifactToCard.class}
 )
-public class FilterAsyncLocalIECModule {
+public class FilterEvolutionInjectModule {
 
     Activity activity;
     NeatParameters np;
     List<NEATArtifact> seeds;
-    public FilterAsyncLocalIECModule(Activity activity, NeatParameters np, List<NEATArtifact> seeds)
+    public FilterEvolutionInjectModule(Activity activity, NeatParameters np, List<NEATArtifact> seeds)
     {
         this.np = np;
         this.activity = activity;
         this.seeds = seeds;
     }
 
-    FilterAsyncLocalIECModule(List<NEATArtifact> seeds){
+    FilterEvolutionInjectModule(List<NEATArtifact> seeds){
         this.seeds = seeds;
     }
 

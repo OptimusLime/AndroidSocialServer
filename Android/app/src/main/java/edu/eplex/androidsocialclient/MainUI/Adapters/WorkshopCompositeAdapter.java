@@ -121,7 +121,7 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
     {
         imageView.setImageResource(R.drawable.ic_action_emo_tongue_black);
 
-        BitmapCacheManager.getInstance().lazyLoadBitmap(url, width, new BitmapCacheManager.LazyLoadedCallback() {
+        BitmapCacheManager.getInstance().lazyLoadBitmap(url, width, false, new BitmapCacheManager.LazyLoadedCallback() {
             @Override
             public void imageLoaded(String url, Bitmap bitmap) {
                 imageView.setImageBitmap(bitmap);

@@ -1,12 +1,19 @@
 package edu.eplex.androidsocialclient.MainUI.Filters;
 
+import android.content.Context;
+import android.content.Intent;
+
 import com.squareup.otto.Produce;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Filter;
 
 import dagger.Provides;
+import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFilterIEC;
 import edu.eplex.androidsocialclient.MainUI.Main.Tabs.TabFlowManager;
 import eplex.win.FastNEATJava.utils.cuid;
 
@@ -56,6 +63,8 @@ public class FilterManager {
     }
 
 
+
+
     static final String BASE_DEFAULT_NAME = "Filter ";
     static final int BASE_DEFAULT_NUMBER_ADD = 1;
 
@@ -67,7 +76,9 @@ public class FilterManager {
 
     }
 
+    FilterComposite lastEditedFilter;
     ArrayList<FilterComposite> existingFilters = new ArrayList<FilterComposite>();
+    Map<String, FilterComposite> filterMap = new HashMap<>();
 
     private static FilterManager instance = null;
 
@@ -88,6 +99,18 @@ public class FilterManager {
     }
 
 
+    //get it yo.
+    public FilterComposite getFilter(String filterID)
+    {
+        return this.filterMap.get(filterID);
+    }
+    public FilterComposite getLastEditedFilter()
+    {
+        return lastEditedFilter;
+    }
+
+
+
     //Add a new composite filter -- passing in the image to work with
     public FilterComposite createNewComposite(String imageURL) throws Exception {
         //lets make a new filter -- that's what they want!
@@ -95,6 +118,7 @@ public class FilterManager {
 
         //add filter to existing -- it's in there now!
         this.existingFilters.add(filter);
+        this.filterMap.put(filter.getUniqueID(), filter);
 
         //added a filter -- alter our followers -- they're so needy
         ChangeCompositeFilterEvent changeEvent = new ChangeCompositeFilterEvent(filter, FilterEventAction.Add);
@@ -105,6 +129,26 @@ public class FilterManager {
         //all done! Send it back if you must.
         return filter;
     }
+
+    public void deleteCompositeFilter(String filterWID) throws Exception {
+
+        FilterComposite filter = this.filterMap.get(filterWID);
+        deleteCompositeFilter(filter);
+    }
+    public void deleteCompositeFilter(FilterComposite filter) throws Exception {
+
+        //remove the filter please
+        this.existingFilters.remove(filter);
+        this.filterMap.remove(filter.getUniqueID());
+
+        //now we must update our filter event
+        //removed a filter -- alter our followers -- they're so needy
+        ChangeCompositeFilterEvent changeEvent = new ChangeCompositeFilterEvent(filter, FilterEventAction.Remove);
+
+        //goodbyeyoudevil
+        TabFlowManager.getInstance().getUiEventBus().post(changeEvent);
+    }
+
 
     @Produce
     public ExistingCompositeFilterEvent currentFilterList()
