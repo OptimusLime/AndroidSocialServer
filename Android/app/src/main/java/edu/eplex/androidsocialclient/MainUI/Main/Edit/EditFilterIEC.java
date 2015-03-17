@@ -135,7 +135,7 @@ public class EditFilterIEC extends Fragment {
                         addMoreOffspring(6, null);
                         return null;
                     }
-                });
+                }, Task.UI_THREAD_EXECUTOR);
     }
 
 
@@ -180,8 +180,6 @@ public class EditFilterIEC extends Fragment {
             setSelectedFilterAsMainImage(selectedFilter);
     }
 
-
-
     void initializeUI(FragmentActivity activity)
     {
         Display display = getActivity().getWindowManager().getDefaultDisplay();
@@ -201,7 +199,7 @@ public class EditFilterIEC extends Fragment {
         if(filterImageAdapter == null)
             filterImageAdapter = new EditIECCompositeAdapter(activity, new ArrayList<FilterComposite>(), new EditIECCompositeAdapter.OnFilterSelected() {
                 @Override
-                public void longSelectFilteredImage(FilterComposite selected, int ix) {
+                public void longSelectFilteredImage(final FilterComposite selected, int ix) {
                     //TIME FOR EVOLUTION!
                     setSelectedFilterAsMainImage(selected);
 
@@ -216,7 +214,12 @@ public class EditFilterIEC extends Fragment {
 
                     //go get more please!
                     //we keep around our original selection -- kind of like elitism
-                    addMoreOffspring(5,selected);
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            addMoreOffspring(5, selected);
+                        }
+                    });
                 }
 
                 @Override

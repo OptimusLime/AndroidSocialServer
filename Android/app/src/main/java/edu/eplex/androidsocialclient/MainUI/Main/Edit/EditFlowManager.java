@@ -288,9 +288,9 @@ public class EditFlowManager {
                                         else
                                             view.setImageBitmap(filterComposite.getFilteredThumbnailBitmap());
 
-                                        return null;
+                                        return task.getResult();
                                     }
-                                }, Task.UI_THREAD_EXECUTOR).continueWith(afterSetImageContinuation);
+                                }, Task.UI_THREAD_EXECUTOR).continueWith(afterSetImageContinuation, Task.UI_THREAD_EXECUTOR);
                     }
 
                     @Override
@@ -304,7 +304,7 @@ public class EditFlowManager {
                             public FilterComposite call() throws Exception {
                                 return null;
                             }
-                        }).continueWith(afterSetImageContinuation);
+                        }).continueWith(afterSetImageContinuation, Task.UI_THREAD_EXECUTOR);
                     }
                 });
     }

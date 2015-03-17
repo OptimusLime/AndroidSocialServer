@@ -6,13 +6,28 @@
     android:gravity="center"
     android:layout_gravity="center"
     >
-
-    <ImageView
+    <FrameLayout
+        android:id="@+id/app_edit_thumbnail_image_view_holder"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_margin="7dp"
-        android:id="@+id/app_edit_iec_individual_image_thumb"/>
+        android:layout_margin="@dimen/app_edit_iec_thumbnail_margin"
+        >
+
+        <ImageView
+            android:id="@+id/app_edit_iec_individual_image_thumb"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="@dimen/app_edit_iec_thumbnail_rounded_corner"
+            android:src="@drawable/ic_action_emo_tongue_black"
+            />
+
+        <ImageView
+            android:src="@drawable/rounded_image_shape_iec"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
 
     <!--<LinearLayout-->
         <!--android:layout_width="wrap_content"-->

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#00ffffff" />
+    <padding android:left="@dimen/app_edit_iec_thumbnail_rounded_corner"
+        android:top="@dimen/app_edit_iec_thumbnail_rounded_corner"
+        android:right="@dimen/app_edit_iec_thumbnail_rounded_corner"
+        android:bottom="@dimen/app_edit_iec_thumbnail_rounded_corner" />
+    <corners android:radius="@dimen/app_edit_iec_thumbnail_rounded_corner_2x" />
+    <stroke android:width="@dimen/app_edit_iec_thumbnail_rounded_corner" android:color="#ff000000" />
+</shape>

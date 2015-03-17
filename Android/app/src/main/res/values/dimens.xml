@@ -57,6 +57,15 @@
     <!-- Workshop thumbnails in the preview - how big??? -->
     <!--<integer name="workshop_preview_thumbnail_size">150</integer>-->
     <dimen name="workshop_preview_thumbnail_size">80dp</dimen>
+
+
+    <!-- Edit IEC -->
     <dimen name="app_edit_iec_thumbnail_size">80dp</dimen>
+    <dimen name="app_edit_iec_scroll_thumbs_size">108dp</dimen>
+    <dimen name="app_edit_iec_thumbnail_rounded_corner">3dp</dimen>
+    <dimen name="app_edit_iec_thumbnail_rounded_corner_2x">6dp</dimen>
+    <dimen name="app_edit_iec_thumbnail_margin">3dp</dimen>
+
+
 
 </resources>

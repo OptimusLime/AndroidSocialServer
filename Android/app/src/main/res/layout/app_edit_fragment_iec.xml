@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/primary_app_blue"
     android:orientation="vertical">
 
     <ImageView
@@ -15,9 +16,8 @@
 
     <it.sephiroth.android.library.widget.HListView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/edit_iec_filter_main_image"
-        android:background="@color/primary_app_blue"
+        android:layout_height="@dimen/app_edit_iec_scroll_thumbs_size"
+        android:layout_alignParentBottom="true"
         android:id="@+id/edit_iec_filter_hlist">
     </it.sephiroth.android.library.widget.HListView>
 

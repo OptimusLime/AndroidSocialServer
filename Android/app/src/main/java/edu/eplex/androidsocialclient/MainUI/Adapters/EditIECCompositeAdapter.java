@@ -9,9 +9,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Filter;
 
@@ -28,6 +30,9 @@ import edu.eplex.androidsocialclient.R;
 public class EditIECCompositeAdapter extends ArrayAdapter<FilterComposite> {
     protected Context mContext;
     protected OnFilterSelected filterSelection;
+
+
+
     public interface OnFilterSelected
     {
         void selectFilteredImage(FilterComposite filter, int ix);
@@ -51,7 +56,7 @@ public class EditIECCompositeAdapter extends ArrayAdapter<FilterComposite> {
         LayoutInflater mInflater = (LayoutInflater)this.mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
         //grab our iamge for this position
-        FilterComposite filter = this.getItem(position);
+        final FilterComposite filter = this.getItem(position);
 
         //whaaaaaaaat
         Bitmap mImage = filter.getFilteredThumbnailBitmap();
@@ -67,16 +72,23 @@ public class EditIECCompositeAdapter extends ArrayAdapter<FilterComposite> {
 
         ImageView bview = (ImageView) view.findViewById(R.id.app_edit_iec_individual_image_thumb);
 
+        FrameLayout fl = (FrameLayout)view.findViewById(R.id.app_edit_thumbnail_image_view_holder);
+
         //set the size for our image view plz
         int widthHeight = (int)mContext.getResources().getDimension(R.dimen.app_edit_iec_thumbnail_size);
 
-        bview.getLayoutParams().width = widthHeight;
-        bview.getLayoutParams().height = widthHeight;
+        fl.getLayoutParams().width = widthHeight;
+        fl.getLayoutParams().height = widthHeight;
 
         if (mImage != null && !mImage.isRecycled()) {
             bview.setImageBitmap(mImage);
-            syncDecrementLoadCount();
+            syncDecrementLoadCount(filter.getUniqueID());
         } else {
+
+            bview.setImageResource(R.drawable.ic_action_emo_tongue_white);
+            bview.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+
+            final EditIECCompositeAdapter adapter = this;
 
             //otherwise, you need to load the thumbnail then filter it
             EditFlowManager.getInstance().lazyLoadFilterIntoImageView(mContext, filter, widthHeight, widthHeight, true, bview, new Continuation<FilterComposite, Void>() {
@@ -84,7 +96,11 @@ public class EditIECCompositeAdapter extends ArrayAdapter<FilterComposite> {
                 public Void then(Task<FilterComposite> task) throws Exception {
 
                     //when we're done loading, drop it down plz
-                    syncDecrementLoadCount();
+                    syncDecrementLoadCount(filter.getUniqueID());
+
+                    //HACK -- get rid of junk genomes if they fail for whatever reason
+                    if (task.getResult() == null)
+                        adapter.remove(filter);
 
                     return null;
                 }
@@ -97,11 +113,15 @@ public class EditIECCompositeAdapter extends ArrayAdapter<FilterComposite> {
         return view;
     }
 
-    void syncDecrementLoadCount()
+    void syncDecrementLoadCount(String filterID)
     {
-        synchronized (inProgress) {
-            loadCount--;
-            if(loadCount == 0)
+        synchronized (filtersInProgress) {
+
+            filtersInProgress.remove(filterID);
+
+            Log.d("EDITIECCOMPOSITEADAPTER", "LoadCount: " + filtersInProgress.size());
+
+            if(filtersInProgress.size() == 0)
                 filterSelection.finishedLoadingAndFiltering();
         }
     }
@@ -125,8 +145,8 @@ public class EditIECCompositeAdapter extends ArrayAdapter<FilterComposite> {
         });
     }
 
-    final Object inProgress = new Object();
-    int loadCount = 0;
+//    final Object inProgress = new Object();
+    final HashSet<String> filtersInProgress = new HashSet<>();
 
     @Override
     public void add(FilterComposite object) {
@@ -138,8 +158,11 @@ public class EditIECCompositeAdapter extends ArrayAdapter<FilterComposite> {
     @Override
     public void addAll(Collection<? extends FilterComposite> collection) {
 
-        synchronized (inProgress) {
-            loadCount += collection.size();
+        synchronized (filtersInProgress) {
+            for(FilterComposite filter : collection)
+                filtersInProgress.add(filter.getUniqueID());
+
+//            loadCount += collection.size();
         }
         super.addAll(collection);
     }
