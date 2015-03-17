@@ -30,8 +30,6 @@
 
     </FrameLayout>
 
-
-
         <TextView
             android:id="@+id/workshop_preview_filter_text_name"
             android:textSize="@dimen/workshop_preview_text_list"
@@ -42,15 +40,33 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
-    <ImageView
-        android:id="@+id/workshop_preview_begin_icon_view"
+    <LinearLayout
+        android:id="@+id/workshop_preview_actions_holder"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true"
-        android:src="@drawable/ic_action_process_start_black"
-        android:layout_margin="@dimen/workshop_preview_image_margin"
-        />
+        android:orientation="horizontal"
+        >
+        <ImageView
+            android:id="@+id/workshop_preview_action_icon_edit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_action_edit_black"
+            android:layout_margin="@dimen/workshop_preview_image_margin"
+            />
+
+
+        <ImageView
+            android:id="@+id/workshop_preview_action_icon_publish"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_action_process_start_black"
+            android:layout_margin="@dimen/workshop_preview_image_margin"
+            />
+    </LinearLayout>
+
+
 
 </RelativeLayout>

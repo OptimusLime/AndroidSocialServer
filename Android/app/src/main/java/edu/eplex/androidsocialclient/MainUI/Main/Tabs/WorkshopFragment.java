@@ -58,13 +58,29 @@ public class WorkshopFragment extends Fragment implements WorkshopCompositeAdapt
         }
     }
 
+    void editFilter(FilterComposite filter)
+    {
+        //we start our new edit activity!
+        getActivity().startActivity(EditFlowManager.getInstance().createEditIntent(getActivity(), filter));
+    }
+    @Override
+    public void publishCompositeFilter(FilterComposite filter) {
+        //pub up the comp
+
+        //we want to publish -- for now, be aware of it
+        Toast.makeText(getActivity(), "Looking to publish: " + filter.getUniqueID(), Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void editClickCompositeFilter(FilterComposite filter) {
+        //edit up the stuff comp
+        editFilter(filter);
+    }
 
     @Override
     public void selectCompositeFilter(FilterComposite filter, int position) {
         //we select a filter yo! What do?
-
-        //we start our new edit activity!
-        getActivity().startActivity(EditFlowManager.getInstance().createEditIntent(getActivity(), filter));
+        editFilter(filter);
     }
 
     @Override

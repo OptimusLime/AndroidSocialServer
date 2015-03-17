@@ -49,6 +49,8 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
 
     public interface OnCompositeFilterSelected
     {
+        void publishCompositeFilter(FilterComposite filter);
+        void editClickCompositeFilter(FilterComposite filter);
         void selectCompositeFilter(FilterComposite filter, int position);
         void longSelectCompositeFilter(FilterComposite filter, int position);
     }
@@ -138,9 +140,29 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
         });
     }
 
-    void setClickListener(View bview, final FilterComposite filter, final int ix)
+
+
+    void setClickListener(View rootView, final FilterComposite filter, final int ix)
     {
-        bview.setOnClickListener(new View.OnClickListener() {
+
+        View editView = rootView.findViewById(R.id.workshop_preview_action_icon_edit);
+        View publishView = rootView.findViewById(R.id.workshop_preview_action_icon_publish);
+
+        editView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                filterSelection.editClickCompositeFilter(filter);
+            }
+        });
+
+        publishView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                filterSelection.publishCompositeFilter(filter);
+            }
+        });
+
+        rootView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //set as the main image asynchronously!
@@ -148,7 +170,7 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
             }
         });
 
-        bview.setOnLongClickListener(new View.OnLongClickListener() {
+        rootView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
                 filterSelection.longSelectCompositeFilter(filter, ix);
@@ -184,7 +206,7 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
 //        File f = new File(url);
 
         ImageView imagePreview = (ImageView)view.findViewById(R.id.workshop_preview_image_view);
-        ImageView beginIconView = (ImageView)view.findViewById(R.id.workshop_preview_begin_icon_view);
+//        ImageView beginIconView = (ImageView)view.findViewById(R.id.workshop_preview_action_icon_edit);
         FrameLayout relativeLayout = (FrameLayout)view.findViewById(R.id.workshop_preview_image_view_holder);
 
         TextView textView = (TextView)view.findViewById(R.id.workshop_preview_filter_text_name);
@@ -192,10 +214,10 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
 
         int thumbnailSize = (int)mContext.getResources().getDimension(R.dimen.workshop_preview_thumbnail_size);
 
-        beginIconView.getLayoutParams().width = 70;
-        beginIconView.getLayoutParams().height = 70;
-        beginIconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        beginIconView.setImageResource(R.drawable.ic_action_process_start_black);
+//        beginIconView.getLayoutParams().width = 70;
+//        beginIconView.getLayoutParams().height = 70;
+//        beginIconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+//        beginIconView.setImageResource(R.drawable.ic_action_process_start_black);
 
         relativeLayout.getLayoutParams().width = thumbnailSize;
         relativeLayout.getLayoutParams().height = thumbnailSize;
@@ -208,8 +230,12 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
 //        if(Math.random() < .5)
 //            url += ".png";
 
+        Bitmap filterThumb = filter.getFilteredThumbnailBitmap();
 
-        EditFlowManager.getInstance().lazyLoadFilterIntoImageView(mContext, filter, thumbnailSize, thumbnailSize, true, imagePreview);
+        if(filterThumb != null && !filterThumb.isRecycled())
+            imagePreview.setImageBitmap(filterThumb);
+        else
+            EditFlowManager.getInstance().lazyLoadFilterIntoImageView(mContext, filter, thumbnailSize, thumbnailSize, true, imagePreview);
         //if we have it on hand, set it up plz
 //        Bitmap filterThumb = filter.getFilteredThumbnailBitmap();
 

@@ -43,7 +43,8 @@
         <LinearLayout
             android:id="@+id/app_edit_iec_action_button_back"
             android:layout_weight="1"
-            android:gravity="center"
+            android:gravity="center_vertical"
+            android:layout_marginLeft="20dp"
             android:background="@drawable/app_edit_action_button"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -52,21 +53,40 @@
                 android:layout_width="@dimen/app_edit_iec_action_back_size"
             android:layout_height="@dimen/app_edit_iec_action_back_size"
             android:src="@drawable/ic_action_arrow_left_white"/>
+
+            <TextView
+                android:id="@+id/app_edit_iec_action_button_back_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:textColor="@color/app_bottom_tab_icon"
+                android:text="Back"/>
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/app_edit_iec_action_button_complete"
             android:layout_weight="1"
-            android:gravity="center"
+            android:gravity="right|center_vertical|end"
             android:background="@drawable/app_edit_action_button"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
+            <TextView
+                android:id="@+id/app_edit_iec_action_button_complete_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:layout_marginEnd="10dp"
+                android:textColor="@color/app_bottom_tab_icon"
+                android:text="Save"/>
+
             <ImageView
                 android:layout_gravity="center_vertical"
+
                 android:layout_width="@dimen/app_edit_iec_action_complete_size"
                 android:layout_height="@dimen/app_edit_iec_action_complete_size"
-                android:src="@drawable/ic_action_publish_white"/>
+                android:layout_marginRight="20dp"
+                android:src="@drawable/ic_action_save_white"/>
         </LinearLayout>
     </LinearLayout>
 

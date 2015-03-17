@@ -2,6 +2,7 @@ package edu.eplex.androidsocialclient.MainUI.Main.Edit;
 
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -12,6 +13,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -59,6 +61,13 @@ public class EditFilterIEC extends Fragment {
 
     @InjectView(R.id.edit_iec_filter_hlist)
     public HListView horizontalScroll;
+
+    @InjectView(R.id.app_edit_iec_action_button_back_text)
+    public TextView backButtonText;
+
+    @InjectView(R.id.app_edit_iec_action_button_complete_text)
+    public TextView saveButtonText;
+
 
     //our evolution object
     @Inject
@@ -252,6 +261,10 @@ public class EditFilterIEC extends Fragment {
         filterImage.getLayoutParams().height = mainImageDesiredWidthHeight;
         filterImage.setImageResource(R.drawable.ic_action_emo_tongue_white);
         filterImage.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+
+        Typeface typeFace= Typeface.createFromAsset(getActivity().getAssets(), "fonts/android.ttf");
+        backButtonText.setTypeface(typeFace);
+        saveButtonText.setTypeface(typeFace);
 
         //no images to start with, we will get those asynchronously
         if(filterImageAdapter == null)
