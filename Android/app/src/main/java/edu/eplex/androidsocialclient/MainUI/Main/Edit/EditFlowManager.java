@@ -40,6 +40,9 @@ import eplex.win.FastNEATJava.utils.NeatParameters;
  */
 public class EditFlowManager {
 
+    //all done, we call this code to know it was us -- i made this up randomly 2093 -- seemed awesome.
+    public static int EDIT_SCREEN_REQUEST_CODE = 2093;
+
     //what tab are we??? How do the tabs behave for switching?
     public enum EditID
     {
@@ -131,6 +134,7 @@ public class EditFlowManager {
         intent.putExtras(conData);
         activity.setResult(FragmentActivity.RESULT_OK, intent);
         activity.finish();
+//        activity.finishActivity(EDIT_SCREEN_REQUEST_CODE);
     }
     public void cancelIECFilter(FragmentActivity activity)
     {
@@ -203,9 +207,6 @@ public class EditFlowManager {
         //-- for now
         np.postSexualMutations = 15;
         np.postAsexualMutations = 15;
-
-        //initialize (only happens once no worries)
-        NEATInitializer.InitializeActivationFunctions();
 
         List<FilterArtifact> seedArtifacts = new ArrayList<>();
 

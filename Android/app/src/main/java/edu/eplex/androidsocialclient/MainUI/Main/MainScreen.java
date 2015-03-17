@@ -10,6 +10,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 
+import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
 import edu.eplex.androidsocialclient.MainUI.Main.Tabs.SelectPictureFragment;
 import edu.eplex.androidsocialclient.MainUI.Main.Tabs.TabFlowManager;
 import edu.eplex.androidsocialclient.MainUI.TakePictureFragment;
@@ -36,6 +37,9 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //start loading things in -- async please
+        FilterManager.getInstance().asyncLoadFiltersFromFile(this);
 
         //make sure to set our tab activity as us on create!
         TabFlowManager.getInstance().setTabActivity(this);
@@ -104,8 +108,9 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        FilterManager.getInstance().asyncSaveFiltersToFile(this);
     }
 
 

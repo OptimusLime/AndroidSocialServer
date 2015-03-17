@@ -22,6 +22,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.afollestad.materialdialogs.Alignment;
 import com.afollestad.materialdialogs.MaterialDialog;
@@ -55,7 +56,7 @@ public class UserSettingsFragment extends Fragment {
             new TitleActionPair("ACCOUNT"),
             new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
             new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
-            new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
+            new TitleActionPair("Click Me Ken", ButtonActionEnum.KenClick),
             new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
             new TitleActionPair("Log Out", ButtonActionEnum.LogOff),
             new TitleActionPair("Wonky"),
@@ -81,6 +82,7 @@ public class UserSettingsFragment extends Fragment {
     private enum ButtonActionEnum
     {
         LogOff,
+        KenClick,
         Nothing
     }
     private class TitleActionPair{
@@ -154,6 +156,9 @@ public class UserSettingsFragment extends Fragment {
                         //logging off please! Warn the user, then confirm logoff
                         warnUserBeforeLogout();
 
+                        break;
+                    case KenClick:
+                        Toast.makeText(getActivity(), "I was wondering if you would notice.", Toast.LENGTH_SHORT).show();
                         break;
                 }
 

@@ -2,6 +2,8 @@ package edu.eplex.androidsocialclient.MainUI.Filters;
 
 import android.graphics.Bitmap;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
@@ -35,18 +37,22 @@ public class FilterComposite {
 
     //what's our unique identifier? So we can keep a hash map and be referenced quickly --
     //this will never change -- readable name can be changed though
-    String uuid;
+    String uniqueID;
 
     //How are we cropping the image? What's the base image right now?
+    @JsonIgnore
     Bitmap currentBitmap;
 
     //what is our filtered version? Applied to the current bitmap
+    @JsonIgnore
     Bitmap filteredBitmap;
 
     //this is what the thumbnail looks like -- it's the unfiltered version
+    @JsonIgnore
     Bitmap thumbnailBitmap;
 
     //this is our thumbnail, but it's a filtered version -- useful for browsing quickly
+    @JsonIgnore
     Bitmap filteredThumbnailBitmap;
 
     public Bitmap getThumbnailBitmap()
@@ -73,19 +79,21 @@ public class FilterComposite {
     {
         return imageURL;
     }
-
+    public void setImageURL(String imageURL){this.imageURL = imageURL;}
     public String getFilteredImageURL()
     {
         return filteredImageURL;
     }
-
+    public void setFilteredImageURL(String filteredImageURL){this.filteredImageURL = filteredImageURL;}
+    public void setReadableName(String readableName){this.readableName = readableName;}
     public String getReadableName()
     {
         return readableName;
     }
+    public void setUuid(String uniqueID){this.uniqueID  = uniqueID;}
     public String getUniqueID()
     {
-        return uuid;
+        return uniqueID;
     }
 
 
@@ -109,6 +117,7 @@ public class FilterComposite {
         });
     }
 
+    public FilterComposite(){}
     public FilterComposite(String imageURL, String uniqueID, String readableName)
     {
         //create an empty artifact plz! Defaults galore!
@@ -133,7 +142,6 @@ public class FilterComposite {
 
         //then save the new image as our filtered image
         this.filteredBitmap = bm;
-
     }
     public void setCurrentBitmap(Bitmap bm)
     {
@@ -142,7 +150,6 @@ public class FilterComposite {
     public void setThumbnailBitmap(Bitmap bm){this.thumbnailBitmap = bm;}
     public void setFilteredThumbnailBitmap(Bitmap bm){this.filteredThumbnailBitmap = bm;}
 
-
     //set our internal strings and what have you
     void setClassConstruction(String imageURL, FilterArtifact artifact, String uniqueID, String readableName)
     {
@@ -150,13 +157,14 @@ public class FilterComposite {
         this.imageURL = imageURL;
         //dupe it up when first created
         this.filteredImageURL = imageURL;
-        this.uuid = uniqueID;
+        this.uniqueID = uniqueID;
         this.filterArtifact = artifact;
         this.readableName = readableName;
 
         frozenArtifactGenomes = new HashSet<>();
     }
 
+    public void setFrozenArtifactGenomes(HashSet<Integer> frozenArtifactGenomes){this.frozenArtifactGenomes = frozenArtifactGenomes;}
     public HashSet<Integer> getFrozenArtifactGenomes()
     {
         return frozenArtifactGenomes;

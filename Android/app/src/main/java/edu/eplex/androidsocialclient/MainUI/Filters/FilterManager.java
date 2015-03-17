@@ -2,18 +2,35 @@ package edu.eplex.androidsocialclient.MainUI.Filters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.support.v4.app.FragmentActivity;
 
 import com.facebook.internal.PlatformServiceClient;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.squareup.otto.Produce;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.logging.Filter;
 
+import bolts.Continuation;
+import bolts.Task;
 import dagger.Provides;
+import edu.eplex.AsyncEvolution.main.NEATInitializer;
 import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFilterIEC;
 import edu.eplex.androidsocialclient.MainUI.Main.Tabs.TabFlowManager;
 import eplex.win.FastNEATJava.utils.cuid;
@@ -63,9 +80,6 @@ public class FilterManager {
         }
     }
 
-
-
-
     static final String BASE_DEFAULT_NAME = "Filter ";
     static final int BASE_DEFAULT_NUMBER_ADD = 1;
 
@@ -74,7 +88,6 @@ public class FilterManager {
     String nextReadableName()
     {
         return BASE_DEFAULT_NAME + (existingFilters.size() + BASE_DEFAULT_NUMBER_ADD);
-
     }
 
     FilterComposite lastEditedFilter;
@@ -85,6 +98,10 @@ public class FilterManager {
 
     protected FilterManager() {
         // Exists only to defeat instantiation.
+
+        //initialize (only happens once no worries)
+        //must be done early on before we mess with any filters --otherwise we cannot decode
+        NEATInitializer.InitializeActivationFunctions();
 
         //we must subscribe to the flow manager
 
@@ -115,12 +132,13 @@ public class FilterManager {
     }
 
 
-
     //Add a new composite filter -- passing in the image to work with
-    public FilterComposite createNewComposite(String imageURL) throws Exception {
+    public FilterComposite createNewComposite(Context mContext, String imageURL) throws Exception {
         //lets make a new filter -- that's what they want!
         FilterComposite filter = new FilterComposite(imageURL, cuid.getInstance().generate(), nextReadableName());
-
+        return createNewComposite(mContext, filter, true);
+    }
+    public FilterComposite createNewComposite(Context mContext, FilterComposite filter, boolean shouldSave) throws Exception {
         //add filter to existing -- it's in there now!
         this.existingFilters.add(filter);
         this.filterMap.put(filter.getUniqueID(), filter);
@@ -130,6 +148,9 @@ public class FilterManager {
 
         //fuckyourface
         TabFlowManager.getInstance().getUiEventBus().post(changeEvent);
+
+        if(shouldSave)
+            asyncSaveFiltersToFile(mContext);
 
         //all done! Send it back if you must.
         return filter;
@@ -161,6 +182,63 @@ public class FilterManager {
         return new ExistingCompositeFilterEvent(this.existingFilters);
     }
 
+    final static String FILTER_MAP_SAVE_LOCATION = "SavedFilterMap";
+
+    public Task<Void> asyncSaveFiltersToFile(final Context mContext)
+    {
+        return Task.call(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+
+                final ByteArrayOutputStream out = new ByteArrayOutputStream();
+                final ObjectMapper mapper = new ObjectMapper();
+
+                mapper.writeValue(out, filterMap.values());
+
+                FileOutputStream fos = mContext.openFileOutput(FILTER_MAP_SAVE_LOCATION, Context.MODE_PRIVATE);
+                fos.write(out.toByteArray());
+                fos.close();
+
+                return null;
+            }
+        });
+    }
+
+    public Task<Void> asyncLoadFiltersFromFile(final Context mContext)
+    {
+        return Task.call(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+
+                ObjectMapper mapper = new ObjectMapper();
+
+                Collection<FilterComposite> filterMap = mapper.readValue(
+                        new InputStreamReader(mContext.openFileInput(FILTER_MAP_SAVE_LOCATION)),
+                        new TypeReference<Collection<FilterComposite>>(){});
+
+                FilterManager fm = FilterManager.getInstance();
+
+                for (FilterComposite filter : filterMap) {
+                    //create a new object -- do the normal signaling to listeners here
+                    fm.createNewComposite(mContext, filter, false);
+                }
+
+//                    Iterator it = filterMap.entrySet().iterator();
+//                    while (it.hasNext()) {
+//                        Map.Entry pair = (Map.Entry)it.next();
+//
+//                        //create a new object -- do the normal signaling to listeners here
+//                        fm.createNewComposite(mContext, (FilterComposite)pair.getValue(), false);
+//
+//                        it.remove(); // avoids a ConcurrentModificationException
+//                    }
+
+
+                return null;
+            }
+        });
+
+    }
 
 
 

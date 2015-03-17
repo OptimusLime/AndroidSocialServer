@@ -61,7 +61,7 @@ public class WorkshopFragment extends Fragment implements WorkshopCompositeAdapt
     void editFilter(FilterComposite filter)
     {
         //we start our new edit activity!
-        getActivity().startActivity(EditFlowManager.getInstance().createEditIntent(getActivity(), filter));
+        getActivity().startActivityForResult(EditFlowManager.getInstance().createEditIntent(getActivity(), filter), EditFlowManager.EDIT_SCREEN_REQUEST_CODE);
     }
     @Override
     public void publishCompositeFilter(FilterComposite filter) {
