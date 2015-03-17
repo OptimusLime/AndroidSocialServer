@@ -1385,7 +1385,7 @@ public class NeatGenome
         {
             NodeLookupHelper lookup = nodeConnectionLookup.get(lookupKey);
 
-            if(lookup == null)
+            if(lookup == null || lookup.node == null || lookup.incoming == null || lookup.outgoing == null)
                 continue;
 
             // If we test the connection count with <=1 then we also pick up neurons that are in dead-end circuits,

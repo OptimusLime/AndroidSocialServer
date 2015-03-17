@@ -62,6 +62,9 @@
     <!-- Edit IEC -->
     <dimen name="app_edit_iec_thumbnail_size">80dp</dimen>
     <dimen name="app_edit_iec_scroll_thumbs_size">108dp</dimen>
+    <dimen name="app_edit_iec_options_size">40dp</dimen>
+    <dimen name="app_edit_iec_action_holder_size">40dp</dimen>
+
     <dimen name="app_edit_iec_thumbnail_rounded_corner">3dp</dimen>
     <dimen name="app_edit_iec_thumbnail_rounded_corner_2x">6dp</dimen>
     <dimen name="app_edit_iec_thumbnail_margin">3dp</dimen>

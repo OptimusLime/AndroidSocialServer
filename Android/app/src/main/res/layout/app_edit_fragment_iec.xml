@@ -13,12 +13,29 @@
         android:layout_gravity="center"
         android:id="@+id/edit_iec_filter_main_image"/>
 
+    <LinearLayout
+        android:id="@+id/edit_iec_filter_options_holder"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/app_edit_iec_options_size"
+        android:orientation="horizontal"
+        android:layout_below="@id/edit_iec_filter_main_image">
+    </LinearLayout>
 
     <it.sephiroth.android.library.widget.HListView
+        android:id="@+id/edit_iec_filter_hlist"
         android:layout_width="match_parent"
         android:layout_height="@dimen/app_edit_iec_scroll_thumbs_size"
-        android:layout_alignParentBottom="true"
-        android:id="@+id/edit_iec_filter_hlist">
+        android:layout_below="@id/edit_iec_filter_options_holder"
+        android:background="@color/app_edit_scroll_background"
+        >
     </it.sephiroth.android.library.widget.HListView>
+
+    <LinearLayout
+        android:id="@+id/edit_iec_filter_action_holder"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/app_edit_iec_action_holder_size"
+        android:orientation="horizontal"
+        android:layout_below="@id/edit_iec_filter_hlist">
+    </LinearLayout>
 
 </RelativeLayout>

@@ -53,10 +53,7 @@ public class EndlessGridScrollListener implements OnScrollListener, AbsHListView
 
             if (gridView.getLastVisiblePosition() + 1 == totalItemCount && !isLoading) {
                 isLoading = true;
-                if (hasMorePages && !isRefreshing) {
-                    isRefreshing = true;
-                    requestItemsCallback.requestItems(pageNumber);
-                }
+                requestRefresh();
             } else {
                 isLoading = false;
             }
@@ -65,10 +62,7 @@ public class EndlessGridScrollListener implements OnScrollListener, AbsHListView
         {
             if (listView.getLastVisiblePosition() + 1 == totalItemCount && !isLoading) {
                 isLoading = true;
-                if (hasMorePages && !isRefreshing) {
-                    isRefreshing = true;
-                    requestItemsCallback.requestItems(pageNumber);
-                }
+                requestRefresh();
             } else {
                 isLoading = false;
             }
@@ -86,10 +80,7 @@ public class EndlessGridScrollListener implements OnScrollListener, AbsHListView
 
             if (gridView.getLastVisiblePosition() + 1 == totalItemCount && !isLoading) {
                 isLoading = true;
-                if (hasMorePages && !isRefreshing) {
-                    isRefreshing = true;
-                    requestItemsCallback.requestItems(pageNumber);
-                }
+               requestRefresh();
             } else {
                 isLoading = false;
             }
@@ -98,10 +89,7 @@ public class EndlessGridScrollListener implements OnScrollListener, AbsHListView
         {
             if (listView.getLastVisiblePosition() + 1 == totalItemCount && !isLoading) {
                 isLoading = true;
-                if (hasMorePages && !isRefreshing) {
-                    isRefreshing = true;
-                    requestItemsCallback.requestItems(pageNumber);
-                }
+                requestRefresh();
             } else {
                 isLoading = false;
             }
@@ -109,11 +97,27 @@ public class EndlessGridScrollListener implements OnScrollListener, AbsHListView
 
     }
 
+    void requestRefresh()
+    {
+        if (hasMorePages && !isRefreshing) {
+            isRefreshing = true;
+            requestItemsCallback.requestItems(pageNumber);
+        }
+    }
+
     @Override
     public void onScrollStateChanged(AbsListView view, int scrollState) {
 
     }
 
+    public void requestMoreIfAtEnd()
+    {
+        if(this.isLoading)
+            requestRefresh();
+    }
+
+    public void forceRequestMore() { requestRefresh();}
+    public boolean isAtEnd() { return this.isLoading; }
     public void noMorePages() {
         this.hasMorePages = false;
     }

@@ -403,7 +403,9 @@ public class CPPN {
 
     public static final String THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_MAIN_END = "" +
             "\n" +
-            "    gl_FragColor = resultColor;\n" +
+//            "    gl_FragColor = resultColor;\n" +
+//            "    gl_FragColor = vec4(resultColor.xyz, centerColor.w);\n" +
+            "    gl_FragColor = vec4(resultColor.rgb, 1.0);\n" +
             "}";
 
     static String nodeFunctionName(int ix)

@@ -8,6 +8,7 @@ import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Display;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -42,6 +43,7 @@ import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
 import edu.eplex.androidsocialclient.R;
 import eplex.win.winBackbone.Artifact;
+import it.neokree.materialtabs.MaterialTab;
 import it.sephiroth.android.library.widget.HListView;
 
 /**
@@ -61,8 +63,9 @@ public class EditFilterIEC extends Fragment {
     @Inject
     AsyncInteractiveEvolution evolution;
 
-    boolean fetchingMoreFilters;
+//    boolean fetchingMoreFilters;
     boolean initialized = false;
+    boolean touchImage = false;
 
     //
     EditIECCompositeAdapter filterImageAdapter;
@@ -149,11 +152,11 @@ public class EditFilterIEC extends Fragment {
     //uhhhh.....
     void addMoreOffspring(int count, FilterComposite original)
     {
-        if(fetchingMoreFilters)
-            return;
+//        if(fetchingMoreFilters)
+//            return;
 
         //we get some cards, async style!
-        fetchingMoreFilters = true;
+//        fetchingMoreFilters = true;
 
         //create a bunch of children object, wouldn't you please?
         List<Artifact> offspring = evolution.createOffspring(count);
@@ -193,7 +196,7 @@ public class EditFilterIEC extends Fragment {
         filterImage.getLayoutParams().width = mainImageDesiredWidthHeight;
         filterImage.getLayoutParams().height = mainImageDesiredWidthHeight;
         filterImage.setImageResource(R.drawable.ic_action_emo_tongue_white);
-        filterImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        filterImage.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 
         //no images to start with, we will get those asynchronously
         if(filterImageAdapter == null)
@@ -208,6 +211,9 @@ public class EditFilterIEC extends Fragment {
 
                     evolution.clearParents();
                     evolution.selectParents(Arrays.asList(filterArtifact.wid()));
+
+                    //jump back to zero plz
+                    horizontalScroll.smoothScrollToPosition(0);
 
                     //clear it out, then fill it up!
                     filterImageAdapter.clear();
@@ -235,8 +241,13 @@ public class EditFilterIEC extends Fragment {
                     //all done with this batch, be prepared to fetch more!
                     mScrollListener.notifyMorePages();
 
+                    //request more if we're at the end of the scroll -- this would
+                    //stop the issue where the user attempts to scroll more while loading only to be denied
+                    //then have to go back and forth to load again
+                    mScrollListener.forceRequestMore();
+
                     //all done, thanks
-                    fetchingMoreFilters = false;
+//                    fetchingMoreFilters = false;
                 }
             });
 
@@ -264,6 +275,37 @@ public class EditFilterIEC extends Fragment {
 
         //make sure to add our infinite scroller here
         horizontalScroll.setOnScrollListener(mScrollListener);
+
+
+        filterImage.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+
+                if (event.getAction() == MotionEvent.ACTION_DOWN)
+                {
+                    //we want to display the chosen filter's original image
+
+                    touchImage = true;
+                    if(selectedFilter != null)
+                        filterImage.setImageBitmap(selectedFilter.getThumbnailBitmap());
+
+                    //need to return true if we handle the up action later
+                    return true;
+                }
+                else if(event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL)
+                {
+                    if(touchImage)
+                    {
+                        touchImage = false;
+                        if(selectedFilter != null)
+                            filterImage.setImageBitmap(selectedFilter.getFilteredBitmap());
+                    }
+
+                }
+
+                return false;
+            }
+        });
     }
 
 

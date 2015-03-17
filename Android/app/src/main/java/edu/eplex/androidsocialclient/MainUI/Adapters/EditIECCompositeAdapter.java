@@ -156,6 +156,14 @@ public class EditIECCompositeAdapter extends ArrayAdapter<FilterComposite> {
     }
 
     @Override
+    public void clear() {
+        super.clear();
+        synchronized (filtersInProgress) {
+            filtersInProgress.clear();
+        }
+    }
+
+    @Override
     public void addAll(Collection<? extends FilterComposite> collection) {
 
         synchronized (filtersInProgress) {
