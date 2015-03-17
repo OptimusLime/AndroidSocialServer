@@ -5,6 +5,10 @@
 
     <color name="app_edit_scroll_background">#99222222</color>
 
+    <color name="app_edit_action_press_1">#99222222</color>
+    <color name="app_edit_action_press_2">#DD323232</color>
+
+
     <color name="app_bottom_tab_accent">#F3F3F0</color>
     <color name="app_bottom_tab_icon">#FFFFFF</color>
     <color name="primary_app_light_blue">#26468A</color>

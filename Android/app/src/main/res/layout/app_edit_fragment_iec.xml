@@ -24,18 +24,52 @@
     <it.sephiroth.android.library.widget.HListView
         android:id="@+id/edit_iec_filter_hlist"
         android:layout_width="match_parent"
+        android:minHeight="@dimen/app_edit_iec_scroll_thumbs_size"
         android:layout_height="@dimen/app_edit_iec_scroll_thumbs_size"
         android:layout_below="@id/edit_iec_filter_options_holder"
         android:background="@color/app_edit_scroll_background"
         >
     </it.sephiroth.android.library.widget.HListView>
 
+
     <LinearLayout
         android:id="@+id/edit_iec_filter_action_holder"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/app_edit_iec_action_holder_size"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
         android:orientation="horizontal"
+        android:gravity="center"
         android:layout_below="@id/edit_iec_filter_hlist">
+
+        <LinearLayout
+            android:id="@+id/app_edit_iec_action_button_back"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:background="@drawable/app_edit_action_button"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <ImageView
+                android:layout_gravity="center_vertical"
+                android:layout_width="@dimen/app_edit_iec_action_back_size"
+            android:layout_height="@dimen/app_edit_iec_action_back_size"
+            android:src="@drawable/ic_action_arrow_left_white"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/app_edit_iec_action_button_complete"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:background="@drawable/app_edit_action_button"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:layout_gravity="center_vertical"
+                android:layout_width="@dimen/app_edit_iec_action_complete_size"
+                android:layout_height="@dimen/app_edit_iec_action_complete_size"
+                android:src="@drawable/ic_action_publish_white"/>
+        </LinearLayout>
     </LinearLayout>
+
+
 
 </RelativeLayout>

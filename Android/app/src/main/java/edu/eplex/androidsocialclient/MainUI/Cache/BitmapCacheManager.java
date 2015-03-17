@@ -125,6 +125,9 @@ public class BitmapCacheManager {
 
                     //need to remove the key -- sync it up
                     callbacksWaiting.remove(cachedURL);
+                    //make sure we don't keep a reference to any mutant objects that failed!
+                    allCached.remove(cachedURL);
+                    cachedBitmaps.remove(cachedURL);
                 }
 
                 //all done
@@ -183,17 +186,21 @@ public class BitmapCacheManager {
         {
             if(allCached.contains(cached))
             {
-                //exists -- just send it back later on the UI thread
-                Task.call(new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
+                Bitmap bm = cachedBitmaps.get(cached);
 
-                        callback.imageLoaded(url, cachedBitmaps.get(cached));
-                        return null;
-                    }
-                });
+                if(!bm.isRecycled()) {
+                    //exists -- just send it back later on the UI thread
+                    Task.call(new Callable<Object>() {
+                        @Override
+                        public Object call() throws Exception {
 
-                return;
+                            callback.imageLoaded(url, cachedBitmaps.get(cached));
+                            return null;
+                        }
+                    });
+
+                    return;
+                }
             }
         }
 

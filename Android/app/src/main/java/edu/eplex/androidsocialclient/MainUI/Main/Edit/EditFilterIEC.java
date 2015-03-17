@@ -30,6 +30,7 @@ import bolts.Continuation;
 import bolts.Task;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
+import butterknife.OnClick;
 import dagger.ObjectGraph;
 import edu.eplex.AsyncEvolution.asynchronous.implementation.AsyncLocalIEC;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncInteractiveEvolution;
@@ -73,6 +74,8 @@ public class EditFilterIEC extends Fragment {
     JsonNode iecParams;
     FilterComposite selectedFilter;
 
+    ArrayList<FilterComposite> allFilters = new ArrayList<>();
+
     int mainImageDesiredWidthHeight;
 
     public void setIecParams(JsonNode iecParams)
@@ -83,7 +86,6 @@ public class EditFilterIEC extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -102,6 +104,54 @@ public class EditFilterIEC extends Fragment {
         asyncInitializeIECandUI(getActivity());
 
         return rootView;
+    }
+
+    void clearEvolutionMemory(FilterComposite chosenFilter)
+    {
+        String chosen = chosenFilter == null ? "" : chosenFilter.getUniqueID();
+        for(int i=0; i < allFilters.size(); i++)
+        {
+            FilterComposite filter = allFilters.get(i);
+
+            String fUID = filter.getUniqueID();
+
+            //should we call the cache manager? Or just clear it out anyways
+            if(!fUID.equals(chosen))
+            {
+                filter.clearFilterBitmapMemory();
+            }
+
+//            if(!filter.getImageURL().equals(chosenFilter.getImageURL()))
+//                filter.clearFilterBitmapMemory();
+        }
+
+        filterImageAdapter.clear();
+    }
+    @OnClick(R.id.app_edit_iec_action_button_complete)
+    void completeClick()
+    {
+        FilterComposite originalFilter = FilterManager.getInstance().getLastEditedFilter();
+        clearEvolutionMemory(selectedFilter);
+
+        EditFlowManager.getInstance().finishIECFilter(getActivity(), originalFilter, selectedFilter);
+    }
+
+    @OnClick(R.id.app_edit_iec_action_button_back)
+    void backClick()
+    {
+        //clear everything including the selected filter
+        clearEvolutionMemory(null);
+
+        //we need to go back
+        EditFlowManager.getInstance().cancelIECFilter(getActivity());
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        //if we die, evolution bitmaps die with us
+        clearEvolutionMemory(null);
     }
 
     public void injectGraph(ObjectGraph graph) {
@@ -150,8 +200,7 @@ public class EditFilterIEC extends Fragment {
     //no... that wasn't it...
     //OH! Turning the artifacts into Card UI objects
     //uhhhh.....
-    void addMoreOffspring(int count, FilterComposite original)
-    {
+    void addMoreOffspring(int count, FilterComposite original) {
 //        if(fetchingMoreFilters)
 //            return;
 
@@ -162,25 +211,31 @@ public class EditFilterIEC extends Fragment {
         List<Artifact> offspring = evolution.createOffspring(count);
 
         List<FilterComposite> evolutionComposites = new ArrayList<>();
-        if(original != null)
+        if (original != null)
             evolutionComposites.add(original);
 
         FilterComposite currentFilter = FilterManager.getInstance().getLastEditedFilter();
-        for(int i=0; i < offspring.size(); i++)
-        {
+        for (int i = 0; i < offspring.size(); i++) {
             //create a composite using the original information from the filter
-            FilterComposite nComposite = new FilterComposite(currentFilter.getImageURL(), (FilterArtifact)offspring.get(i), currentFilter.getReadableName());
+            FilterComposite nComposite = new FilterComposite(currentFilter.getImageURL(), (FilterArtifact) offspring.get(i), currentFilter.getReadableName());
             evolutionComposites.add(nComposite);
+            allFilters.add(nComposite);
         }
 
         //then add to our dude all at once
         filterImageAdapter.addAll(evolutionComposites);
 
+        //jump back to zero plz -- we're doign next round of evo
+        if(original != null)
+            horizontalScroll.smoothScrollToPosition(0);
+
         //if we have no selected filter -- set it to be the first indiviual :)
-        if(selectedFilter == null)
+        if (selectedFilter == null)
             setSelectedFilterAsMainImage(evolutionComposites.get(0));
-        else
+        else {
             setSelectedFilterAsMainImage(selectedFilter);
+
+        }
     }
 
     void initializeUI(FragmentActivity activity)
@@ -211,9 +266,6 @@ public class EditFilterIEC extends Fragment {
 
                     evolution.clearParents();
                     evolution.selectParents(Arrays.asList(filterArtifact.wid()));
-
-                    //jump back to zero plz
-                    horizontalScroll.smoothScrollToPosition(0);
 
                     //clear it out, then fill it up!
                     filterImageAdapter.clear();

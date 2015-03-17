@@ -47,7 +47,7 @@ public class FilterSeedLoader implements AsyncSeedLoader{
     @Override
     public Task<List<Artifact>> asyncLoadSeeds(JsonNode params) {
 
-        if(customSeeds != null)
+        if(customSeeds != null && customSeeds.size() != 0)
             return Task.callInBackground(new Callable<List<Artifact>>() {
                 @Override
                 public List<Artifact> call() throws Exception {

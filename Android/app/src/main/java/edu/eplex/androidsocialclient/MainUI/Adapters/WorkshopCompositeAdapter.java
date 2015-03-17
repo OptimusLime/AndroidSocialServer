@@ -19,6 +19,7 @@ import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Transformation;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import java.util.concurrent.Callable;
 import bolts.Task;
 import edu.eplex.androidsocialclient.MainUI.Cache.BitmapCacheManager;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
+import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFlowManager;
 import edu.eplex.androidsocialclient.R;
 import edu.eplex.androidsocialclient.Utilities.FileUtilities;
 import eplex.win.FastNEATJava.utils.cuid;
@@ -121,7 +123,7 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
     {
         imageView.setImageResource(R.drawable.ic_action_emo_tongue_black);
 
-        BitmapCacheManager.getInstance().lazyLoadBitmap(url, width, false, new BitmapCacheManager.LazyLoadedCallback() {
+        BitmapCacheManager.getInstance().lazyLoadBitmap(url, width, true, new BitmapCacheManager.LazyLoadedCallback() {
             @Override
             public void imageLoaded(String url, Bitmap bitmap) {
                 imageView.setImageBitmap(bitmap);
@@ -154,6 +156,7 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
             }
         });
     }
+
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
@@ -199,12 +202,25 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
 //        imagePreview.getLayoutParams().width = 150;
 //        imagePreview.getLayoutParams().height = 150;
         imagePreview.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        imagePreview.setImageResource(R.drawable.ic_action_emo_tongue_black);
 
         //this should fail randomly MWAHAHAH
 //        if(Math.random() < .5)
 //            url += ".png";
 
-        lazyLoadBitmapFromCache(url, thumbnailSize, imagePreview);
+
+        EditFlowManager.getInstance().lazyLoadFilterIntoImageView(mContext, filter, thumbnailSize, thumbnailSize, true, imagePreview);
+        //if we have it on hand, set it up plz
+//        Bitmap filterThumb = filter.getFilteredThumbnailBitmap();
+
+        //make sure it's locked please -- is it recylced or not?
+
+//        synchronized (filterThumb) {
+//            if (filterThumb != null && !filterThumb.isRecycled())
+//                imagePreview.setImageBitmap(filterThumb);
+//            else
+//                lazyLoadBitmapFromCache(url, thumbnailSize, imagePreview);
+//        }
 
 //        Bitmap bm;
 //

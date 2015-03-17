@@ -1,0 +1,169 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var program = require('commander');
+var color = require('colors');
+var fs = require('fs-extra');
+var prompt = require('prompt');
+
+//lets do a copy request
+function list(val) {
+  return val.split(',');
+}
+
+program
+  .version('0.0.1')
+  .usage('[options] <file ...>')
+  .option('-n, --filename <value>','Filename')
+  .option('-o, --rename <value>','Rename the file to copy')
+  .option('-r, --resolutions <items>', 'A list', list)
+  .option('-x, --excluderesolutions <items>', 'What to exclude from defaults', list)
+  .option('-l, --copylocation <items>', 'copylocation')
+  .option('-c, --colors <items>', 'Colors to copy', list)
+  .parse(process.argv);
+
+if(!program.resolutions)
+{
+	program.resolutions = ["ldpi", "mdpi", "hdpi", "xhdpi", "xxhdpi"];
+}
+
+//remove some -- we don't need to copy all
+if(program.excluderesolutions)
+{
+	var excl = program.excluderesolutions;
+	var res = program.resolutions;
+	var resMap = {};
+	for(var i=0; i < res.length; i++)
+	{
+		resMap[res[i]] = true;
+	}
+	for(var i=0; i < excl.length; i++)
+	{
+		delete resMap[excl[i]];
+	}
+	program.resolutions = [];
+	for(var key in resMap)
+		program.resolutions.push(key);
+
+}
+
+if(!program.filename)
+{
+	console.error("Need to specify file name".red);
+	return;
+}
+if(!program.copylocation)
+{
+	console.error("Need to specify copy location".red);
+	return;
+}
+
+if(!program.colors)
+{
+	console.error("Need to specify colors to copy".red);
+	return;
+}
+
+
+var missing = [];
+var directories = [];
+
+for(var i=0; i < program.resolutions.length; i++)
+{
+
+	var dirName = program.copylocation + "drawable-" + program.resolutions[i];
+	var exists = fs.existsSync(dirName);
+	
+	directories.push(dirName);
+
+	if(!exists)
+		missing.push(program.resolutions[i]);
+}
+
+if(missing.length)
+{
+	console.error("All resolutions must exist!".red, missing);
+	return;
+}
+
+var missing = [];
+
+var allFileLocations = [];
+var allSaveLocations = [];
+
+if(!program.rename)
+	program.rename = program.filename;
+
+for(var c=0; c < program.colors.length; c++)
+{
+	var color = program.colors[c];
+
+	//check that the images exist in all the folders
+	for(var i=0; i < directories.length; i++)
+	{
+		var res = program.resolutions[i];
+		var copydir = directories[i];
+
+		var fileLocation = __dirname + "/assets/" + color  + "/" + res + "/" + program.filename + ".png";
+		var saveLocation = copydir + "/" + program.rename + "_" + color + ".png";
+
+		allFileLocations.push(fileLocation);		
+		allSaveLocations.push(saveLocation);
+
+		var exists = fs.existsSync(fileLocation);
+		if(!exists)
+			missing.push(fileLocation);
+	}
+}
+
+if(missing.length)
+{
+	console.error("All files and their images must exist!".red, missing);
+	return;
+}
+
+console.log(' name: %s', program.filename)
+console.log(' rename: %s', program.rename)
+console.log(' copy base location: %s', program.copylocation);
+console.log(' resolutions: %j', program.resolutions);
+console.log(' colors: %j', program.colors);
+console.log(' \n\n from locations: '.cyan, allFileLocations);
+console.log(' \n\n to locations: '.magenta, allSaveLocations);
+
+//everything okay? Ask the user
+prompt.confirm("Are these copy locations correct? Verify you want to continue.".blue, function(err, accept)
+{
+	console.log('Can continue: ' + accept);
+
+	if(accept)
+	{
+		console.log('Proceeding with copy!'.blue);
+
+		for(var i=0; i < allFileLocations.length; i++)
+		{
+			var from  = allFileLocations[i];
+			var to = allSaveLocations[i];
+			console.log('\n Copying from: \n', from.cyan, '\n to \n', to.magenta);
+			fs.copySync(from, to);
+		}
+
+		console.log("All copied!".green);
+	}
+
+
+
+});
+
+
+
+//now we take that array, and we go and make some copies
+
+
+
+
+
+
+

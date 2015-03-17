@@ -1,5 +1,6 @@
 package edu.eplex.androidsocialclient.MainUI.Main;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -100,6 +101,11 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
     @Override
     public void onTabUnselected(MaterialTab tab) {
 
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
 

@@ -3,6 +3,7 @@ package edu.eplex.androidsocialclient.MainUI.Main.Edit;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
@@ -14,8 +15,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.squareup.otto.Bus;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import bolts.Continuation;
@@ -112,6 +115,34 @@ public class EditFlowManager {
         return i;
     }
 
+    public void finishIECFilter(FragmentActivity activity, FilterComposite startFilter, FilterComposite endFilter)
+    {
+
+        //replace our filter, and return, we're all done here!
+        //do not copy the unique ID -- it must remain the same
+        startFilter.replaceWithFilter(endFilter);
+
+        //we've finished with our filter, we need to replace our old filter
+        //lets stick it in the cloud!
+        //I want to go back
+        Bundle conData = new Bundle();
+        conData.putString("filter", startFilter.getUniqueID());
+        Intent intent = new Intent();
+        intent.putExtras(conData);
+        activity.setResult(FragmentActivity.RESULT_OK, intent);
+        activity.finish();
+    }
+    public void cancelIECFilter(FragmentActivity activity)
+    {
+        //I want to go back
+        Bundle conData = new Bundle();
+        conData.putString("iec", "cancelled");
+        Intent intent = new Intent();
+        intent.putExtras(conData);
+        activity.setResult(FragmentActivity.RESULT_CANCELED, intent);
+        activity.finish();
+    }
+
     //last saved object
     public FilterComposite getFilterFromEditIntent(Intent intent)
     {
@@ -176,8 +207,14 @@ public class EditFlowManager {
         //initialize (only happens once no worries)
         NEATInitializer.InitializeActivationFunctions();
 
+        List<FilterArtifact> seedArtifacts = new ArrayList<>();
+
+        //add the filter artifact as a seed -- this will be the seed to start evolution
+        if(filter != null && filter.getFilterArtifact() != null)
+            seedArtifacts.add(filter.getFilterArtifact());
+
         //we need to inject our objects!
-        ObjectGraph graph = ObjectGraph.create(Arrays.asList(new FilterEvolutionInjectModule(mContext, np, null)).toArray());
+        ObjectGraph graph = ObjectGraph.create(Arrays.asList(new FilterEvolutionInjectModule(mContext, np, seedArtifacts)).toArray());
         editFilterIEC.injectGraph(graph);
 
 
@@ -267,13 +304,31 @@ public class EditFlowManager {
         BitmapCacheManager.getInstance().lazyLoadBitmap(filterComposite.getImageURL(), width, height, false,
                 new BitmapCacheManager.LazyLoadedCallback() {
                     @Override
-                    public void imageLoaded(String url, Bitmap bitmap) {
+                    public void imageLoaded(String url, final Bitmap bitmap) {
 
                         //set current bitmap
                         if(!isThumbnail)
                             filterComposite.setCurrentBitmap(bitmap);
                         else
                             filterComposite.setThumbnailBitmap(bitmap);
+
+                        //is your filter artifact null -- be the original image then
+                        //skip the rest
+                        if(filterComposite.getFilterArtifact() == null)
+                        {
+                            Task.call(new Callable<FilterComposite>() {
+                                @Override
+                                public FilterComposite call() throws Exception {
+                                    //grab the image from the card -- hack for now
+                                    view.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                                    view.setImageBitmap(bitmap);
+
+                                    return null;
+                                }
+                            }, Task.UI_THREAD_EXECUTOR).continueWith(afterSetImageContinuation, Task.UI_THREAD_EXECUTOR);
+
+                            return;
+                        }
 
                         asyncRunFilterOnImage(mContext, filterComposite, width, isThumbnail, bitmap)
                                 .continueWith(new Continuation<FilterComposite, FilterComposite>() {

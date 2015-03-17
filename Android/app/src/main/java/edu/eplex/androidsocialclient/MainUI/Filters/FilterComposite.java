@@ -112,7 +112,7 @@ public class FilterComposite {
     public FilterComposite(String imageURL, String uniqueID, String readableName)
     {
         //create an empty artifact plz! Defaults galore!
-        setClassConstruction(imageURL, new FilterArtifact(), uniqueID, readableName);
+        setClassConstruction(imageURL, null, uniqueID, readableName);
     }
     public FilterComposite(String imageURL, FilterArtifact artifact, String uniqueID, String readableName)
     {
@@ -182,7 +182,54 @@ public class FilterComposite {
                 this.frozenArtifactGenomes.add(i);
     }
 
+    public void clearFilterBitmapMemory()
+    {
+        //recycle each filtereted bitmap we own -- if it isn't already recycled
+        if(this.filteredBitmap != null && this.filteredBitmap != this.currentBitmap && !this.filteredBitmap.isRecycled())
+            this.filteredBitmap.recycle();
 
+        if(this.filteredThumbnailBitmap != null && !this.filteredThumbnailBitmap.isRecycled())
+            this.filteredThumbnailBitmap.recycle();
+
+    }
+
+    public void replaceWithFilter(FilterComposite filter)
+    {
+//        if(this.filteredBitmap != null && this.filteredBitmap != filter.filteredBitmap && !this.filteredBitmap.isRecycled())
+//            this.filteredBitmap.recycle();
+//
+//        if(this.filteredThumbnailBitmap != null && this.filteredThumbnailBitmap != filter.filteredThumbnailBitmap && !this.filteredThumbnailBitmap.isRecycled())
+//            this.filteredThumbnailBitmap.recycle();
+
+        //are there any frozen params?
+        this.filterArtifact = filter.filterArtifact;
+        this.frozenArtifactGenomes = filter.frozenArtifactGenomes;
+
+        //what image are we filtering???
+        this.imageURL = filter.imageURL;
+
+        //where is our filtered image saved? At first this points to our image URL, then eventually we save!
+        this.filteredImageURL = filter.filteredImageURL;
+
+        //whats our name
+        this.readableName = filter.readableName;
+
+        //what's our unique identifier? So we can keep a hash map and be referenced quickly --
+        //this will never change -- readable name can be changed though
+//        this.uuid = filter.uuid;
+
+        //How are we cropping the image? What's the base image right now?
+        this.currentBitmap = filter.currentBitmap;
+
+        //what is our filtered version? Applied to the current bitmap
+        this.filteredBitmap = filter.filteredBitmap;
+
+        //this is what the thumbnail looks like -- it's the unfiltered version
+        this.thumbnailBitmap = filter.thumbnailBitmap;
+
+        //this is our thumbnail, but it's a filtered version -- useful for browsing quickly
+        this.filteredThumbnailBitmap = filter.filteredThumbnailBitmap;
+    }
 
 
 

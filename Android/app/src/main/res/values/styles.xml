@@ -4,6 +4,15 @@
     <dimen name="login_font_size">16.0sp</dimen>
     <dimen name="action_bar_icon_vertical_padding">8dip</dimen>
 
+
+    <!--<style name="button">-->
+        <!--<item name="android:background">@drawable/button</item>-->
+        <!--<item name="android:textSize">@dimen/text_size</item>-->
+        <!--<item name="android:padding">@dimen/padding_button</item>-->
+        <!--<item name="android:textColor">@color/blanco</item>-->
+    <!--</style>-->
+
+
     <style name="AppBaseTheme" parent="Theme.AppCompat.Light.NoActionBar">
 
         <item name="colorPrimary">@color/indigo_500</item>

@@ -19,6 +19,9 @@ public class MainEditScreen extends ActionBarActivity {
     @Override
     protected void onStart() {
         super.onStart();
+
+        //start up our editor -- simple launch routine
+        startEditor();
     }
 
 
@@ -31,10 +34,9 @@ public class MainEditScreen extends ActionBarActivity {
 
         //load the very basic outline -- most editing layout comes from the objects themselves -- maybe a save/forward bar at top always?
         setContentView(R.layout.app_main_edit_layout);
-
-        //start up our editor -- simple launch routine
-        startEditor();
     }
+
+
 
     void startEditor()
     {

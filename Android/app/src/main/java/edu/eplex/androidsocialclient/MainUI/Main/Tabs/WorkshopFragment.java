@@ -1,6 +1,7 @@
 package edu.eplex.androidsocialclient.MainUI.Main.Tabs;
 
 import android.content.ContentValues;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.Fragment;
@@ -165,5 +166,11 @@ public class WorkshopFragment extends Fragment implements WorkshopCompositeAdapt
         TabFlowManager.getInstance().switchToTab(TAB, toTab);
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
 
+        if(compositeAdapter != null)
+            compositeAdapter.notifyDataSetChanged();
+    }
 }
