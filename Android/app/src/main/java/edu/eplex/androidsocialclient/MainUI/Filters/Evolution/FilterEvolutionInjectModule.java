@@ -1,4 +1,4 @@
-package edu.eplex.androidsocialclient.MainUI.Filters;
+package edu.eplex.androidsocialclient.MainUI.Filters.Evolution;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
@@ -10,18 +10,17 @@ import dagger.Provides;
 import edu.eplex.AsyncEvolution.asynchronous.implementation.AsyncArtifactToCard;
 import edu.eplex.AsyncEvolution.asynchronous.implementation.AsyncLocalIEC;
 import edu.eplex.AsyncEvolution.asynchronous.implementation.AsyncLocalRandomSeedLoader;
-import edu.eplex.AsyncEvolution.asynchronous.implementation.SyncLocalOffspringGenerator;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncArtifactToPhenotype;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncArtifactToUI;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncInteractiveEvolution;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncPhenotypeToUI;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncSeedLoader;
-import edu.eplex.AsyncEvolution.backbone.NEATArtifact;
 import edu.eplex.AsyncEvolution.cache.implementations.LRUBitmapCache;
 import edu.eplex.AsyncEvolution.cardUI.cards.GridCard;
 import edu.eplex.AsyncEvolution.cppn.implementations.Filters.AsyncArtifactToCPPNFilter;
 import edu.eplex.AsyncEvolution.cppn.implementations.Filters.AsyncCPPNToFilterCard;
 import edu.eplex.AsyncEvolution.interfaces.PhenotypeCache;
+import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
 import edu.eplex.androidsocialclient.MainUI.IECFilters;
 import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFilterIEC;
 import eplex.win.FastNEATJava.utils.NeatParameters;
@@ -43,15 +42,15 @@ public class FilterEvolutionInjectModule {
 
     Activity activity;
     NeatParameters np;
-    List<NEATArtifact> seeds;
-    public FilterEvolutionInjectModule(Activity activity, NeatParameters np, List<NEATArtifact> seeds)
+    List<FilterArtifact> seeds;
+    public FilterEvolutionInjectModule(Activity activity, NeatParameters np, List<FilterArtifact> seeds)
     {
         this.np = np;
         this.activity = activity;
         this.seeds = seeds;
     }
 
-    FilterEvolutionInjectModule(List<NEATArtifact> seeds){
+    FilterEvolutionInjectModule(List<FilterArtifact> seeds){
         this.seeds = seeds;
     }
 
@@ -84,12 +83,12 @@ public class FilterEvolutionInjectModule {
     //and also an offspring generator, to merege objects
     @Provides
     public AsyncSeedLoader provideAsyncSeedLoading(){
-        AsyncLocalRandomSeedLoader seedLoader = new AsyncLocalRandomSeedLoader();
+        FilterSeedLoader seedLoader = new FilterSeedLoader();
 
         //pull the asset manager from our set (I hope) activity
         seedLoader.assetManager = activity.getAssets();
         seedLoader.customSeeds = seeds;
-        seedLoader.seedFileLocation = "testseeds/basicSeed.json";
+        seedLoader.seedFileLocation = "filterseeds/basicSeed.json";
 
         return seedLoader;
     }
@@ -98,7 +97,7 @@ public class FilterEvolutionInjectModule {
     //handling any unusual artifact generation logic, then returning the children
     @Provides
     public ArtifactOffspringGenerator provideOffspringGenerator() {
-        return new SyncLocalOffspringGenerator(this.np);
+        return new FilterLocalOffspringGenerator(this.np);
     }
 
 

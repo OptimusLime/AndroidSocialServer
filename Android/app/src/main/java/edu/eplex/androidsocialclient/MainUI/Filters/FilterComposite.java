@@ -2,11 +2,14 @@ package edu.eplex.androidsocialclient.MainUI.Filters;
 
 import android.graphics.Bitmap;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.concurrent.Callable;
 import java.util.logging.Filter;
 import bolts.Continuation;
 import bolts.Task;
 import edu.eplex.androidsocialclient.MainUI.Cache.BitmapCacheManager;
+import eplex.win.FastNEATJava.genome.NeatGenome;
 import eplex.win.FastNEATJava.utils.cuid;
 
 /**
@@ -17,6 +20,9 @@ public class FilterComposite {
 
     //what is our genotype that defines our full filter!
     FilterArtifact filterArtifact;
+
+    //are there any frozen params?
+    HashSet<Integer> frozenArtifactGenomes;
 
     //what image are we filtering???
     String imageURL;
@@ -147,7 +153,37 @@ public class FilterComposite {
         this.uuid = uniqueID;
         this.filterArtifact = artifact;
         this.readableName = readableName;
+
+        frozenArtifactGenomes = new HashSet<>();
     }
+
+    public HashSet<Integer> getFrozenArtifactGenomes()
+    {
+        return frozenArtifactGenomes;
+    }
+
+    public void freezeArtifactGenome(Integer wid)
+    {
+        this.frozenArtifactGenomes.add(wid);
+    }
+    public void unfreezeArtifactGenome(Integer wid)
+    {
+        this.frozenArtifactGenomes.remove(wid);
+    }
+    public void unfreezeAll()
+    {
+        this.frozenArtifactGenomes.clear();
+    }
+    public void freezeAllButOne(Integer wid)
+    {
+        ArrayList<NeatGenome> allGenomes = this.filterArtifact.genomeFilters;
+        for(int i=0; i < allGenomes.size(); i++)
+            if(i != wid)
+                this.frozenArtifactGenomes.add(i);
+    }
+
+
+
 
 
 }

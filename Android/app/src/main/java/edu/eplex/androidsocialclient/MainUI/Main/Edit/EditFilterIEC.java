@@ -1,10 +1,12 @@
 package edu.eplex.androidsocialclient.MainUI.Main.Edit;
 
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -60,11 +62,15 @@ public class EditFilterIEC extends Fragment {
     AsyncInteractiveEvolution evolution;
 
     boolean fetchingMoreFilters;
+    boolean initialized = false;
 
     //
     EditIECCompositeAdapter filterImageAdapter;
     EndlessGridScrollListener mScrollListener;
     JsonNode iecParams;
+    FilterComposite selectedFilter;
+
+    int mainImageDesiredWidthHeight;
 
     public void setIecParams(JsonNode iecParams)
     {
@@ -73,15 +79,12 @@ public class EditFilterIEC extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        //initilaize!
-        asyncInitializeIECandUI(getActivity());
     }
 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.app_fragment_workshop, container, false);
+        View rootView = inflater.inflate(R.layout.app_edit_fragment_iec, container, false);
 
         //we now have access to list view thanks to butterknife!
         ButterKnife.inject(this, rootView);
@@ -91,6 +94,9 @@ public class EditFilterIEC extends Fragment {
         //with event benefits
         //just thinking out loud
         EditFlowManager.getInstance().registerUIEvents(this);
+
+        //initilaize!
+        asyncInitializeIECandUI(getActivity());
 
         return rootView;
     }
@@ -105,6 +111,12 @@ public class EditFilterIEC extends Fragment {
     }
 
     Task<Void> asyncInitializeIECandUI(FragmentActivity activity) {
+
+//        if(initialized)
+//            return null;
+
+        //don't do this more than once -- it's starting evolution
+        initialized = true;
 
         //first we initialize all our internal organs, so to speak
         initializeUI(activity);
@@ -141,7 +153,6 @@ public class EditFilterIEC extends Fragment {
             return;
 
         //we get some cards, async style!
-
         fetchingMoreFilters = true;
 
         //create a bunch of children object, wouldn't you please?
@@ -161,88 +172,114 @@ public class EditFilterIEC extends Fragment {
 
         //then add to our dude all at once
         filterImageAdapter.addAll(evolutionComposites);
+
+        //if we have no selected filter -- set it to be the first indiviual :)
+        if(selectedFilter == null)
+            setSelectedFilterAsMainImage(evolutionComposites.get(0));
+        else
+            setSelectedFilterAsMainImage(selectedFilter);
     }
 
 
 
     void initializeUI(FragmentActivity activity)
     {
+        Display display = getActivity().getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        int width = size.x;
+        int height = size.y;
+
+        mainImageDesiredWidthHeight = Math.min(width,height);
+
+        filterImage.getLayoutParams().width = mainImageDesiredWidthHeight;
+        filterImage.getLayoutParams().height = mainImageDesiredWidthHeight;
+        filterImage.setImageResource(R.drawable.ic_action_emo_tongue_white);
+        filterImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
+
         //no images to start with, we will get those asynchronously
-        filterImageAdapter = new EditIECCompositeAdapter(activity, new ArrayList<FilterComposite>(), new EditIECCompositeAdapter.OnFilterSelected() {
-            @Override
-            public void longSelectFilteredImage(FilterComposite selected, int ix) {
-                //TIME FOR EVOLUTION!
-                setSelectedFilterAsMainImage(selected);
+        if(filterImageAdapter == null)
+            filterImageAdapter = new EditIECCompositeAdapter(activity, new ArrayList<FilterComposite>(), new EditIECCompositeAdapter.OnFilterSelected() {
+                @Override
+                public void longSelectFilteredImage(FilterComposite selected, int ix) {
+                    //TIME FOR EVOLUTION!
+                    setSelectedFilterAsMainImage(selected);
 
-                //get the filter artifact -- we need to do some evolution
-                FilterArtifact filterArtifact = selected.getFilterArtifact();
+                    //get the filter artifact -- we need to do some evolution
+                    FilterArtifact filterArtifact = selected.getFilterArtifact();
 
-                evolution.clearParents();
-                evolution.selectParents(Arrays.asList(filterArtifact.wid()));
+                    evolution.clearParents();
+                    evolution.selectParents(Arrays.asList(filterArtifact.wid()));
 
-                //clear it out, then fill it up!
-                filterImageAdapter.clear();
+                    //clear it out, then fill it up!
+                    filterImageAdapter.clear();
 
-                //go get more please!
-                //we keep around our original selection -- kind of like elitism
-                addMoreOffspring(5,selected);
-            }
+                    //go get more please!
+                    //we keep around our original selection -- kind of like elitism
+                    addMoreOffspring(5,selected);
+                }
 
-            @Override
-            public void selectFilteredImage(FilterComposite filter, int ix) {
+                @Override
+                public void selectFilteredImage(FilterComposite filter, int ix) {
 
-                //set as our image
-                setSelectedFilterAsMainImage(filter);
-            }
+                    //set as our image
+                    setSelectedFilterAsMainImage(filter);
+                }
 
-            @Override
-            public void finishedLoadingAndFiltering() {
+                @Override
+                public void finishedLoadingAndFiltering() {
 
-                //all done with this batch, be prepared to fetch more!
-                mScrollListener.notifyMorePages();
+                    //all done with this batch, be prepared to fetch more!
+                    mScrollListener.notifyMorePages();
 
-                //all done, thanks
-                fetchingMoreFilters = false;
-            }
-        });
+                    //all done, thanks
+                    fetchingMoreFilters = false;
+                }
+            });
 
         //set the damn adapter -- we'll figure out fancy thigns later
         horizontalScroll.setAdapter(filterImageAdapter);
 
 
         //here we're going to set our scroll listener for creating more objects and appending them!
-        mScrollListener = new EndlessGridScrollListener(horizontalScroll);
+        if(mScrollListener == null)
+        {
 
-//        //lets set our callback item now -- this is called whenever the user scrolls to the bottom
-        mScrollListener.setRequestItemsCallback(new EndlessGridScrollListener.RequestItemsCallback() {
-            @Override
-            public void requestItems(int pageNumber) {
-//                System.out.println("On Refresh invoked..");
+            mScrollListener = new EndlessGridScrollListener(horizontalScroll);
 
-                //add more offspring, hoo-ray!!!
+            //lets set our callback item now -- this is called whenever the user scrolls to the bottom
+            mScrollListener.setRequestItemsCallback(new EndlessGridScrollListener.RequestItemsCallback() {
+                @Override
+                public void requestItems(int pageNumber) {
+                    //add more offspring, hoo-ray!!!
+                    //every time it's the same process -- generate artifacts, convert to phenotype, display!
+                    //rinse and repeat
+                    addMoreOffspring(4, null);
+                }
+            });
+        }
 
-                //every time it's the same process -- generate artifacts, convert to phenotype, display!
-                //rinse and repeat
-                addMoreOffspring(4, null);
-            }
-        });
-//
-//        //make sure to add our infinite scroller here
+        //make sure to add our infinite scroller here
         horizontalScroll.setOnScrollListener(mScrollListener);
     }
+
 
     void setSelectedFilterAsMainImage(FilterComposite filterComposite)
     {
         //now we have to install in the main image!
+        if(filterComposite == selectedFilter)
+            return;
+
+        selectedFilter = filterComposite;
 
         //grab our artifact -- for now, we grab our inside NEAT Artifact like usual
-        FilterArtifact filterArtifact = filterComposite.getFilterArtifact();
+//        FilterArtifact filterArtifact = filterComposite.getFilterArtifact();
 
         //original image plzzzzz
-        Bitmap mainImage = filterComposite.getCurrentBitmap();
+//        Bitmap mainImage = filterComposite.getCurrentBitmap();
 
         //we need a new image
-        int widthHeight = EditFlowManager.getInstance().getBitmapWidthHeight(getActivity(), filterImage.getLayoutParams().width);
+        int widthHeight = EditFlowManager.getInstance().getBitmapSquareSize(getActivity(), mainImageDesiredWidthHeight);
 
         //need to lazy load in the main image -- then async run the filter plz
         EditFlowManager.getInstance().lazyLoadFilterIntoImageView(getActivity(), filterComposite, widthHeight, widthHeight, false, filterImage);

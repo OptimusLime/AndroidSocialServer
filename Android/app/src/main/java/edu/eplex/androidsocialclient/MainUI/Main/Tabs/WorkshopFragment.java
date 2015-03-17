@@ -67,7 +67,7 @@ public class WorkshopFragment extends Fragment implements WorkshopCompositeAdapt
     }
 
     @Override
-    public void longSelectImageAtIndex(FilterComposite filter, int position) {
+    public void longSelectCompositeFilter(FilterComposite filter, int position) {
         //long press - this should trigger contextual things -- want to delete? rename? etc...
 
     }

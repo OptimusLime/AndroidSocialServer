@@ -47,6 +47,10 @@ public class MainEditScreen extends ActionBarActivity {
         //grab our existing item
         FilterComposite currentFilter = efm.getFilterFromEditIntent(intent);
 
+        //set it to be our last edited -- since we were sent here to DESTROY
+        //sorry dont know where that came from. This filter was sent for LOVE.
+        FilterManager.getInstance().setLastEditedFilter(currentFilter);
+
         //this is the object we're working with -- set it as our main object in the first edit fragment we open
         efm.temporaryLaunchIECWithFilter(this, currentFilter);
     }

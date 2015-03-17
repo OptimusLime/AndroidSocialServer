@@ -67,17 +67,21 @@ public class EditIECCompositeAdapter extends ArrayAdapter<FilterComposite> {
 
         ImageView bview = (ImageView) view.findViewById(R.id.app_edit_iec_individual_image_thumb);
 
+        //set the size for our image view plz
+        int widthHeight = (int)mContext.getResources().getDimension(R.dimen.app_edit_iec_thumbnail_size);
+
+        bview.getLayoutParams().width = widthHeight;
+        bview.getLayoutParams().height = widthHeight;
+
         if (mImage != null && !mImage.isRecycled()) {
             bview.setImageBitmap(mImage);
             syncDecrementLoadCount();
         } else {
 
-            int widthHeight = (int)mContext.getResources().getDimension(R.dimen.app_edit_iec_thumbnail_size);
-
             //otherwise, you need to load the thumbnail then filter it
-            EditFlowManager.getInstance().lazyLoadFilterIntoImageView(mContext, filter, widthHeight, widthHeight, true, bview, new Continuation<Void, Void>() {
+            EditFlowManager.getInstance().lazyLoadFilterIntoImageView(mContext, filter, widthHeight, widthHeight, true, bview, new Continuation<FilterComposite, Void>() {
                 @Override
-                public Void then(Task<Void> task) throws Exception {
+                public Void then(Task<FilterComposite> task) throws Exception {
 
                     //when we're done loading, drop it down plz
                     syncDecrementLoadCount();

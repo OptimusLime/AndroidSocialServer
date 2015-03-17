@@ -16,7 +16,7 @@ import com.squareup.otto.Bus;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.logging.Filter;
+import java.util.concurrent.Callable;
 
 import bolts.Continuation;
 import bolts.Task;
@@ -24,9 +24,9 @@ import dagger.ObjectGraph;
 import edu.eplex.AsyncEvolution.main.NEATInitializer;
 import edu.eplex.androidsocialclient.GPU.GPUNetworkFilter;
 import edu.eplex.androidsocialclient.MainUI.Cache.BitmapCacheManager;
-import edu.eplex.androidsocialclient.MainUI.FilterAsyncLocalIECModule;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
+import edu.eplex.androidsocialclient.MainUI.Filters.Evolution.FilterEvolutionInjectModule;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
 import edu.eplex.androidsocialclient.MainUI.Main.MainEditScreen;
 import edu.eplex.androidsocialclient.R;
@@ -100,14 +100,14 @@ public class EditFlowManager {
 
     public Intent createEditIntent(Context mContext, FilterComposite toEdit)
     {
-        return  createEditIntent(mContext, toEdit, null);
+        return createEditIntent(mContext, toEdit, null);
     }
     public Intent createEditIntent(Context mContext, FilterComposite toEdit, String innerFilterWID)
     {
         Intent i = new Intent();
-        i.setClass(mContext, EditFilterIEC.class);
+        i.setClass(mContext, MainEditScreen.class);
         i.putExtra(EXTRA_FILTER_WID, toEdit.getUniqueID());
-        if(innerFilterWID != null && innerFilterWID != "")
+        if(innerFilterWID != null && !innerFilterWID.equals(""))
             i.putExtra(EXTRA_INNER_FILTER_WID, innerFilterWID);
         return i;
     }
@@ -134,7 +134,7 @@ public class EditFlowManager {
         ObjectNode uiParams = mapper.createObjectNode();
 
         int thumbnailSize = (int)activity.getResources().getDimension(R.dimen.app_edit_iec_thumbnail_size);
-        int cppnCalculateSize = getBitmapWidthHeight(activity, thumbnailSize);
+        int cppnCalculateSize = getBitmapSquareSize(activity, thumbnailSize);
 
         uiParams.set("width", mapper.convertValue(cppnCalculateSize, JsonNode.class));
         uiParams.set("height", mapper.convertValue(cppnCalculateSize , JsonNode.class));
@@ -177,7 +177,7 @@ public class EditFlowManager {
         NEATInitializer.InitializeActivationFunctions();
 
         //we need to inject our objects!
-        ObjectGraph graph = ObjectGraph.create(Arrays.asList(new FilterAsyncLocalIECModule(mContext, np, null)).toArray());
+        ObjectGraph graph = ObjectGraph.create(Arrays.asList(new FilterEvolutionInjectModule(mContext, np, null)).toArray());
         editFilterIEC.injectGraph(graph);
 
 
@@ -191,7 +191,7 @@ public class EditFlowManager {
 
 
     //both bitmap sizes and evolutionary defaults -- params, should be handled elsewhere
-    int getBitmapWidthHeight(Context mContext, int imageContainerSize)
+    int getBitmapSquareSize(Context mContext, int imageContainerSize)
     {
         //how much to scale the CPPNs
         float widthHeightScale = Float.parseFloat(mContext.getResources().getString(R.string.mainImageCPPNScaleDown));
@@ -211,7 +211,7 @@ public class EditFlowManager {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode uiParams = mapper.createObjectNode();
 
-        int widthHeight = getBitmapWidthHeight(mContext, imageContainerSize);
+        int widthHeight = getBitmapSquareSize(mContext, imageContainerSize);
 
         uiParams.set("width", mapper.convertValue(widthHeight, JsonNode.class));
         uiParams.set("height", mapper.convertValue(widthHeight, JsonNode.class));
@@ -248,14 +248,21 @@ public class EditFlowManager {
                 });
     }
 
+    static final Continuation<FilterComposite,Void> emptyContinuation = new Continuation<FilterComposite, Void>() {
+        @Override
+        public Void then(Task<FilterComposite> task) throws Exception {
+            return null;
+        }
+    };
+
     public void lazyLoadFilterIntoImageView(final Context mContext, final FilterComposite filterComposite,
                                             final int width, int height, final boolean isThumbnail, final ImageView view)
     {
-        lazyLoadFilterIntoImageView(mContext, filterComposite, width, height, isThumbnail, view, null);
+        lazyLoadFilterIntoImageView(mContext, filterComposite, width, height, isThumbnail, view, emptyContinuation);
     }
     public void lazyLoadFilterIntoImageView(final Context mContext, final FilterComposite filterComposite,
                                             final int width, int height, final boolean isThumbnail, final ImageView view,
-                                            final Continuation<Void, Void> afterSetImageContinuation)
+                                            final Continuation<FilterComposite, Void> afterSetImageContinuation)
     {
         BitmapCacheManager.getInstance().lazyLoadBitmap(filterComposite.getImageURL(), width, height, false,
                 new BitmapCacheManager.LazyLoadedCallback() {
@@ -269,9 +276,9 @@ public class EditFlowManager {
                             filterComposite.setThumbnailBitmap(bitmap);
 
                         asyncRunFilterOnImage(mContext, filterComposite, width, isThumbnail, bitmap)
-                                .continueWith(new Continuation<FilterComposite, Void>() {
+                                .continueWith(new Continuation<FilterComposite, FilterComposite>() {
                                     @Override
-                                    public Void then(Task<FilterComposite> task) throws Exception {
+                                    public FilterComposite then(Task<FilterComposite> task) throws Exception {
 
                                         //grab the image from the card -- hack for now
                                         view.setScaleType(ImageView.ScaleType.FIT_CENTER);
@@ -291,6 +298,13 @@ public class EditFlowManager {
 
                         //otherwise, fail -- don't know how to handle
                         Toast.makeText(mContext, "EditFilterIEC: Filter Load Failed - " + reason, Toast.LENGTH_SHORT).show();
+
+                        Task.call(new Callable<FilterComposite>() {
+                            @Override
+                            public FilterComposite call() throws Exception {
+                                return null;
+                            }
+                        }).continueWith(afterSetImageContinuation);
                     }
                 });
     }

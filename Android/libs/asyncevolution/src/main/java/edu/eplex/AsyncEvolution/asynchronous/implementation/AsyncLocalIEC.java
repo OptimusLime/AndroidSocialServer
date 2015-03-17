@@ -77,6 +77,13 @@ public class AsyncLocalIEC extends AsyncInteractiveEvolution {
         parents.clear();
     }
 
+    List<Artifact> lastChildren;
+
+    @Override
+    public List<Artifact> lastOffspring() {
+        return lastChildren;
+    }
+
     //this is a synchronous process anywho -- just call it internally and get some new individuals
     //if you need it to be async, that can be arranged!
     @Override
@@ -84,17 +91,20 @@ public class AsyncLocalIEC extends AsyncInteractiveEvolution {
     {
         ArrayList<Artifact> children = new ArrayList<Artifact>(count);
 
+        lastChildren = new ArrayList<>();
         //use parents to create children -- them is the future yo
         for(int i=0; i < count; i++)
         {
             Artifact child = offspringGenerator.createArtifactFromParents(parents);
 
+            lastChildren.add(child);
             children.add(child);
             allEvolutionArtifacts.put(child.wid(), child);
         }
 
         return children;
     }
+
 
     @Override
     public Task<List<Artifact>> asyncCreateOffspring(final int count) {

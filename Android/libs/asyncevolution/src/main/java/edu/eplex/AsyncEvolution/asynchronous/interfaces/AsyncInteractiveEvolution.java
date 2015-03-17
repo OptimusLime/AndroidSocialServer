@@ -45,4 +45,6 @@ public abstract class AsyncInteractiveEvolution {
     //configure with some parameters of course!
     public abstract Task<Void> asyncInitialize(JsonNode configuration);
 
+    public abstract List<Artifact> lastOffspring();
+
 }

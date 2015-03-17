@@ -3,6 +3,7 @@ package edu.eplex.androidsocialclient.MainUI.Filters;
 import android.content.Context;
 import android.content.Intent;
 
+import com.facebook.internal.PlatformServiceClient;
 import com.squareup.otto.Produce;
 
 import java.util.ArrayList;
@@ -107,6 +108,10 @@ public class FilterManager {
     public FilterComposite getLastEditedFilter()
     {
         return lastEditedFilter;
+    }
+    public void setLastEditedFilter(FilterComposite lastEditedFilter)
+    {
+        this.lastEditedFilter = lastEditedFilter;
     }
 
 

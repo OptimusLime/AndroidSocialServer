@@ -48,7 +48,7 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
     public interface OnCompositeFilterSelected
     {
         void selectCompositeFilter(FilterComposite filter, int position);
-        void longSelectImageAtIndex(FilterComposite filter, int position);
+        void longSelectCompositeFilter(FilterComposite filter, int position);
     }
 
     public WorkshopCompositeAdapter(Context context, OnCompositeFilterSelected selectFunction)
@@ -136,6 +136,25 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
         });
     }
 
+    void setClickListener(View bview, final FilterComposite filter, final int ix)
+    {
+        bview.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //set as the main image asynchronously!
+                filterSelection.selectCompositeFilter(filter, ix);
+            }
+        });
+
+        bview.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                filterSelection.longSelectCompositeFilter(filter, ix);
+                return true;
+            }
+        });
+    }
+
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
 
@@ -151,6 +170,9 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
 
         //then we need to inject into an inner view for Picasso
         FilterComposite filter = getItem(position);
+
+        //handle clicks for this view plz
+        setClickListener(view, filter, position);
 
         //ya hear? dis our image yo
         String url = filter.getFilteredImageURL();
