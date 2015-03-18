@@ -1,6 +1,7 @@
 package edu.eplex.androidsocialclient.MainUI;
 
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -27,7 +28,9 @@ import com.afollestad.materialdialogs.Alignment;
 import com.afollestad.materialdialogs.MaterialDialog;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -360,13 +363,19 @@ public class TakePictureFragment extends Fragment {
             //grab the full image please
 //            fullImageBitmap = BitmapFactory.decodeFile(mCurrentImageSaveLocation);
 
-            fullImageBitmap = FileUtilities.decodeSampledBitmapFromResource(mCurrentImageSaveLocation,
+
+            try {
+                ContentResolver cr = getActivity().getContentResolver();
+
+
+            fullImageBitmap = FileUtilities.decodeSampledBitmapFromResource(cr, Uri.fromFile(new File(mCurrentImageSaveLocation)),
                     maxImageWidthHeight,
                     maxImageWidthHeight);
 
 
-            //we decode using file utilities and our desired width/height
-            Bitmap decodedBitmap = FileUtilities.decodeSampledBitmapFromResource(mCurrentImageSaveLocation,
+
+                //we decode using file utilities and our desired width/height
+            Bitmap decodedBitmap = FileUtilities.decodeSampledBitmapFromResource(cr,Uri.fromFile(new File(mCurrentImageSaveLocation)),
                     previewWidthHeight,
                     previewWidthHeight);
 
@@ -385,6 +394,12 @@ public class TakePictureFragment extends Fragment {
 
             //we must alert the system that an image has been added
             handlePhotoTaken();
+
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

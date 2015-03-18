@@ -318,8 +318,12 @@ public class UserSettingsFragment extends Fragment {
     @Subscribe
     public void currentUserInformation(UserSessionManager.CurrentUserInformation currentUserInfo)
     {
-        currentUser = currentUserInfo.currentAPIToken.user.username;
-        userFromCache = currentUserInfo.userLoadedFromCache;
+        if(currentUserInfo != null) {
+            if(currentUserInfo.currentAPIToken != null)
+                currentUser = currentUserInfo.currentAPIToken.user.username;
+
+            userFromCache = currentUserInfo.userLoadedFromCache;
+        }
     }
 
     @Subscribe

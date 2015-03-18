@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.squareup.otto.Bus;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -294,15 +295,13 @@ public class EditFlowManager {
     };
 
     public void lazyLoadFilterIntoImageView(final Context mContext, final FilterComposite filterComposite,
-                                            final int width, int height, final boolean isThumbnail, final ImageView view)
-    {
+                                            final int width, int height, final boolean isThumbnail, final ImageView view) throws FileNotFoundException {
         lazyLoadFilterIntoImageView(mContext, filterComposite, width, height, isThumbnail, view, emptyContinuation);
     }
     public void lazyLoadFilterIntoImageView(final Context mContext, final FilterComposite filterComposite,
                                             final int width, int height, final boolean isThumbnail, final ImageView view,
-                                            final Continuation<FilterComposite, Void> afterSetImageContinuation)
-    {
-        BitmapCacheManager.getInstance().lazyLoadBitmap(filterComposite.getImageURL(), width, height, false,
+                                            final Continuation<FilterComposite, Void> afterSetImageContinuation) throws FileNotFoundException {
+        BitmapCacheManager.getInstance().lazyLoadBitmap(mContext, filterComposite.getImageURL(), width, height, false,
                 new BitmapCacheManager.LazyLoadedCallback() {
                     @Override
                     public void imageLoaded(String url, final Bitmap bitmap) {

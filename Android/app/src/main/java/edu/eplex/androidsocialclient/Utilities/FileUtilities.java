@@ -1,12 +1,16 @@
 package edu.eplex.androidsocialclient.Utilities;
 
+import android.content.ContentResolver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -86,7 +90,10 @@ public class FileUtilities {
     //From Android documentation: http://developer.android.com/training/displaying-bitmaps/load-bitmap.html
     //Allows the loading of a bitmap from file with a certain requested width and height
     //It's meant to allow for more efficient bitmap reads into memory
-    public static Bitmap decodeSampledBitmapFromResource(String strPath, int maxDimension) {
+    public static Bitmap decodeSampledBitmapFromResource(ContentResolver cr, Uri uri, int maxDimension) throws Exception {
+
+//        ContentResolver cr = getContentResolver();
+        InputStream in = cr.openInputStream(uri);
 
         // First decode with inJustDecodeBounds=true to check dimensions
         final BitmapFactory.Options options = new BitmapFactory.Options();
@@ -95,7 +102,8 @@ public class FileUtilities {
         options.inJustDecodeBounds = true;
 
         //here we decode into options
-        BitmapFactory.decodeFile(strPath, options);
+//        BitmapFactory.decodeFile(strPath, options);
+        BitmapFactory.decodeStream(in, null, options);
 
         int rawHeight = options.outHeight;
         int rawWidth = options.outWidth;
@@ -113,23 +121,34 @@ public class FileUtilities {
         // Decode bitmap with inSampleSize set
         options.inJustDecodeBounds = false;
 
+        //start at the beginning
+//        in.reset();
+
         //decode to the appropriate size
-        return BitmapFactory.decodeFile(strPath, options);
+        Bitmap bm = BitmapFactory.decodeStream(in = cr.openInputStream(uri), null, options);
+
+        return bm;
+//BitmapFactory.decodeFile(s
+//
+// retutrPath, options);
     }
 
     //From Android documentation: http://developer.android.com/training/displaying-bitmaps/load-bitmap.html
     //Allows the loading of a bitmap from file with a certain requested width and height
     //It's meant to allow for more efficient bitmap reads into memory
-    public static Bitmap decodeSampledBitmapFromResource(String strPath, int reqWidth, int reqHeight) {
+    public static Bitmap decodeSampledBitmapFromResource(ContentResolver cr, Uri uri, int reqWidth, int reqHeight) throws IOException {
 
-        // First decode with inJustDecodeBounds=true to check dimensions
+        Bitmap bm = null;
+
+            // First decode with inJustDecodeBounds=true to check dimensions
         final BitmapFactory.Options options = new BitmapFactory.Options();
 
         //we decode the bitmap, but only looking for the true width/height
         options.inJustDecodeBounds = true;
-
+        InputStream in = cr.openInputStream(uri);
         //here we decode into options
-        BitmapFactory.decodeFile(strPath, options);
+//        BitmapFactory.decodeFile(strPath, options);
+        BitmapFactory.decodeStream(in, null, options);
 
         // Calculate inSampleSize -- this will determine how our bitmap is cropped during actual decode
         options.inSampleSize = calculateInSampleSize(options,reqWidth,
@@ -138,8 +157,17 @@ public class FileUtilities {
         // Decode bitmap with inSampleSize set
         options.inJustDecodeBounds = false;
 
+
+            //decode to the appropriate size
+//        return BitmapFactory.decodeFile(strPath, options);
+            //start at the beginning
+//            in.reset();
+        in = cr.openInputStream(uri);
         //decode to the appropriate size
-        return BitmapFactory.decodeFile(strPath, options);
+        bm = BitmapFactory.decodeStream(in, null, options);
+
+
+        return bm;
     }
 
     //From documentation: http://developer.android.com/training/displaying-bitmaps/load-bitmap.html

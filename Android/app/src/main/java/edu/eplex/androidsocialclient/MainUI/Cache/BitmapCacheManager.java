@@ -1,9 +1,14 @@
 package edu.eplex.androidsocialclient.MainUI.Cache;
 
+import android.content.ContentResolver;
+import android.content.Context;
 import android.graphics.Bitmap;
+import android.net.Uri;
 
 import com.squareup.picasso.Transformation;
 
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -72,12 +77,12 @@ public class BitmapCacheManager {
     }
 
     //need to lazy load images
-    public void lazyLoadBitmap(String url, int squareSize, boolean filtered, LazyLoadedCallback callback) {
-        lazyLoadBitmap(url, squareSize, squareSize, filtered, callback);
+    public void lazyLoadBitmap(Context mContext, String uriPath, int squareSize, boolean filtered, LazyLoadedCallback callback) throws FileNotFoundException {
+        lazyLoadBitmap(mContext, uriPath, squareSize, squareSize, filtered, callback);
     }
 
     //finish it up
-    void completeCallbacks(final String url, final String cachedURL, final Bitmap bitmap)
+    void completeCallbacks(final String cachedURL, final Bitmap bitmap)
     {
         synchronized (cachedBitmaps)
         {
@@ -97,7 +102,7 @@ public class BitmapCacheManager {
                     callbacks = callbacksWaiting.get(cachedURL);
 
                     for (int i = 0; i < callbacks.size(); i++) {
-                        callbacks.get(i).imageLoaded(url, bitmap);
+                        callbacks.get(i).imageLoaded(cachedURL, bitmap);
                     }
 
                     //need to remove the key -- sync it up
@@ -137,7 +142,7 @@ public class BitmapCacheManager {
         }, Task.UI_THREAD_EXECUTOR);
     }
 
-    void finishLazyLoad(final String url, final int width, final int height, final String cached)
+    void finishLazyLoad(final ContentResolver cr, final Uri uri, final int width, final int height, final String cached)
     {
         //okay, we know what to do -- load the bitmap from the factory on the background thread
         //okay, we know what to do -- load the bitmap from the factory on the background thread
@@ -146,9 +151,9 @@ public class BitmapCacheManager {
             public Bitmap call() throws Exception{
 
                 if (width == height) {
-                    return FileUtilities.decodeSampledBitmapFromResource(url, width);
+                    return FileUtilities.decodeSampledBitmapFromResource(cr, uri, width);
                 } else
-                    return FileUtilities.decodeSampledBitmapFromResource(url, width, height);
+                    return FileUtilities.decodeSampledBitmapFromResource(cr, uri, width, height);
                 }
         })
         .continueWith(new Continuation<Bitmap, Object>() {
@@ -168,7 +173,7 @@ public class BitmapCacheManager {
                         bm = new CropSquareTransformation().transform(bm);
 
                     //now we need to complete on the UI thread -- because that's how we do here
-                    completeCallbacks(url, cached, bm);
+                    completeCallbacks(cached, bm);
                 }
 
                 return null;
@@ -177,10 +182,9 @@ public class BitmapCacheManager {
 
     }
 
-    public void lazyLoadBitmap(final String url, int width,  int height, boolean filtered, final LazyLoadedCallback callback)
-    {
+    public void lazyLoadBitmap(final Context mContext, final String uriPath, int width,  int height, boolean filtered, final LazyLoadedCallback callback) throws FileNotFoundException {
         //what is the cache name?
-        final String cached = urlCacheName(url, width, height, filtered);
+        final String cached = urlCacheName(uriPath, width, height, filtered);
 
         synchronized (allCached)
         {
@@ -194,7 +198,7 @@ public class BitmapCacheManager {
                         @Override
                         public Object call() throws Exception {
 
-                            callback.imageLoaded(url, cachedBitmaps.get(cached));
+                            callback.imageLoaded(cached, cachedBitmaps.get(cached));
                             return null;
                         }
                     });
@@ -229,9 +233,12 @@ public class BitmapCacheManager {
         }
 
         //we've made it this far, we can only be the thread that added -- therefore no more blocking necessary
+        //load up the resolver here
+        ContentResolver cr = mContext.getContentResolver();
+//        InputStream in = cr.openInputStream();
 
         //start the lazy loading -- let me know when you're done
-        finishLazyLoad(url, width, height, cached);
+        finishLazyLoad(cr, Uri.parse(uriPath), width, height, cached);
     }
 
     String urlCacheName(String url, int width, int height)

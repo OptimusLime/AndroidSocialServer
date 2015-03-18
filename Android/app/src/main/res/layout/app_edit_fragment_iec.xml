@@ -44,7 +44,6 @@
             android:id="@+id/app_edit_iec_action_button_back"
             android:layout_weight="1"
             android:gravity="center_vertical"
-            android:layout_marginLeft="20dp"
             android:background="@drawable/app_edit_action_button"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -52,6 +51,7 @@
                 android:layout_gravity="center_vertical"
                 android:layout_width="@dimen/app_edit_iec_action_back_size"
             android:layout_height="@dimen/app_edit_iec_action_back_size"
+            android:layout_marginLeft="20dp"
             android:src="@drawable/ic_action_arrow_left_white"/>
 
             <TextView

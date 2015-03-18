@@ -12,6 +12,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import java.io.FileNotFoundException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -91,20 +92,28 @@ public class EditIECCompositeAdapter extends ArrayAdapter<FilterComposite> {
             final EditIECCompositeAdapter adapter = this;
 
             //otherwise, you need to load the thumbnail then filter it
-            EditFlowManager.getInstance().lazyLoadFilterIntoImageView(mContext, filter, widthHeight, widthHeight, true, bview, new Continuation<FilterComposite, Void>() {
-                @Override
-                public Void then(Task<FilterComposite> task) throws Exception {
+            try {
+                EditFlowManager.getInstance().lazyLoadFilterIntoImageView(mContext, filter, widthHeight, widthHeight, true, bview, new Continuation<FilterComposite, Void>() {
+                    @Override
+                    public Void then(Task<FilterComposite> task) throws Exception {
 
-                    //when we're done loading, drop it down plz
-                    syncDecrementLoadCount(filter.getUniqueID());
+                        //when we're done loading, drop it down plz
+                        syncDecrementLoadCount(filter.getUniqueID());
 
-                    //HACK -- get rid of junk genomes if they fail for whatever reason
-                    if (task.getResult() == null)
-                        adapter.remove(filter);
+                        //HACK -- get rid of junk genomes if they fail for whatever reason
+                        if (task.getResult() == null)
+                            adapter.remove(filter);
 
-                    return null;
-                }
-            });
+                        return null;
+                    }
+                });
+            } catch (FileNotFoundException e) {
+//                e.printStackTrace();
+
+                //whether or not things get loaded properly, you must decrement the count -- cause you tried and failed
+                //when we're done loading, drop it down plz
+                syncDecrementLoadCount(filter.getUniqueID());
+            }
         }
 
         //set up listener for each object

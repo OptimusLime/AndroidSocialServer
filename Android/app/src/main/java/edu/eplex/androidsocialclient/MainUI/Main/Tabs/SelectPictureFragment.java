@@ -155,7 +155,7 @@ public class SelectPictureFragment extends Fragment {
 
         //create our new composite -- then peace outta here -- we der dunnn yo'
 //        for(int i=0; i < 10; i++)
-        FilterManager.getInstance().createNewComposite(getActivity(), UriToUrl.get(getActivity(), imageUri));
+        FilterManager.getInstance().createNewComposite(getActivity(), imageUri.toString());//UriToUrl.get(getActivity(), imageUri));
 
         switchTabs();
         //fly out and away!

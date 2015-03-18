@@ -83,6 +83,9 @@ public class UriToUrl {
             if (isGooglePhotosUri(uri))
                 return uri.getLastPathSegment();
 
+            String picassa = uri.getLastPathSegment();
+
+
             return getDataColumn(context, uri, null, null);
         }
         // File

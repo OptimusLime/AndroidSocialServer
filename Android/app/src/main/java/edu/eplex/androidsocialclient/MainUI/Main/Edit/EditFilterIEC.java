@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -374,8 +375,7 @@ public class EditFilterIEC extends Fragment {
     }
 
 
-    void setSelectedFilterAsMainImage(FilterComposite filterComposite)
-    {
+    void setSelectedFilterAsMainImage(FilterComposite filterComposite) {
         //now we have to install in the main image!
         if(filterComposite == selectedFilter)
             return;
@@ -391,9 +391,14 @@ public class EditFilterIEC extends Fragment {
         //we need a new image
         int widthHeight = EditFlowManager.getInstance().getBitmapSquareSize(getActivity(), mainImageDesiredWidthHeight);
 
-        //need to lazy load in the main image -- then async run the filter plz
-        EditFlowManager.getInstance().lazyLoadFilterIntoImageView(getActivity(), filterComposite, widthHeight, widthHeight, false, filterImage);
-
+        try {
+            //need to lazy load in the main image -- then async run the filter plz
+            EditFlowManager.getInstance().lazyLoadFilterIntoImageView(getActivity(), filterComposite, widthHeight, widthHeight, false, filterImage);
+        }
+        catch (Exception e)
+        {
+            Toast.makeText(getActivity(), "Error loading main image file.", Toast.LENGTH_SHORT);
+        }
     }
 
 

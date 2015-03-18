@@ -13,12 +13,14 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Transformation;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -121,11 +123,10 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
 //        });
 //    }
 
-    void lazyLoadBitmapFromCache(String url, int width, final ImageView imageView)
-    {
+    void lazyLoadBitmapFromCache(String uriPath, int width, final ImageView imageView) throws FileNotFoundException {
         imageView.setImageResource(R.drawable.ic_action_emo_tongue_black);
 
-        BitmapCacheManager.getInstance().lazyLoadBitmap(url, width, true, new BitmapCacheManager.LazyLoadedCallback() {
+        BitmapCacheManager.getInstance().lazyLoadBitmap(mContext, uriPath, width, true, new BitmapCacheManager.LazyLoadedCallback() {
             @Override
             public void imageLoaded(String url, Bitmap bitmap) {
                 imageView.setImageBitmap(bitmap);
@@ -235,8 +236,13 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
 
         if(filterThumb != null && !filterThumb.isRecycled())
             imagePreview.setImageBitmap(filterThumb);
-        else
-            EditFlowManager.getInstance().lazyLoadFilterIntoImageView(mContext, filter, thumbnailSize, thumbnailSize, true, imagePreview);
+        else {
+            try {
+                EditFlowManager.getInstance().lazyLoadFilterIntoImageView(mContext, filter, thumbnailSize, thumbnailSize, true, imagePreview);
+            } catch (FileNotFoundException e) {
+                Toast.makeText(mContext, "Base file not found", Toast.LENGTH_SHORT).show();
+            }
+        }
         //if we have it on hand, set it up plz
 //        Bitmap filterThumb = filter.getFilteredThumbnailBitmap();
 
