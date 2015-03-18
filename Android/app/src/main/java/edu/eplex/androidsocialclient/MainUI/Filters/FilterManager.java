@@ -156,12 +156,12 @@ public class FilterManager {
         return filter;
     }
 
-    public void deleteCompositeFilter(String filterWID) throws Exception {
+    public void deleteCompositeFilter(Context mContext, String filterWID) throws Exception {
 
         FilterComposite filter = this.filterMap.get(filterWID);
-        deleteCompositeFilter(filter);
+        deleteCompositeFilter(mContext, filter);
     }
-    public void deleteCompositeFilter(FilterComposite filter) throws Exception {
+    public void deleteCompositeFilter(Context mContext, FilterComposite filter) throws Exception {
 
         //remove the filter please
         this.existingFilters.remove(filter);
@@ -169,6 +169,9 @@ public class FilterManager {
 
         //drop the filter -- it's not coming back -- don't worry
         filter.clearFilterBitmapMemory();
+
+        asyncSaveFiltersToFile(mContext);
+
 
         //now we must update our filter event
         //removed a filter -- alter our followers -- they're so needy

@@ -125,7 +125,7 @@ public class FileUtilities {
 //        in.reset();
 
         //decode to the appropriate size
-        Bitmap bm = BitmapFactory.decodeStream(in = cr.openInputStream(uri), null, options);
+        Bitmap bm = BitmapFactory.decodeStream(cr.openInputStream(uri), null, options);
 
         return bm;
 //BitmapFactory.decodeFile(s

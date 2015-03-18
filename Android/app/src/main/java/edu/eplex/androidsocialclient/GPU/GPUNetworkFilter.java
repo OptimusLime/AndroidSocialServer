@@ -26,6 +26,7 @@ import eplex.win.FastNEATJava.genome.NeatGenome;
 import eplex.win.winBackbone.Artifact;
 import jp.co.cyberagent.android.gpuimage.GPUImage;
 import jp.co.cyberagent.android.gpuimage.GPUImage3x3TextureSamplingFilter;
+import jp.co.cyberagent.android.gpuimage.GPUImageBoxBlurFilter;
 
 /**
  * Created by paul on 3/13/15.
@@ -87,6 +88,7 @@ public class GPUNetworkFilter {
         GPUImage mGPUImage = new GPUImage(context);
 
         mGPUImage.setFilter(cppnFilter);
+//        mGPUImage.setFilter(new GPUImageBoxBlurFilter(.4f));
         mGPUImage.setImage(originalImage);
 
         //create the filtered bitmap object and send it back

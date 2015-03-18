@@ -353,7 +353,7 @@ public class EditFilterIEC extends Fragment {
 
                     touchImage = true;
                     if(selectedFilter != null)
-                        filterImage.setImageBitmap(selectedFilter.getThumbnailBitmap());
+                        filterImage.setImageBitmap(selectedFilter.getCurrentBitmap());
 
                     //need to return true if we handle the up action later
                     return true;
@@ -389,15 +389,15 @@ public class EditFilterIEC extends Fragment {
 //        Bitmap mainImage = filterComposite.getCurrentBitmap();
 
         //we need a new image
-        int widthHeight = EditFlowManager.getInstance().getBitmapSquareSize(getActivity(), mainImageDesiredWidthHeight);
+//        int widthHeight = EditFlowManager.getInstance().getBitmapSquareSize(getActivity(), mainImageDesiredWidthHeight);
 
         try {
             //need to lazy load in the main image -- then async run the filter plz
-            EditFlowManager.getInstance().lazyLoadFilterIntoImageView(getActivity(), filterComposite, widthHeight, widthHeight, false, filterImage);
+            EditFlowManager.getInstance().lazyLoadFilterIntoImageView(getActivity(), filterComposite, mainImageDesiredWidthHeight, mainImageDesiredWidthHeight, false, filterImage);
         }
         catch (Exception e)
         {
-            Toast.makeText(getActivity(), "Error loading main image file.", Toast.LENGTH_SHORT);
+            Toast.makeText(getActivity(), "Error loading main image file.", Toast.LENGTH_SHORT).show();
         }
     }
 

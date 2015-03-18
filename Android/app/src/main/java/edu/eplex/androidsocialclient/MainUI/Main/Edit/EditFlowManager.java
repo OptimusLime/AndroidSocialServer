@@ -3,6 +3,7 @@ package edu.eplex.androidsocialclient.MainUI.Main.Edit;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
@@ -250,7 +251,7 @@ public class EditFlowManager {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode uiParams = mapper.createObjectNode();
 
-        int widthHeight = getBitmapSquareSize(mContext, imageContainerSize);
+        int widthHeight = imageContainerSize;//getBitmapSquareSize(mContext, imageContainerSize);
 
         uiParams.set("width", mapper.convertValue(widthHeight, JsonNode.class));
         uiParams.set("height", mapper.convertValue(widthHeight, JsonNode.class));
@@ -293,6 +294,20 @@ public class EditFlowManager {
             return null;
         }
     };
+    public Bitmap getResizedBitmap(Bitmap bm, int newWidth, int newHeight) {
+        int width = bm.getWidth();
+        int height = bm.getHeight();
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+        // CREATE A MATRIX FOR THE MANIPULATION
+        Matrix matrix = new Matrix();
+        // RESIZE THE BIT MAP
+        matrix.postScale(scaleWidth, scaleHeight);
+
+        // "RECREATE" THE NEW BITMAP
+        Bitmap resizedBitmap = Bitmap.createBitmap(bm, 0, 0, width, height, matrix, false);
+        return resizedBitmap;
+    }
 
     public void lazyLoadFilterIntoImageView(final Context mContext, final FilterComposite filterComposite,
                                             final int width, int height, final boolean isThumbnail, final ImageView view) throws FileNotFoundException {
@@ -330,10 +345,18 @@ public class EditFlowManager {
                             return;
                         }
 
-                        asyncRunFilterOnImage(mContext, filterComposite, width, isThumbnail, bitmap)
+                        int widthHeightScaled = getBitmapSquareSize(mContext, width);
+
+
+//                        Bitmap resized = getResizedBitmap(bitmap, widthHeightScaled, widthHeightScaled);
+
+                        asyncRunFilterOnImage(mContext, filterComposite, widthHeightScaled, isThumbnail, bitmap)
                                 .continueWith(new Continuation<FilterComposite, FilterComposite>() {
                                     @Override
                                     public FilterComposite then(Task<FilterComposite> task) throws Exception {
+
+//                                        int widthCompare = bitmap.getWidth();
+//                                        int filterWidthCompare = filterComposite.getFilteredBitmap().getWidth();
 
                                         //grab the image from the card -- hack for now
                                         view.setScaleType(ImageView.ScaleType.FIT_CENTER);

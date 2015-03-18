@@ -42,7 +42,7 @@
 
     <!-- App Edit Frags -->
 
-    <string name="mainImageCPPNScaleDown">.5</string>
+    <string name="mainImageCPPNScaleDown">0.5</string>
 
 
 

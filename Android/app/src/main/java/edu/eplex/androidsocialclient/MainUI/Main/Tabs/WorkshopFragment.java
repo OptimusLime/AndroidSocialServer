@@ -223,7 +223,7 @@ public class WorkshopFragment extends Fragment implements WorkshopCompositeAdapt
 
                         //lets delete the filter plz
                         try {
-                            FilterManager.getInstance().deleteCompositeFilter(filter);
+                            FilterManager.getInstance().deleteCompositeFilter(getActivity(), filter);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
