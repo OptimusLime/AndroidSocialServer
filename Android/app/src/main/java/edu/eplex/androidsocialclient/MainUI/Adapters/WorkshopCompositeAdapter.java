@@ -49,8 +49,8 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
 
     public interface OnCompositeFilterSelected
     {
-        void publishCompositeFilter(FilterComposite filter);
-        void editClickCompositeFilter(FilterComposite filter);
+        void publishCompositeFilter(FilterComposite filter, int position);
+        void editClickCompositeFilter(FilterComposite filter, int position);
         void selectCompositeFilter(FilterComposite filter, int position);
         void longSelectCompositeFilter(FilterComposite filter, int position);
     }
@@ -147,29 +147,30 @@ public class WorkshopCompositeAdapter extends ArrayAdapter<FilterComposite> {
 
         View editView = rootView.findViewById(R.id.workshop_preview_action_icon_edit);
         View publishView = rootView.findViewById(R.id.workshop_preview_action_icon_publish);
+        View imageView = rootView.findViewById(R.id.workshop_preview_image_view);
 
         editView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                filterSelection.editClickCompositeFilter(filter);
+                filterSelection.editClickCompositeFilter(filter, ix);
             }
         });
 
         publishView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                filterSelection.publishCompositeFilter(filter);
+                filterSelection.publishCompositeFilter(filter, ix);
             }
         });
 
-        rootView.setOnClickListener(new View.OnClickListener() {
+        imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //set as the main image asynchronously!
                 filterSelection.selectCompositeFilter(filter, ix);
             }
         });
-
+//
         rootView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {

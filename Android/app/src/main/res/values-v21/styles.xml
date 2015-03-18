@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="HiddenActionTheme" parent="AppBaseTheme">
+    <style name="HiddenActionTheme" parent="FilterAppBaseTheme">
         <item name="android:windowActionBar">false</item>
         <!--<item name="android:windowTitleSize">0dp</item>-->
     </style>

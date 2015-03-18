@@ -7,12 +7,12 @@
     android:layout_height="match_parent"
     >
 
-    <ListView
+    <com.baoyz.swipemenulistview.SwipeMenuListView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/workshop_list_view"
         android:orientation="vertical" >
-    </ListView>
+    </com.baoyz.swipemenulistview.SwipeMenuListView>
 
     <com.melnykov.fab.FloatingActionButton
         android:id="@+id/workshop_fab"

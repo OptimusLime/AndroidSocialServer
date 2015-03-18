@@ -36,22 +36,17 @@ android {
 }
 dependencies {
     //horizontal scrolling
-//    compile 'it.sephiroth.android.library.horizontallistview:hlistview:1.2.2'
+    //    compile 'it.sephiroth.android.library.horizontallistview:hlistview:1.2.2'
     //NEED for GPU filters
     compile 'jp.co.cyberagent.android.gpuimage:gpuimage-library:1.2.3'
-
     //for presenting and caching images
     compile 'com.squareup.picasso:picasso:2.5.0'
-
     //for presenting the user with a nice action button at all times for certain locations in the app -- it floats
     compile 'com.melnykov:floatingactionbutton:1.2.0'
-
     //Material tabs with icons plz
-//    compile 'it.neokree:MaterialTabs:0.11'
-
+    //    compile 'it.neokree:MaterialTabs:0.11'
     //For quick view injection -- makes for clearner frag code
     compile 'com.jakewharton:butterknife:6.1.0'
-
     //square API helpers
     compile 'com.squareup.retrofit:retrofit:1.8.0'
     compile 'com.squareup:otto:1.3.5'
@@ -64,9 +59,7 @@ dependencies {
     compile 'com.afollestad:material-dialogs:0.4.3'
     compile fileTree(dir: 'libs', include: ['*.jar'])
     //    compile 'com.android.support:support-v13:20.0.+'
-
     compile 'com.android.support:appcompat-v7:22.0.0'
-
     compile 'com.google.android.gms:play-services-identity:6.5.87'
     compile('de.keyboardsurfer.android.widget:crouton:1.8.5@aar') {
         // exclusion is not neccessary, but generally a good idea.
@@ -78,5 +71,6 @@ dependencies {
     compile project(':FastNEATJava')
     compile project(':win-backbone')
     compile project(':MaterialTabsModule')
+    compile project(':swipeMenuListView')
 }
 

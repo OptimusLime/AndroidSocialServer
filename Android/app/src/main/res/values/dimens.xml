@@ -47,6 +47,12 @@
 
     <!-- Tab Settings -->
     <dimen name="app_bottom_tab_height">54dp</dimen>
+
+    <!-- Workshop main  -->
+
+    <dimen name="workshop_preview_swipe_icon_size">80dp</dimen>
+
+
     <!-- Workshop previews -->
     <dimen name="workshop_preview_text_list">25dp</dimen>
     <dimen name="workshop_preview_image_margin">12dp</dimen>

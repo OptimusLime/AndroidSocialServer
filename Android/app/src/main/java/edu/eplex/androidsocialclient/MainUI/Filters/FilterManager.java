@@ -167,6 +167,9 @@ public class FilterManager {
         this.existingFilters.remove(filter);
         this.filterMap.remove(filter.getUniqueID());
 
+        //drop the filter -- it's not coming back -- don't worry
+        filter.clearFilterBitmapMemory();
+
         //now we must update our filter event
         //removed a filter -- alter our followers -- they're so needy
         ChangeCompositeFilterEvent changeEvent = new ChangeCompositeFilterEvent(filter, FilterEventAction.Remove);
@@ -193,7 +196,7 @@ public class FilterManager {
                 final ByteArrayOutputStream out = new ByteArrayOutputStream();
                 final ObjectMapper mapper = new ObjectMapper();
 
-                mapper.writeValue(out, filterMap.values());
+                mapper.writeValue(out, existingFilters);
 
                 FileOutputStream fos = mContext.openFileOutput(FILTER_MAP_SAVE_LOCATION, Context.MODE_PRIVATE);
                 fos.write(out.toByteArray());
@@ -212,13 +215,16 @@ public class FilterManager {
 
                 ObjectMapper mapper = new ObjectMapper();
 
-                Collection<FilterComposite> filterMap = mapper.readValue(
+                ArrayList<FilterComposite> filterMap = mapper.readValue(
                         new InputStreamReader(mContext.openFileInput(FILTER_MAP_SAVE_LOCATION)),
-                        new TypeReference<Collection<FilterComposite>>(){});
+                        new TypeReference<ArrayList<FilterComposite>>(){});
 
                 FilterManager fm = FilterManager.getInstance();
 
-                for (FilterComposite filter : filterMap) {
+                for(int i=0; i < filterMap.size();i++){
+                    //grab our filter from the list
+                    FilterComposite filter  = filterMap.get(i);
+
                     //create a new object -- do the normal signaling to listeners here
                     fm.createNewComposite(mContext, filter, false);
                 }
