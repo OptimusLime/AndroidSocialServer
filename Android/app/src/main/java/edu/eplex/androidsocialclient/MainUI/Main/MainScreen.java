@@ -10,6 +10,11 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 
+import java.util.Arrays;
+
+import dagger.ObjectGraph;
+import edu.eplex.androidsocialclient.MainUI.API.Modules.AdjustableHostAPIModule;
+import edu.eplex.androidsocialclient.MainUI.API.WinAPIManager;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
 import edu.eplex.androidsocialclient.MainUI.Main.Tabs.SelectPictureFragment;
 import edu.eplex.androidsocialclient.MainUI.Main.Tabs.TabFlowManager;
@@ -79,6 +84,13 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
 
         //no need to be graceful, just switch immediately
         switchToTab(tfm.DefaultStartingTab(), false);
+
+        //we need to inject our objects!
+        ObjectGraph graph = ObjectGraph.create(Arrays.asList(new AdjustableHostAPIModule(this, R.string.local_app_server_endpoint, R.string.s3_bucket_url_endpoint)).toArray());
+
+        //send it in!
+        WinAPIManager.getInstance().injectAPIManager(graph);
+
     }
 
     public void switchToTab(TabFlowManager.TabID tab, boolean smooth)

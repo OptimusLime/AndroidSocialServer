@@ -201,6 +201,16 @@ public class FilterComposite {
 
     }
 
+    public FilterComposite clone()
+    {
+        FilterComposite other = new FilterComposite();
+        other.replaceWithFilter(this);
+        //make sure it's a true clone of the artifact
+        other.filterArtifact = ((FilterArtifact)this.filterArtifact.clone());
+        other.setUuid(this.getUniqueID());
+        return other;
+    }
+
     public void replaceWithFilter(FilterComposite filter)
     {
 //        if(this.filteredBitmap != null && this.filteredBitmap != filter.filteredBitmap && !this.filteredBitmap.isRecycled())

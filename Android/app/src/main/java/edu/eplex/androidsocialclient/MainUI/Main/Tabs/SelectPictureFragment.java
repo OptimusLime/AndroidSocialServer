@@ -105,9 +105,11 @@ public class SelectPictureFragment extends Fragment {
     @SuppressWarnings("unused")
     private void displayGallery() {
         if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED) && !Environment.getExternalStorageState().equals(Environment.MEDIA_CHECKING)) {
-            Intent intent = new Intent();
-            intent.setType("image/jpeg");
-            intent.setAction(Intent.ACTION_GET_CONTENT);
+            Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            intent.setType("image/*");
+//            intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
+//            intent.addCategory(Intent.CATEGORY_OPENABLE);
+
             startActivityForResult(intent, Constants.REQUEST_GALLERY);
         } else {
             Toast.makeText(getActivity(), R.string.no_media, Toast.LENGTH_SHORT).show();
@@ -146,8 +148,8 @@ public class SelectPictureFragment extends Fragment {
 
     private Uri getOutputMediaFile(){
         ContentValues values = new ContentValues();
-        values.put(MediaStore.Images.Media.TITLE, "Camera Pro");
-        values.put(MediaStore.Images.Media.DESCRIPTION, "www.appsroid.org");
+        values.put(MediaStore.Images.Media.TITLE, "HTFilters");
+        values.put(MediaStore.Images.Media.DESCRIPTION, "www.hashtagfilters.com");
         return getActivity().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
     }
 

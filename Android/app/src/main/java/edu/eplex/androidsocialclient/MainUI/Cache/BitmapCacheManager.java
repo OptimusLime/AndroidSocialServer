@@ -1,9 +1,13 @@
 package edu.eplex.androidsocialclient.MainUI.Cache;
 
+import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
+import android.support.v4.app.FragmentActivity;
 
 import com.squareup.picasso.Transformation;
 
@@ -19,6 +23,7 @@ import bolts.Continuation;
 import bolts.Task;
 import edu.eplex.androidsocialclient.MainUI.Adapters.WorkshopCompositeAdapter;
 import edu.eplex.androidsocialclient.Utilities.FileUtilities;
+import edu.eplex.androidsocialclient.Utilities.UriToUrl;
 
 /**
  * Created by paul on 3/15/15.
@@ -234,11 +239,26 @@ public class BitmapCacheManager {
 
         //we've made it this far, we can only be the thread that added -- therefore no more blocking necessary
         //load up the resolver here
+        Uri contentURI = Uri.parse(uriPath);
+
         ContentResolver cr = mContext.getContentResolver();
+
+//        final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
+
+        // Check for the freshest data.
+//        if(isKitKat)
+//            persistURIPermissions(cr, contentURI);
+
 //        InputStream in = cr.openInputStream();
 
         //start the lazy loading -- let me know when you're done
-        finishLazyLoad(cr, Uri.parse(uriPath), width, height, cached);
+        finishLazyLoad(cr, contentURI, width, height, cached);
+    }
+
+    @TargetApi(Build.VERSION_CODES.KITKAT)
+    void persistURIPermissions( ContentResolver cr, Uri contentURI)
+    {
+        cr.takePersistableUriPermission(contentURI, (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
     }
 
     String urlCacheName(String url, int width, int height)

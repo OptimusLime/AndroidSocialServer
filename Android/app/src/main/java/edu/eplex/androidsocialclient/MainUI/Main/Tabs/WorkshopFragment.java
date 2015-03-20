@@ -32,9 +32,12 @@ import java.util.logging.Filter;
 
 import com.melnykov.fab.FloatingActionButton;
 
+import bolts.Continuation;
+import bolts.Task;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import butterknife.OnClick;
+import edu.eplex.androidsocialclient.MainUI.API.WinAPIManager;
 import edu.eplex.androidsocialclient.MainUI.Adapters.WorkshopCompositeAdapter;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
@@ -94,12 +97,25 @@ public class WorkshopFragment extends Fragment implements WorkshopCompositeAdapt
         getActivity().startActivityForResult(EditFlowManager.getInstance().createEditIntent(getActivity(), filter), EditFlowManager.EDIT_SCREEN_REQUEST_CODE);
     }
     @Override
-    public void publishCompositeFilter(FilterComposite filter, int position) {
+    public void publishCompositeFilter(final FilterComposite filter, int position) {
         //pub up the comp
         toggleMenu(position, true);
 
         //we want to publish -- for now, be aware of it
-        Toast.makeText(getActivity(), "Looking to publish: " + filter.getUniqueID(), Toast.LENGTH_SHORT).show();
+//        Toast.makeText(getActivity(), "Looking to publish: " + filter.getUniqueID(), Toast.LENGTH_SHORT).show();
+
+        WinAPIManager.getInstance().asyncPublishArtifact(filter)
+            .onSuccess(new Continuation<Void, Void>() {
+                @Override
+                public Void then(Task<Void> task) throws Exception {
+
+                    Toast.makeText(getActivity(), "Publish successful: " + filter.getUniqueID(), Toast.LENGTH_SHORT).show();
+
+                    return null;
+                }
+            });
+
+
     }
 
     @Override

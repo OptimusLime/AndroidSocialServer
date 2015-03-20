@@ -2,6 +2,8 @@
 #Ignore the social keys and other senstitive strings
 socialKeys.xml
 clientKeys.js
+access-credentials.json
+access-credentials.js
 
 # Logs
 logs

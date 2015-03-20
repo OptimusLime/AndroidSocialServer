@@ -190,12 +190,21 @@ public class EditFilterIEC extends Fragment {
                     @Override
                     public Task<Void> then(Task<Void> task) throws Exception {
 //
-//                        List<Artifact> allSeeds = evolution.seeds();
+                        List<Artifact> allSeeds = evolution.seeds();
 //                        for (Artifact seed : allSeeds)
 //                            allArtifactMap.put(seed.wid(), seed);
 
+                        //don't start with anything please
+                        FilterComposite filter = FilterManager.getInstance().getLastEditedFilter();
+                        FilterComposite startingFilter = null;
+                        if(filter.getFilterArtifact() != null && filter.getFilterArtifact().wid().equals(allSeeds.get(0).wid()))
+                        {
+                            //clone the filter and add it as our first individual
+                            startingFilter = filter.clone();
+                        }
+
                         //start by fetching the minimal required for displaying -- 6/8 should do!
-                        addMoreOffspring(6, null);
+                        addMoreOffspring(6, startingFilter);
                         return null;
                     }
                 }, Task.UI_THREAD_EXECUTOR);
