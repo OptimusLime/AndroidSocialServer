@@ -17,10 +17,10 @@ var createFiles = function(props)
     var prepend = user + "/";
 
     return [
-        {prepend: prepend, append: "/filter-thumbnail"},
-        {prepend: prepend, append: "/filter-full"},
-        {prepend: prepend, append: "/image-full"},
-        {prepend: prepend, append: "/image-thumbnail"}
+        {prepend: prepend, append: "/filterThumbnail"},
+        {prepend: prepend, append: "/filterFull"},
+        {prepend: prepend, append: "/imageFull"},
+        {prepend: prepend, append: "/imageThumbnail"}
     ];
 }
 
@@ -111,6 +111,17 @@ function launchExpress()
 			  			res.status(500).send('Error initialize upload ' + (err.message || err)).end();
 			  		});
 			});
+
+			app.put('/check/put', function(req, res)
+			{
+				// console.log(req);
+
+				console.log(req.headers);
+
+				res.json(JSON.stringify({succes: true})).end();
+
+
+			})
 
 			app.post('/upload/confirm', function(req, res)
 			{

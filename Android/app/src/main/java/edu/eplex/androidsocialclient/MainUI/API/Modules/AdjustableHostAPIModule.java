@@ -34,6 +34,7 @@ public class AdjustableHostAPIModule {
                 .build();
 
         s3Adapter = new RestAdapter.Builder()
+                .setLogLevel(RestAdapter.LogLevel.FULL)
                 .setEndpoint(activity.getResources().getString(amazonEndpoint))
                 .build();
     }

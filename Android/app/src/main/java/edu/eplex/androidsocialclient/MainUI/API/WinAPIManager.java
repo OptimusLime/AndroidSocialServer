@@ -10,7 +10,23 @@ import android.util.Log;
 //import com.squareup.okhttp.RequestBody;
 //import com.squareup.okhttp.Response;
 
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
+import com.loopj.android.http.SyncHttpClient;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +44,11 @@ import edu.eplex.androidsocialclient.MainUI.API.Publish.PublishResponse;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
 import retrofit.RestAdapter;
+import retrofit.client.Header;
+import retrofit.client.OkClient;
+import retrofit.client.Request;
 import retrofit.client.Response;
+import retrofit.mime.TypedByteArray;
 
 /**
  * Created by paul on 3/19/15.
@@ -37,17 +57,17 @@ public class WinAPIManager {
 
 //    public static final MediaType JSON
 //            = MediaType.parse("application/json; charset=utf-8");
-//
+////
 //    public static final MediaType PNG
 //            = MediaType.parse("image/png");
 //
 //    public static final MediaType PLAINTEXT
 //            = MediaType.parse("text/plain");
 
-    static String FILTER_THUMB = "filter-thumbnail";
-    static String FILTER_FULL = "filter-full";
-    static String IMAGE_THUMB = "image-thumbnail";
-    static String IMAGE_FULL = "image-full";
+    static String FILTER_THUMB = "filteThumbnail";
+    static String FILTER_FULL = "filterFull";
+    static String IMAGE_THUMB = "imageThumbnail";
+    static String IMAGE_FULL = "imageFull";
 
 
     @Inject
@@ -87,6 +107,7 @@ public class WinAPIManager {
         Bitmap immagex=image;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         immagex.compress(Bitmap.CompressFormat.PNG, 100, baos);
+
         return baos;
     }
 
@@ -97,7 +118,7 @@ public class WinAPIManager {
         return BitmapFactory.decodeByteArray(input, 0, input.length);
     }
 
-    Task<Response> asyncUploadImage(final UploadURL url, final Bitmap image)
+    Task<Void> asyncUploadImage(final UploadURL url, final Bitmap image)
     {
         return Task.callInBackground(new Callable<ByteArrayOutputStream>() {
             @Override
@@ -108,8 +129,7 @@ public class WinAPIManager {
             @Override
             public Response then(Task<ByteArrayOutputStream> task) throws Exception {
 
-                if(task.getResult() != null)
-                {
+                if (task.getResult() != null) {
                     //we need to pull the info from the url
                     String s3Key = url.request.Key;
 
@@ -119,13 +139,106 @@ public class WinAPIManager {
 
                     String[] signature = qSplit[1].split("\\&");
 
-                    return s3UploadAPI.syncS3Upload(task.getResult().toByteArray(),
+                    byte[] data = task.getResult().toByteArray();
+
+                    TypedByteArray typedByteArray = new TypedByteArray("binary/octet-stream", data);//"application/json; charset=UTF-8", data);
+
+//                    @Body byte[] pngImage,
+//                    @Header("Content-Length") int contentLength,
+//                    @Path("username") String username,
+//                    @Path("folder") String folder,
+//                    @Path("image") String imageName,
+//                    @Query("AWSAccessKeyId") String awsAccessKeyId,
+//                    @Query("Expires") long expires,
+//                    @Query("Signature") String Signature
+
+                    String awsAccessKeyId = signature[0].split("\\=")[1];
+                    long expires = Long.parseLong(signature[1].split("\\=")[1]);
+                    String sig = signature[2].split("\\=")[1];
+
+                    HttpClient client = new DefaultHttpClient();
+                    HttpPut put = new HttpPut(url.url);
+//                    HttpPut put = new HttpPut("http://192.168.1.101:8000/check/put");//url.url);
+//                    put.removeHeaders();
+                    org.apache.http.Header[] defaults = put.getAllHeaders();
+
+                    put.removeHeaders("Content-Length");
+                    put.removeHeaders("Content-Type");
+                    put.removeHeaders("Accept");
+                    defaults = put.getAllHeaders();
+
+//                    put.addHeader("Content-Type", "binary/octet-stream");
+                    put.addHeader("Connection", "close");
+                    put.addHeader("User-Agent", "filters");
+                    put.addHeader("Host", url.request.Bucket + ".s3.amazonaws.com");
+//                    put.addHeader("Content-Length", "" + data.length);
+                    put.addHeader("Accept", "*/*");
+                    put.setEntity(new ByteArrayEntity(data));//new StringEntity(jsonObj.writeValue()));
+                    defaults = put.getAllHeaders();
+
+
+                    HttpResponse response = client.execute(put);
+
+
+//                    SyncHttpClient client = new SyncHttpClient();
+//                    client.removeAllHeaders();
+//                    client.addHeader("Accept", "*/*");
+//                    RequestParams requestParams = new RequestParams();
+//                    requestParams.put("image", new ByteArrayInputStream(data));
+//
+////                    client.addHeader("Content-Length", requestParams."" + data.length);
+//                    client.set
+//
+//                    client.put(url.url, requestParams, new AsyncHttpResponseHandler() {
+//
+//                        @Override
+//                        public void onSuccess(int statusCode, org.apache.http.Header[] headers, byte[] responseBody) {
+//                            Log.d("TAGS", "" + statusCode);
+//                        }
+//
+//                        @Override
+//                        public void onFailure(int statusCode, org.apache.http.Header[] headers, byte[] responseBody, Throwable error) {
+//                            Log.d("TAG", "" + statusCode);
+//                        }
+//                    });
+
+//                    OkHttpClient client = new OkHttpClient();
+//
+//                    RequestBody body = RequestBody.create(PNG, data);
+//                    com.squareup.okhttp.Request request = new com.squareup.okhttp.Request.Builder()
+//                            .url(url.url)
+//                            .put(body)
+//                            .build();
+//
+//                    com.squareup.okhttp.Response response = client.newCall(request).execute();
+//                    return response;
+
+
+
+//                    RequestBody body = Request.create(JSON, json);
+//                    ArrayList<Header> headers = new ArrayList<Header>();
+//                    headers.add(new Header("Accept", "*/*"));
+//                    headers.add(new Header("Content-Length", "" + typedByteArray.getBytes().length));
+//
+//                    //send a put request please
+//                    Request request = new Request("PUT", url.url, headers, typedByteArray);
+//                    Response r = client.execute(request);
+//
+//                    return r;
+//
+//                    Response response = client.newCall(request).execute();
+//                    return response.body().string();
+
+
+                    return s3UploadAPI.syncS3Upload(typedByteArray,
+                            typedByteArray.getBytes().length,
+                            url.request.Bucket + ".s3.amazonaws.com",
                             urlParams[0],
                             urlParams[1],
                             urlParams[2],
-                            signature[0],
-                            Long.parseLong(signature[1]),
-                            signature[2]);
+                            awsAccessKeyId,
+                            expires,
+                            sig);
 
 
 //                    return null;// post(url, task.getResult().toByteArray());
@@ -133,6 +246,20 @@ public class WinAPIManager {
                 }
                 //now we must upload to the url provided
                 return null;
+            }
+        }).continueWith(new Continuation<Response, Void>() {
+            @Override
+            public Void then(Task<Response> task) throws Exception {
+
+                if(task.getResult() != null)
+                {
+                    //get info from the response -- was ita a success?
+                    if(task.getResult().getStatus() == 200)
+                        return null;
+                }
+
+                //TODO custom exception
+                throw new Exception("Upload to S3 failed");
             }
         });
     }
@@ -168,7 +295,7 @@ public class WinAPIManager {
 
                     UploadURL[] uploads = publishResponse.uploads;
 
-                    ArrayList<Task<Response>> asyncUploadRequests = new ArrayList<Task<Response>>();
+                    ArrayList<Task<Void>> asyncUploadRequests = new ArrayList<>();
 
                     //uplaod it all, plz!
                     for (int i = 0; i < uploads.length; i++) {

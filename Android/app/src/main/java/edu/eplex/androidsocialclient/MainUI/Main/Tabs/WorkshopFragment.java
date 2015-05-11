@@ -102,7 +102,7 @@ public class WorkshopFragment extends Fragment implements WorkshopCompositeAdapt
         toggleMenu(position, true);
 
         //we want to publish -- for now, be aware of it
-//        Toast.makeText(getActivity(), "Looking to publish: " + filter.getUniqueID(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), "Looking to publish: " + filter.getUniqueID(), Toast.LENGTH_SHORT).show();
 
         WinAPIManager.getInstance().asyncPublishArtifact(filter)
             .onSuccess(new Continuation<Void, Void>() {
