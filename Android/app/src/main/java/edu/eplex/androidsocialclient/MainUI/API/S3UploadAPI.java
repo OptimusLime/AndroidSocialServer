@@ -16,13 +16,17 @@ import retrofit.mime.TypedByteArray;
 public interface S3UploadAPI {
 
     @Headers({
-            "Accept : */*"
+            "Accept : */*",
+//            "Connection : close",
+//            "User-Agent : filters"
 //            "Content-Type : image/png"
     })
-    @PUT("/{username}/{folder}/{image}")
+    @PUT("/check/{username}/{folder}/{image}")
     Response syncS3Upload(@Body TypedByteArray pngImage,
                           @Header("Content-Length") int contentLength,
                           @Header("Host") String host,
+                          @Header("Connection") String conn,
+//                          @Header("Content-Type") String type,
                           @Path("username") String username,
                           @Path("folder") String folder,
                           @Path("image") String imageName,

@@ -112,7 +112,7 @@ function launchExpress()
 			  		});
 			});
 
-			app.put('/check/put', function(req, res)
+			app.put('/check/:uuid/:username/:image', function(req, res)
 			{
 				// console.log(req);
 

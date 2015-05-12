@@ -7,6 +7,7 @@ import dagger.Provides;
 import edu.eplex.androidsocialclient.MainUI.API.S3UploadAPI;
 import edu.eplex.androidsocialclient.MainUI.API.PublishAPI;
 import edu.eplex.androidsocialclient.MainUI.API.WinAPIManager;
+import retrofit.RequestInterceptor;
 import retrofit.RestAdapter;
 
 /**
@@ -36,6 +37,12 @@ public class AdjustableHostAPIModule {
         s3Adapter = new RestAdapter.Builder()
                 .setLogLevel(RestAdapter.LogLevel.FULL)
                 .setEndpoint(activity.getResources().getString(amazonEndpoint))
+                .setRequestInterceptor(new RequestInterceptor() {
+                    @Override
+                    public void intercept(RequestInterceptor.RequestFacade request) {
+
+                    }
+                })
                 .build();
     }
 

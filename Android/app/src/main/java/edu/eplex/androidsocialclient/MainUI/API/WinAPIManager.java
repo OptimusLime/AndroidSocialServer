@@ -125,9 +125,9 @@ public class WinAPIManager {
             public ByteArrayOutputStream call() throws Exception {
                 return encodeToPNG(image);
             }
-        }).continueWith(new Continuation<ByteArrayOutputStream, Response>() {
+        }).continueWith(new Continuation<ByteArrayOutputStream, HttpResponse>() {
             @Override
-            public Response then(Task<ByteArrayOutputStream> task) throws Exception {
+            public HttpResponse then(Task<ByteArrayOutputStream> task) throws Exception {
 
                 if (task.getResult() != null) {
                     //we need to pull the info from the url
@@ -155,7 +155,7 @@ public class WinAPIManager {
                     String awsAccessKeyId = signature[0].split("\\=")[1];
                     long expires = Long.parseLong(signature[1].split("\\=")[1]);
                     String sig = signature[2].split("\\=")[1];
-
+//
                     HttpClient client = new DefaultHttpClient();
                     HttpPut put = new HttpPut(url.url);
 //                    HttpPut put = new HttpPut("http://192.168.1.101:8000/check/put");//url.url);
@@ -176,8 +176,8 @@ public class WinAPIManager {
                     put.setEntity(new ByteArrayEntity(data));//new StringEntity(jsonObj.writeValue()));
                     defaults = put.getAllHeaders();
 
-
-                    HttpResponse response = client.execute(put);
+                    return client.execute(put);
+//                    HttpResponse response = client.execute(put);
 
 
 //                    SyncHttpClient client = new SyncHttpClient();
@@ -230,15 +230,17 @@ public class WinAPIManager {
 //                    return response.body().string();
 
 
-                    return s3UploadAPI.syncS3Upload(typedByteArray,
-                            typedByteArray.getBytes().length,
-                            url.request.Bucket + ".s3.amazonaws.com",
-                            urlParams[0],
-                            urlParams[1],
-                            urlParams[2],
-                            awsAccessKeyId,
-                            expires,
-                            sig);
+//                    return s3UploadAPI.syncS3Upload(typedByteArray,
+//                            typedByteArray.getBytes().length,
+//                            url.request.Bucket + ".s3.amazonaws.com",
+//                            "close",
+//                            "",
+//                            urlParams[0],
+//                            urlParams[1],
+//                            urlParams[2],
+//                            awsAccessKeyId,
+//                            expires,
+//                            sig);
 
 
 //                    return null;// post(url, task.getResult().toByteArray());
@@ -247,14 +249,14 @@ public class WinAPIManager {
                 //now we must upload to the url provided
                 return null;
             }
-        }).continueWith(new Continuation<Response, Void>() {
+        }).continueWith(new Continuation<HttpResponse, Void>() {
             @Override
-            public Void then(Task<Response> task) throws Exception {
+            public Void then(Task<HttpResponse> task) throws Exception {
 
                 if(task.getResult() != null)
                 {
                     //get info from the response -- was ita a success?
-                    if(task.getResult().getStatus() == 200)
+                    if(task.getResult().getStatusLine().getStatusCode() == 200)
                         return null;
                 }
 
