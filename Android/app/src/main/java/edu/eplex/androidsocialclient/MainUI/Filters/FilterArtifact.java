@@ -40,8 +40,16 @@ public class FilterArtifact implements Artifact {
     @JsonProperty("wid")
     private String wid;
 
+    public String dbType = "FilterArtifact";
+
     @JsonProperty("genomeFilters")
     public ArrayList<NeatGenome> genomeFilters;
+
+    @JsonProperty("caption")
+    public String photoCaption;
+
+    @JsonProperty("hashtags")
+    public ArrayList<String> hashtags;
 
     @Override
     public String wid() {

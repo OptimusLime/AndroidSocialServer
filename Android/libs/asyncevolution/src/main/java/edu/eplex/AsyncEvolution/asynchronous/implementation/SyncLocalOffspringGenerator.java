@@ -48,7 +48,7 @@ public class SyncLocalOffspringGenerator implements ArtifactOffspringGenerator {
         NEATArtifact na = (NEATArtifact)clone;
 
         //grab the unique identifier for the genome
-        String gParent = na.genome.gid;
+        String gParent = na.genome.wid;
 
         //create an asexual offspring object!
         na.genome = na.genome.createOffspringAsexual(newNodeTable, newConnectionTable, np);
@@ -77,12 +77,12 @@ public class SyncLocalOffspringGenerator implements ArtifactOffspringGenerator {
         NEATArtifact o1 = (NEATArtifact)clone;
         NEATArtifact p2 = (NEATArtifact)parent2;
 
-        String p1GID= o1.genome.gid;
+        String p1GID= o1.genome.wid;
         //create an asexual offspring object!
         o1.genome = o1.genome.createOffspringSexual(p2.genome, np);
 
         //set the parent! For tracking purposes
-        o1.genome.parents = Arrays.asList(p1GID, p2.genome.gid);
+        o1.genome.parents = Arrays.asList(p1GID, p2.genome.wid);
 
         //add some extra mutations for good show!
         for(int i=0; i < np.postSexualMutations; i++)

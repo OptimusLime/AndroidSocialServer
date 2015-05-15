@@ -42,6 +42,7 @@ import edu.eplex.androidsocialclient.MainUI.Adapters.WorkshopCompositeAdapter;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
 import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFlowManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Publish.PublishFlowManager;
 import edu.eplex.androidsocialclient.R;
 
 /**
@@ -104,16 +105,23 @@ public class WorkshopFragment extends Fragment implements WorkshopCompositeAdapt
         //we want to publish -- for now, be aware of it
         Toast.makeText(getActivity(), "Looking to publish: " + filter.getUniqueID(), Toast.LENGTH_SHORT).show();
 
-        WinAPIManager.getInstance().asyncPublishArtifact(filter)
-            .onSuccess(new Continuation<Void, Void>() {
-                @Override
-                public Void then(Task<Void> task) throws Exception {
+        //this is hte one we want to edit for publishing
+        FilterManager.getInstance().setLastEditedFilter(filter);
 
-                    Toast.makeText(getActivity(), "Publish successful: " + filter.getUniqueID(), Toast.LENGTH_SHORT).show();
+        //we start our new edit activity!
+        getActivity().startActivityForResult(PublishFlowManager.getInstance().createPublishIntent(getActivity(), filter),
+                PublishFlowManager.PUBLISH_SCREEN_REQUEST_CODE);
 
-                    return null;
-                }
-            });
+//        WinAPIManager.getInstance().asyncPublishArtifact(filter)
+//            .onSuccess(new Continuation<Void, Void>() {
+//                @Override
+//                public Void then(Task<Void> task) throws Exception {
+//
+//                    Toast.makeText(getActivity(), "Publish successful: " + filter.getUniqueID(), Toast.LENGTH_SHORT).show();
+//
+//                    return null;
+//                }
+//            });
 
 
     }

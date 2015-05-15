@@ -18,7 +18,7 @@ public class NeatNode {
     public String activationFunction;
 
     @JsonProperty("nodeType")
-    public NodeType type;
+    public NodeType nodeType;
 
     @JsonProperty("layer")
     public double layer;
@@ -35,7 +35,7 @@ public class NeatNode {
         this.gid = gid;
         this.activationFunction = functionID;
         this.layer = layer;
-        this.type = type;
+        this.nodeType = type;
     }
 
     public NeatNode clone()
@@ -45,6 +45,6 @@ public class NeatNode {
 
     public static NeatNode Copy(NeatNode otherNode)
     {
-        return new NeatNode(otherNode.gid, otherNode.activationFunction, otherNode.layer, otherNode.type);
+        return new NeatNode(otherNode.gid, otherNode.activationFunction, otherNode.layer, otherNode.nodeType);
     }
 }

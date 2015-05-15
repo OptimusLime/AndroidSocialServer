@@ -1,19 +1,13 @@
 package edu.eplex.androidsocialclient.MainUI.API;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 
-//import com.squareup.okhttp.MediaType;
-//import com.squareup.okhttp.OkHttpClient;
-//import com.squareup.okhttp.Request;
-//import com.squareup.okhttp.RequestBody;
-//import com.squareup.okhttp.Response;
 
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
-import com.loopj.android.http.SyncHttpClient;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -24,6 +18,9 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -43,6 +40,7 @@ import edu.eplex.androidsocialclient.MainUI.API.Publish.PublishRequest;
 import edu.eplex.androidsocialclient.MainUI.API.Publish.PublishResponse;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
+import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
 import retrofit.RestAdapter;
 import retrofit.client.Header;
 import retrofit.client.OkClient;
@@ -64,7 +62,7 @@ public class WinAPIManager {
 //    public static final MediaType PLAINTEXT
 //            = MediaType.parse("text/plain");
 
-    static String FILTER_THUMB = "filteThumbnail";
+    static String FILTER_THUMB = "filterThumbnail";
     static String FILTER_FULL = "filterFull";
     static String IMAGE_THUMB = "imageThumbnail";
     static String IMAGE_FULL = "imageFull";
@@ -98,6 +96,69 @@ public class WinAPIManager {
     public void injectAPIManager(ObjectGraph graph)
     {
         graph.inject(this);
+    }
+
+    HashMap<String, PublishRequest> confirmedUploads;// = new HashMap<>();
+    final static String SUCCESSFUL_UPLOAD_SAVE_LOCATION = "SavedUploadRequests";
+
+    public Task<Void> saveSuccessfulFilterUpload(String wid, PublishRequest pr, final Context mContext)
+    {
+        if(confirmedUploads ==null)
+            confirmedUploads = new HashMap<>();
+
+        confirmedUploads.put(wid, pr);
+
+        return Task.call(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+
+                final ByteArrayOutputStream out = new ByteArrayOutputStream();
+                final ObjectMapper mapper = new ObjectMapper();
+
+                mapper.writeValue(out, confirmedUploads);
+
+                FileOutputStream fos = mContext.openFileOutput(SUCCESSFUL_UPLOAD_SAVE_LOCATION, Context.MODE_PRIVATE);
+                fos.write(out.toByteArray());
+                fos.close();
+
+                return null;
+            }
+        });
+    }
+
+    public Task<PublishRequest> asyncCheckSuccessfulUpload(final String wid, final Context mContext)
+    {
+        if(confirmedUploads == null) {
+            return Task.call(new Callable<PublishRequest>() {
+                @Override
+                public PublishRequest call() throws Exception {
+
+                    ObjectMapper mapper = new ObjectMapper();
+
+                    try {
+                        confirmedUploads = mapper.readValue(
+                                new InputStreamReader(mContext.openFileInput(SUCCESSFUL_UPLOAD_SAVE_LOCATION)),
+                                new TypeReference<HashMap<String, PublishRequest>>() {
+                                });
+                    }
+                    catch (IOException e)
+                    {
+                        confirmedUploads = new HashMap<String, PublishRequest>();
+                    }
+
+//                    confirmedUploads = new HashMap<String, PublishRequest>();
+
+                    return confirmedUploads.get(wid);
+                }
+            });
+        }
+        else
+            return Task.call(new Callable<PublishRequest>() {
+                @Override
+                public PublishRequest call() throws Exception {
+                    return confirmedUploads.get(wid);
+                }
+            });
     }
 
 
@@ -276,81 +337,138 @@ public class WinAPIManager {
 //        return client.newCall(request).execute();
 //    }
 
-    public Task<Void> asyncPublishArtifact(final FilterComposite artifactToPublish)
+
+    Continuation<Void, Confirmation> ConfirmUpload(final Context mContext, final PublishRequest pr, final FilterComposite artifactToPublish)
     {
-        final PublishRequest pr = new PublishRequest();
-
-        return Task.callInBackground(new Callable<PublishResponse>() {
-            @Override
-            public PublishResponse call() throws Exception {
-                //need to generate a publish request first
-                return publishAPI.syncGenerateUpload(null);
-            }
-        }).continueWithTask(new Continuation<PublishResponse, Task<Void>>() {
-            @Override
-            public Task<Void> then(Task<PublishResponse> task) throws Exception {
-                //we got the publish response, we need to check for errors
-                if (task.getResult() != null) {
-                    PublishResponse publishResponse = task.getResult();
-
-                    pr.uuid = publishResponse.uuid;
-
-                    UploadURL[] uploads = publishResponse.uploads;
-
-                    ArrayList<Task<Void>> asyncUploadRequests = new ArrayList<>();
-
-                    //uplaod it all, plz!
-                    for (int i = 0; i < uploads.length; i++) {
-                        UploadURL upURL = uploads[i];
-                        String uploadKey = upURL.request.Key;
-                        if (uploadKey.contains(FILTER_FULL)) {
-                            asyncUploadRequests.add(asyncUploadImage(upURL, artifactToPublish.getFilteredBitmap()));
-                        } else if (uploadKey.contains(FILTER_THUMB)) {
-                            asyncUploadRequests.add(asyncUploadImage(upURL, artifactToPublish.getFilteredThumbnailBitmap()));
-                        } else if (uploadKey.contains(IMAGE_FULL)) {
-                            asyncUploadRequests.add(asyncUploadImage(upURL, artifactToPublish.getCurrentBitmap()));
-                        } else if (uploadKey.contains(IMAGE_THUMB)) {
-                            asyncUploadRequests.add(asyncUploadImage(upURL, artifactToPublish.getThumbnailBitmap()));
-                        }
-                    }
-                    //we now have a bunch of requests to make
-                    return Task.whenAll(asyncUploadRequests);
-                }
-
-                //then after error check we grab the response and then upload to amazon s3
-                return null;
-            }
-        }).continueWith(new Continuation<Void, Confirmation>() {
+        return new Continuation<Void, Confirmation>() {
             @Override
             public Confirmation then(Task<Void> task) throws Exception {
 
                 //if we made it this far, we've uploaded images
                 if (!task.isCancelled() || !task.isFaulted()) {
                     //wow, lets go ahead and confirm, and send our filter artifact while we're at it too!
+                    //we should actually save this attempt -- so that we don't upload twice
+
                     pr.accessToken = "bobsyourunclefool";
                     pr.filterArtifacts = new HashMap<String, FilterArtifact>();
                     FilterArtifact fa = artifactToPublish.getFilterArtifact();
                     pr.filterArtifacts.put(fa.wid(), fa);
+
+                    saveSuccessfulFilterUpload(artifactToPublish.getUniqueID(), pr, mContext);
+
                     return publishAPI.syncConfirmUpload(pr);
                 }
 
                 return null;
             }
-        }).continueWith(new Continuation<Confirmation, Void>() {
-            @Override
-            public Void then(Task<Confirmation> task) throws Exception {
+        };
+    }
 
-                if(task.getResult() != null)
-                {
-                    if(task.getResult().uuid.equals(pr.uuid))
-                    {
-                        Log.d("WINAPIMANAGER", "Successful upload!");
+    public Task<Void> asyncPublishArtifact(final Context mContext, final FilterComposite artifactToPublish)
+    {
+//        final PublishRequest checkResponse = checkSuccessfulUpload(artifactToPublish.getUniqueID());
+
+        return asyncCheckSuccessfulUpload(artifactToPublish.getUniqueID(), mContext)
+                .continueWithTask(new Continuation<PublishRequest, Task<Void>>() {
+                    @Override
+                    public Task<Void> then(Task<PublishRequest> task) throws Exception {
+
+                        final PublishRequest checkResponse = task.getResult();
+
+                        if (checkResponse == null) {
+                            //we have to do everything
+                            final PublishRequest pr = new PublishRequest();
+
+                            return Task.callInBackground(new Callable<PublishResponse>() {
+                                @Override
+                                public PublishResponse call() throws Exception {
+                                    //need to generate a publish request first
+                                    return publishAPI.syncGenerateUpload(null);
+                                }
+                            }).continueWithTask(new Continuation<PublishResponse, Task<Void>>() {
+                                @Override
+                                public Task<Void> then(Task<PublishResponse> task) throws Exception {
+
+                                    //we got the publish response, we need to check for errors
+                                    if (task.getResult() != null) {
+                                        PublishResponse publishResponse = task.getResult();
+
+                                        pr.uuid = publishResponse.uuid;
+
+                                        UploadURL[] uploads = publishResponse.uploads;
+
+                                        ArrayList<Task<Void>> asyncUploadRequests = new ArrayList<>();
+
+                                        //uplaod it all, plz!
+                                        for (int i = 0; i < uploads.length; i++) {
+                                            UploadURL upURL = uploads[i];
+                                            String uploadKey = upURL.request.Key;
+                                            if (uploadKey.contains(FILTER_FULL)) {
+                                                asyncUploadRequests.add(asyncUploadImage(upURL, artifactToPublish.getFilteredBitmap()));
+                                            } else if (uploadKey.contains(FILTER_THUMB)) {
+                                                asyncUploadRequests.add(asyncUploadImage(upURL, artifactToPublish.getFilteredThumbnailBitmap()));
+                                            } else if (uploadKey.contains(IMAGE_FULL)) {
+                                                asyncUploadRequests.add(asyncUploadImage(upURL, artifactToPublish.getCurrentBitmap()));
+                                            } else if (uploadKey.contains(IMAGE_THUMB)) {
+                                                asyncUploadRequests.add(asyncUploadImage(upURL, artifactToPublish.getThumbnailBitmap()));
+                                            }
+                                        }
+                                        //we now have a bunch of requests to make
+                                        return Task.whenAll(asyncUploadRequests);
+                                    }
+
+                                    //then after error check we grab the response and then upload to amazon s3
+                                    return null;
+                                }
+                            })
+                                    .continueWith(ConfirmUpload(mContext, pr, artifactToPublish))
+                                    .continueWith(new Continuation<Confirmation, Void>() {
+                                        @Override
+                                        public Void then(Task<Confirmation> task) throws Exception {
+
+                                            if (task.getResult() != null) {
+                                                if (task.getResult().uuid.equals(pr.uuid)) {
+                                                    Log.d("WINAPIMANAGER", "Successful upload!");
+                                                }
+                                            }
+                                            else //otherwise, remove the wid -- we didn't succeed -- we need to be careful
+                                                confirmedUploads.remove(artifactToPublish.getUniqueID());
+
+                                            return null;
+                                        }
+                                    });
+                        } else {
+                            //otherwise, we can skip ahead, the upload has been done -- and we know it
+                            return Task.callInBackground(new Callable<Void>() {
+                                @Override
+                                public Void call() throws Exception {
+                                    return null;
+                                }
+                            })
+                                    .continueWith(ConfirmUpload(mContext, checkResponse, artifactToPublish))
+                                    .continueWith(new Continuation<Confirmation, Void>() {
+                                        @Override
+                                        public Void then(Task<Confirmation> task) throws Exception {
+
+                                            if (task.getResult() != null) {
+                                                if (task.getResult().uuid.equals(checkResponse.uuid)) {
+                                                    Log.d("WINAPIMANAGER", "Successful upload!");
+                                                }
+                                            }
+                                            else //otherwise, remove the wid -- we didn't succeed -- we need to be careful
+                                                confirmedUploads.remove(artifactToPublish.getUniqueID());
+
+                                            return null;
+                                        }
+                                    });
+                        }
                     }
-                }
+                });
 
-                return null;
-            }
-        });
+
+
+
+
 
     }
 

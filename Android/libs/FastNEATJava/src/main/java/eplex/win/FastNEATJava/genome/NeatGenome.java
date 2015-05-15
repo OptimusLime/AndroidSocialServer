@@ -3,6 +3,8 @@ package eplex.win.FastNEATJava.genome;
 
 import android.util.Pair;
 
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -30,9 +32,11 @@ public class NeatGenome
     public List<String> parents;
 
     @JsonProperty("wid")
-    public String gid;
+    public String wid;
 
-    public double fitness;
+    double fitness;
+
+    public String dbType = "NEATGenotype";
 
     @JsonProperty("nodes")
     public List<NeatNode> nodes;
@@ -57,7 +61,7 @@ public class NeatGenome
                       int incount,
                       int outcount)
     {
-        this.gid = gid;
+        this.wid = gid;
 
         // From C#: Ensure that the connectionGenes are sorted by innovation ID at all times.
         this.nodes = nodes;
@@ -90,9 +94,9 @@ public class NeatGenome
         for(int i=0; i < this.nodes.size(); i++) {
 
             NeatNode nn = this.nodes.get(i);
-            if (nn.type == NodeType.input)
+            if (nn.nodeType == NodeType.input)
                 incount++;
-            else if(nn.type == NodeType.output)
+            else if(nn.nodeType == NodeType.output)
                 outcount++;
         }
 
@@ -258,7 +262,7 @@ public class NeatGenome
             connectionCopy.add(conn.clone());
         }
 
-        return new NeatGenome(genome.gid, nodeCopy, connectionCopy, genome.inputNodeCount, genome.outputNodeCount);
+        return new NeatGenome(genome.wid, nodeCopy, connectionCopy, genome.inputNodeCount, genome.outputNodeCount);
     }
 
     public static NeatGenome Copy(NeatGenome genome, String gid)
@@ -267,7 +271,7 @@ public class NeatGenome
         NeatGenome cp = Copy(genome);
 
         if(gid != null)
-            cp.gid = gid;
+            cp.wid = gid;
 
         return cp;
     }
@@ -576,7 +580,7 @@ public class NeatGenome
 //        idxBound = neuronGeneList.Count;
 
         for (NeatNode node : this.nodes) {
-            if (node.type != NodeType.hidden) {
+            if (node.nodeType != NodeType.hidden) {
                 newNodeList.add(NeatNode.Copy(node));
                 newNodeTable.put(node.gid, node);
             }
@@ -656,7 +660,7 @@ public class NeatGenome
 
     public NeatGenome cloneGenome()
     {
-        return NeatGenome.Copy(this, this.gid);
+        return NeatGenome.Copy(this, this.wid);
     }
 
     public NeatGenome cloneGenomeNewID()
@@ -960,7 +964,7 @@ public class NeatGenome
 
             //newNeuronGene = new NeuronGene(tmpStruct.NewNeuronGene.InnovationId, NeuronType.Hidden, actFunct);
             newNode = NeatNode.Copy(tmpStruct.node);
-            newNode.type = NodeType.hidden;
+            newNode.nodeType = NodeType.hidden;
             //new NeuronGene(null, tmpStruct.NewNeuronGene.gid, tmpStruct.NewNeuronGene.Layer, NeuronType.Hidden, actFunct, this.step);
 
             newConnection1 = new NeatConnection(
@@ -1044,7 +1048,7 @@ public class NeatGenome
                 // Find all potential outputs, or quit if there are not enough.
                 // Neurons cannot be outputs if they are dummy input or output nodes of a module, or network input or bias nodes.
                 for (NeatNode n : this.nodes) {
-                    if (n.type != NodeType.bias && n.type != NodeType.input &&
+                    if (n.nodeType != NodeType.bias && n.nodeType != NodeType.input &&
                             !n.activationFunction.equals("ModuleInputNeuron")
                             && !n.activationFunction.equals("ModuleOutputNeuron"))
                         potentialOutputs.add(n);
@@ -1173,19 +1177,19 @@ public class NeatGenome
                 NeatConnection connection = this.connections.get(index);
 
                 // Scan forward and find the first non-mutated gene.
-                while (this.connections.get(index).isMutated) {    // Increment index. Wrap around back to the start if we go off the end.
+                while (this.connections.get(index).IsMutated()) {    // Increment index. Wrap around back to the start if we go off the end.
                     if (++index == connectionCount)
                         index = 0;
                 }
 
                 // Mutate the gene at 'index'.
                 mutateConnectionWeight(this.connections.get(index), np, paramGroup);
-                this.connections.get(index).isMutated = true;
+                this.connections.get(index).SetIsMutated(true);
             }
 
             for (NeatConnection connection : this.connections) {
                 //reset if connection has been mutated, in case we go to do more mutations...
-                connection.isMutated = false;
+                connection.SetIsMutated(false);
             }
         }
     }
@@ -1231,7 +1235,7 @@ public class NeatGenome
         boolean isNeuronRedundant(Map<String, NeatNode> nodeLookup, String nid)
     {
         NeatNode node = nodeLookup.get(nid);
-        if (node.type != NodeType.hidden
+        if (node.nodeType != NodeType.hidden
                 || node.activationFunction.equals("ModuleInputNeuron")
                 || node.activationFunction.equals("ModuleOutputNeuron"))
             return false;
@@ -1392,7 +1396,7 @@ public class NeatGenome
             // RemoveSimpleNeuron is then able to delete these neurons from the network structure along with any
             // associated connections.
             // All neurons that are part of a module would appear to be dead-ended, but skip removing them anyway.
-            if (lookup.node.type == NodeType.hidden
+            if (lookup.node.nodeType == NodeType.hidden
                     && !(lookup.node.activationFunction.equals("ModuleInputNeuron"))
                     && !(lookup.node.activationFunction.equals("ModuleOutputNeuron"))) {
                 if((lookup.incoming.size() <= 1) || (lookup.outgoing.size() <= 1))

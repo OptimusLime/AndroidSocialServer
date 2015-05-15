@@ -80,4 +80,7 @@
 
 
 
+    <dimen name="app_publish_image_preview_size">100dp</dimen>
+
+
 </resources>

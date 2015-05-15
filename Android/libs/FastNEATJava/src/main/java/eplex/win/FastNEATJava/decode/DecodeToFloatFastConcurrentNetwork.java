@@ -29,7 +29,7 @@ public class DecodeToFloatFastConcurrentNetwork
          int nodeIdx=0;
          for(; nodeIdx<neuronGeneCount; nodeIdx++)
          {
-             if(ng.nodes.get(nodeIdx).type !=  NodeType.bias)
+             if(ng.nodes.get(nodeIdx).nodeType !=  NodeType.bias)
                  break;
 
              activationFunctionArray.add(ng.nodes.get(nodeIdx).activationFunction);

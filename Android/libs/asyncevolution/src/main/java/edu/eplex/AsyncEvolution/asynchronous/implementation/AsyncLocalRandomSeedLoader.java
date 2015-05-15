@@ -240,10 +240,10 @@ public class AsyncLocalRandomSeedLoader implements AsyncSeedLoader{
 
                 nn.bias = node.get("bias").asDouble();
 
-                if(nn.type == NodeType.input)
+                if(nn.nodeType == NodeType.input)
                     inCount++;
 
-                if(nn.type == NodeType.output)
+                if(nn.nodeType == NodeType.output)
                     outCount++;
 
                 artifactNodes.add(nn);

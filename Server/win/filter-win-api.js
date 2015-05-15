@@ -66,6 +66,10 @@ function initializeServerObjects()
 			.then(function(winObject)
 			{
 				winAPIObject = winObject;
+			})
+			.catch(function(err)
+			{
+				throw err;	
 			});
 }
 
@@ -140,10 +144,14 @@ function launchExpress()
 			  	var filterArtifacts = req.body.filterArtifacts;
 
         		var metaInfo = {user: user, timeofcreation: Date.now(), session: "funtimesession"};
+        		console.log('Confirming upload for uuid: ', uuidUpload);
 
 			  	s3Storage.asyncConfirmUploadComplete(uuidUpload)
 			  		.then(function(isCompleted)
 			  		{	
+			  			console.log('Checked upload: ', isCompleted);
+			  			console.log('Artifacts: ', filterArtifacts);
+			  			console.log('metainfo', metaInfo);
 			  			//doofus say waaaaa -- send back the storage location, problem solved!
 		  				//res.json(storageLocations).end();
 		  				if(isCompleted.success)
@@ -158,11 +166,13 @@ function launchExpress()
 			  		})
 			  		.then(function()
 			  		{
+			  			console.log('Finished and confirmed upload. 200 status.');
+
 			  			//we've saved the object -- success!
-			  			res.status(200).end();
+			  			res.json({uuid: uuidUpload}).end();
 			  		})
 			  		.catch(function(err){
-
+			  			console.log('Error confirming', require('util').inspect(err, false, 10));
 			  			//server error
 			  			res.status(500).send('Error initialize upload ' + (err.message || err)).end();
 			  		});

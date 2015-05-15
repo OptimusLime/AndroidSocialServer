@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <color name="hashtag_color">#00bcd4</color>
     <color name="select_image_button">#DDD</color>
 
     <color name="app_edit_scroll_background">#99222222</color>

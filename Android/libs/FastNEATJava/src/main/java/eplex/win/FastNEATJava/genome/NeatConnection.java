@@ -1,5 +1,6 @@
 package eplex.win.FastNEATJava.genome;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -22,8 +23,12 @@ public class NeatConnection
     @JsonProperty("targetID")
     public String targetID;
 
-    public boolean isMutated;
-
+    private boolean isMutated;
+    public boolean IsMutated()
+    {
+        return  isMutated;
+    }
+    public void SetIsMutated(boolean val){isMutated= val;};
     public NeatConnection(){}
 
     public NeatConnection(String gid, double weight, String sourceID, String targetID)
