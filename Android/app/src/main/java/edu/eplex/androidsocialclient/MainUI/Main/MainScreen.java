@@ -127,6 +127,9 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         FilterManager fm = FilterManager.getInstance();
+
+        Log.d("MAINEDITSCREEN", "Activity RESULT from " + requestCode);
+
         switch (requestCode)
         {
             case EditFlowManager.EDIT_SCREEN_REQUEST_CODE:
@@ -139,13 +142,19 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
 
                     //we actually published something!
                     try {
+                        Log.d("MAINSCREEN", "Closed activity after successful publish, now publishing.");
+
                         fm.publishedCompositeFilter(this, fm.getFilter(data.getStringExtra("filter")), true);
                     }
                     catch (Exception e)
                     {
                         //failed. doh.
-                        Log.d("MAINEDITSCREEN", "Failed to publish on local device: " + e.getMessage());
+                        Log.d("MAINSCREEN", "Failed to publish on local device: " + e.getMessage());
                     }
+                }
+                else
+                {
+                    Log.d("MAINSCREEN", "Result code not okay: " + resultCode + " ok: " + FragmentActivity.RESULT_OK);
                 }
 
                 break;

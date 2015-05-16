@@ -10,6 +10,7 @@ import android.support.v4.app.FragmentActivity;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Display;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -171,7 +172,13 @@ public class PublishFragment extends Fragment {
 
                     publishInProgress = false;
 
-                    if(task.isCancelled() || task.isFaulted())
+                    Log.d("PUBFRAG", "Returned from publish: " + task.isCompleted());
+
+                    if(task.isCompleted())
+                    {
+                        PublishFlowManager.getInstance().finishPublishArtifactActivity(getActivity(), toPublishFilter);
+                    }
+                    else if(task.isCancelled() || task.isFaulted())
                     {
                         //failed!
                         failedToPublishImageError();
@@ -179,14 +186,15 @@ public class PublishFragment extends Fragment {
                     else {
 //                        Toast.makeText(getActivity(), "Publish successful: " + toPublishFilter.getUniqueID(), Toast.LENGTH_SHORT).show();
                         //lets close this place up!
-
+                        failedToPublishImageError();
                         //this should finish the publishing process -- we need to be very concerned about the published image --
                         //cause it needs to be removed
-                        PublishFlowManager.getInstance().finishPublishArtifactActivity(getActivity(), toPublishFilter);
+//                        PublishFlowManager.getInstance().finishPublishArtifactActivity(getActivity(), toPublishFilter);
                     }
+
                     return null;
                 }
-            });
+            }, Task.UI_THREAD_EXECUTOR);
 
     }
     //here we warn the user before loggin off

@@ -369,14 +369,30 @@ public class WinAPIManager {
         };
     }
 
-    public Task<Boolean> loadImage(Context mContext, String url, boolean isFilter, int size)
+    public Task<Boolean> loadImage(Context mContext, final FilterComposite artifact, final boolean isFilter, final boolean isThumbnail, int size)
     {
         final Task<Boolean>.TaskCompletionSource singleLoadImage = Task.create();
 
         try {
-            BitmapCacheManager.getInstance().lazyLoadBitmap(mContext, url, size, isFilter, new BitmapCacheManager.LazyLoadedCallback() {
+            BitmapCacheManager.getInstance().lazyLoadBitmap(mContext, artifact.getImageURL(), size, isFilter, new BitmapCacheManager.LazyLoadedCallback() {
                 @Override
                 public void imageLoaded(String url, Bitmap bitmap) {
+
+                    if(isThumbnail)
+                    {
+                        if(isFilter)
+                            artifact.setFilteredThumbnailBitmap(bitmap);
+                        else
+                            artifact.setThumbnailBitmap(bitmap);
+                    }
+                    else
+                    {
+                        if(isFilter)
+                            artifact.setFilteredBitmap(bitmap);
+                        else
+                            artifact.setCurrentBitmap(bitmap);
+                    }
+
                     singleLoadImage.setResult(true);
                 }
 
@@ -396,7 +412,7 @@ public class WinAPIManager {
 
     public Task<FilterComposite> loadImageAndFilter(final Context mContext, final FilterComposite filter, final boolean isThumbnail, final int size)
     {
-        return loadImage(mContext, filter.getImageURL(), false, size)
+        return loadImage(mContext, filter, false, isThumbnail, size)
                 .continueWithTask(new Continuation<Boolean, Task<FilterComposite>>() {
                     @Override
                     public Task<FilterComposite> then(Task<Boolean> task) throws Exception {

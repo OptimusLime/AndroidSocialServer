@@ -64,6 +64,8 @@ public class MainEditScreen extends ActionBarActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+        Log.d("MAINEDITSCREEN", "Activity RESULT from " + requestCode);
+
         FilterManager fm = FilterManager.getInstance();
         switch (requestCode)
         {

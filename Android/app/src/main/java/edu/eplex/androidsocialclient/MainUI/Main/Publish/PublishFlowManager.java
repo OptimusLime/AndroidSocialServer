@@ -5,9 +5,13 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -109,15 +113,21 @@ public class PublishFlowManager {
         //we've finished with our filter, we need to replace our old filter
         //lets stick it in the cloud!
         //I want to go back
-
-
-        Bundle conData = new Bundle();
-        conData.putString("filter", finalFilter.getUniqueID());
-        Intent intent = new Intent();
-        intent.putExtras(conData);
-        activity.setResult(FragmentActivity.RESULT_OK, intent);
-        activity.finish();
+        try {
+            Bundle conData = new Bundle();
+            conData.putString("filter", finalFilter.getUniqueID());
+            Intent intent = new Intent();
+            intent.putExtras(conData);
+            hideKeyboard(activity);
+            activity.setResult(FragmentActivity.RESULT_OK, intent);
+            activity.finish();
+            Log.d("PUBFLOWMANAGER", "Activity closed");
 //        activity.finishActivity(EDIT_SCREEN_REQUEST_CODE);
+        }
+        catch (Exception e)
+        {
+            Log.d("PUBFLOWMANAGER", "Failed to end publish activity : " + e.getMessage());
+        }
     }
 
     public void cancelPublishFilter(FragmentActivity activity)
@@ -127,10 +137,14 @@ public class PublishFlowManager {
         conData.putString("publish", "cancelled");
         Intent intent = new Intent();
         intent.putExtras(conData);
+        hideKeyboard(activity);
         activity.setResult(FragmentActivity.RESULT_CANCELED, intent);
         activity.finish();
     }
-
+    void hideKeyboard(FragmentActivity activity)
+    {
+        activity.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+    }
     //last saved object
     public FilterComposite getFilterFromPublishIntent(Intent intent)
     {
