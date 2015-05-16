@@ -27,6 +27,7 @@ import com.baoyz.swipemenulistview.SwipeMenuItem;
 import com.baoyz.swipemenulistview.SwipeMenuListView;
 import com.squareup.otto.Subscribe;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Filter;
 
@@ -264,6 +265,7 @@ public class WorkshopFragment extends Fragment implements WorkshopCompositeAdapt
     @Override
     public void onStart() {
         super.onStart();
+        TabFlowManager.getInstance().registerUIEvents(this);
     }
 
     @Override
@@ -298,8 +300,25 @@ public class WorkshopFragment extends Fragment implements WorkshopCompositeAdapt
     @Subscribe
     public void currentCompositeList(FilterManager.ExistingCompositeFilterEvent existingList)
     {
-        //pretty simple -- safe add everything
-        safeAddListToAdapter(existingList.currentFilters);
+        ArrayList<FilterComposite> removeSafely = new ArrayList<>();
+        ArrayList<FilterComposite> addSafely = new ArrayList<>(existingList.currentFilters);
+        for(int i=0; i < compositeAdapter.getCount(); i++)
+        {
+            FilterComposite fc = compositeAdapter.getItem(i);
+
+            if(!existingList.currentFilters.contains(fc))
+            {
+                removeSafely.add(fc);
+            }
+            else //otherwise we already have it in composite adapter -- so remove from adding
+                addSafely.remove(fc);
+        }
+        if(removeSafely.size() > 0)
+            safeRemoveListFromAdapter(removeSafely);
+
+        if(addSafely.size() > 0)
+            //pretty simple -- safe add everything
+            safeAddListToAdapter(addSafely);
     }
     @Subscribe
     public void changeCompositeList(FilterManager.ChangeCompositeFilterEvent changeEvent)
@@ -312,6 +331,10 @@ public class WorkshopFragment extends Fragment implements WorkshopCompositeAdapt
                 break;
             case Remove:
                 safeRemoveListFromAdapter(changeEvent.removedFilters);
+                break;
+            case Publish:
+                //remove from the list of pictures -- but technically we would add to published images
+                safeRemoveListFromAdapter(changeEvent.publishedFilters);
                 break;
             case BothAddRemove:
                 safeAddListToAdapter(changeEvent.addedFilters);

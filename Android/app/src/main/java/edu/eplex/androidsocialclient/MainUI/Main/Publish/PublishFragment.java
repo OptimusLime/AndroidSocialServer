@@ -139,10 +139,16 @@ public class PublishFragment extends Fragment {
             return hts;
     }
 
+    boolean publishInProgress = false;
 
     @OnClick(R.id.pub_filter_publish_button)
     void publishClick()
     {
+        if(publishInProgress)
+            return;
+
+        publishInProgress = true;
+
         FilterArtifact fa = toPublishFilter.getFilterArtifact();
 
         String caption =  hashtagText.getText().toString();
@@ -159,18 +165,48 @@ public class PublishFragment extends Fragment {
 
 
         WinAPIManager.getInstance().asyncPublishArtifact(getActivity(), toPublishFilter)
-            .onSuccess(new Continuation<Void, Void>() {
+            .continueWith(new Continuation<Void, Void>() {
                 @Override
                 public Void then(Task<Void> task) throws Exception {
 
-                    Toast.makeText(getActivity(), "Publish successful: " + toPublishFilter.getUniqueID(), Toast.LENGTH_SHORT).show();
+                    publishInProgress = false;
 
+                    if(task.isCancelled() || task.isFaulted())
+                    {
+                        //failed!
+                        failedToPublishImageError();
+                    }
+                    else {
+//                        Toast.makeText(getActivity(), "Publish successful: " + toPublishFilter.getUniqueID(), Toast.LENGTH_SHORT).show();
+                        //lets close this place up!
+
+                        //this should finish the publishing process -- we need to be very concerned about the published image --
+                        //cause it needs to be removed
+                        PublishFlowManager.getInstance().finishPublishArtifactActivity(getActivity(), toPublishFilter);
+                    }
                     return null;
                 }
             });
 
     }
-
+    //here we warn the user before loggin off
+    void failedToPublishImageError()
+    {
+        new MaterialDialog.Builder(getActivity())
+                .title("Error Publishing" )
+                .content(Html.fromHtml("<br/>Error publishing photo. Try again, sorry about that!<br/>"))
+                .titleAlignment(Alignment.CENTER)
+                .contentAlignment(Alignment.CENTER)
+                .positiveText("Okay")
+                .callback(new MaterialDialog.SimpleCallback() {
+                    @Override
+                    public void onPositive(MaterialDialog materialDialog) {
+                        //easy, just hide ourselves!
+                        materialDialog.hide();
+                    }
+                })
+                .show();
+    }
     //here we warn the user before loggin off
     void warnUserMissingHashtags()
     {
@@ -197,13 +233,16 @@ public class PublishFragment extends Fragment {
 
     void initializeUI(FragmentActivity activity)
     {
-        Display display = getActivity().getWindowManager().getDefaultDisplay();
+        Display display = activity.getWindowManager().getDefaultDisplay();
         Point size = new Point();
         display.getSize(size);
         int width = size.x;
         int height = size.y;
 
-        mainImageDesiredWidthHeight = Math.min(width,height);
+//        mainImageDesiredWidthHeight = Math.min(width,height);
+        mainImageDesiredWidthHeight = activity.getResources().getInteger(R.integer.max_filtered_image_size);//Math.min(width,height);
+
+//        int screenMatch = Math.min(width, height);
 
 //        filterImage.getLayoutParams().width = mainImageDesiredWidthHeight;
 //        filterImage.getLayoutParams().height = mainImageDesiredWidthHeight;

@@ -51,6 +51,9 @@ var winConfiguration = {
 
 var configLocation = __dirname + "/../access-credentials.json";
 
+
+var customS3Match = {schemaName: "S3_connection", schemaJSON: {wid: "String", s3Key: "String"}};
+
 function initializeServerObjects()
 {
 
@@ -66,6 +69,8 @@ function initializeServerObjects()
 			.then(function(winObject)
 			{
 				winAPIObject = winObject;
+
+				winAPIObject.dataAccess.syncLoadCustomSchema(customS3Match.schemaName, customS3Match.schemaJSON);
 			})
 			.catch(function(err)
 			{
@@ -149,6 +154,10 @@ function launchExpress()
 			  	s3Storage.asyncConfirmUploadComplete(uuidUpload)
 			  		.then(function(isCompleted)
 			  		{	
+			  			//must match the upload key with the filter artifacts -- this way we know where to get the s3 uploads
+			  			for(var key in filterArtifacts)
+			  				filterArtifacts[key].s3Key = uuidUpload;
+
 			  			console.log('Checked upload: ', isCompleted);
 			  			console.log('Artifacts: ', filterArtifacts);
 			  			console.log('metainfo', metaInfo);
@@ -163,6 +172,17 @@ function launchExpress()
 		  				else
 		  					throw new Error("Upload to S3 cannot be confirmed.");
 
+			  		})
+			  		.then(function()
+			  		{
+			  			var toSaveConnection = {};
+			  			var wid = Object.keys(filterArtifacts)[0];
+			  			toSaveConnection[wid] = {s3Key: uuidUpload, wid: wid};
+
+			  			console.log("To save connection: ", toSaveConnection);
+
+			  			//now lets keep track of our s3 connection in a separate database object
+			  			return winAPIObject.dataAccess.saveDatabaseObjects(customS3Match.schemaName, toSaveConnection);			  			
 			  		})
 			  		.then(function()
 			  		{

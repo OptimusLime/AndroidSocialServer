@@ -4,11 +4,13 @@ import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 
 import java.util.Arrays;
 
@@ -16,6 +18,8 @@ import dagger.ObjectGraph;
 import edu.eplex.androidsocialclient.MainUI.API.Modules.AdjustableHostAPIModule;
 import edu.eplex.androidsocialclient.MainUI.API.WinAPIManager;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFlowManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Publish.PublishFlowManager;
 import edu.eplex.androidsocialclient.MainUI.Main.Tabs.SelectPictureFragment;
 import edu.eplex.androidsocialclient.MainUI.Main.Tabs.TabFlowManager;
 import edu.eplex.androidsocialclient.MainUI.TakePictureFragment;
@@ -122,7 +126,30 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        FilterManager.getInstance().asyncSaveFiltersToFile(this);
+        FilterManager fm = FilterManager.getInstance();
+        switch (requestCode)
+        {
+            case EditFlowManager.EDIT_SCREEN_REQUEST_CODE:
+                fm.asyncSaveFiltersToFile(this);
+
+                break;
+            case PublishFlowManager.PUBLISH_SCREEN_REQUEST_CODE:
+
+                if(resultCode == FragmentActivity.RESULT_OK) {
+
+                    //we actually published something!
+                    try {
+                        fm.publishedCompositeFilter(this, fm.getFilter(data.getStringExtra("filter")), true);
+                    }
+                    catch (Exception e)
+                    {
+                        //failed. doh.
+                        Log.d("MAINEDITSCREEN", "Failed to publish on local device: " + e.getMessage());
+                    }
+                }
+
+                break;
+        }
     }
 
 

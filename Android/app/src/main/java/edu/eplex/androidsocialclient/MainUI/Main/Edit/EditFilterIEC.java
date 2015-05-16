@@ -265,10 +265,12 @@ public class EditFilterIEC extends Fragment {
         int width = size.x;
         int height = size.y;
 
-        mainImageDesiredWidthHeight = Math.min(width,height);
+        mainImageDesiredWidthHeight = activity.getResources().getInteger(R.integer.max_filtered_image_size);//Math.min(width,height);
 
-        filterImage.getLayoutParams().width = mainImageDesiredWidthHeight;
-        filterImage.getLayoutParams().height = mainImageDesiredWidthHeight;
+        int screenMatch = Math.min(width, height);
+
+        filterImage.getLayoutParams().width = screenMatch;
+        filterImage.getLayoutParams().height = screenMatch;
         filterImage.setImageResource(R.drawable.ic_action_emo_tongue_white);
         filterImage.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 

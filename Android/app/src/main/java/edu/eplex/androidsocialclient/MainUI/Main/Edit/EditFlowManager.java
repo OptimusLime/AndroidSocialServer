@@ -43,7 +43,7 @@ import eplex.win.FastNEATJava.utils.NeatParameters;
 public class EditFlowManager {
 
     //all done, we call this code to know it was us -- i made this up randomly 2093 -- seemed awesome.
-    public static int EDIT_SCREEN_REQUEST_CODE = 2093;
+    public final static int EDIT_SCREEN_REQUEST_CODE = 2093;
 
     //what tab are we??? How do the tabs behave for switching?
     public enum EditID

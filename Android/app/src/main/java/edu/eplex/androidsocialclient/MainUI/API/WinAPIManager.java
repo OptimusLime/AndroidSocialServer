@@ -3,7 +3,9 @@ package edu.eplex.androidsocialclient.MainUI.API;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Point;
 import android.util.Log;
+import android.view.Display;
 
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -38,9 +40,12 @@ import edu.eplex.androidsocialclient.MainUI.API.Publish.Objects.Confirmation;
 import edu.eplex.androidsocialclient.MainUI.API.Publish.Objects.UploadURL;
 import edu.eplex.androidsocialclient.MainUI.API.Publish.PublishRequest;
 import edu.eplex.androidsocialclient.MainUI.API.Publish.PublishResponse;
+import edu.eplex.androidsocialclient.MainUI.Cache.BitmapCacheManager;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFlowManager;
+import edu.eplex.androidsocialclient.R;
 import retrofit.RestAdapter;
 import retrofit.client.Header;
 import retrofit.client.OkClient;
@@ -364,11 +369,74 @@ public class WinAPIManager {
         };
     }
 
+    public Task<Boolean> loadImage(Context mContext, String url, boolean isFilter, int size)
+    {
+        final Task<Boolean>.TaskCompletionSource singleLoadImage = Task.create();
+
+        try {
+            BitmapCacheManager.getInstance().lazyLoadBitmap(mContext, url, size, isFilter, new BitmapCacheManager.LazyLoadedCallback() {
+                @Override
+                public void imageLoaded(String url, Bitmap bitmap) {
+                    singleLoadImage.setResult(true);
+                }
+
+                @Override
+                public void imageLoadFailed(String reason, Exception e) {
+                    singleLoadImage.setError(e);
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            singleLoadImage.setError(e);
+        }
+
+        return singleLoadImage.getTask();
+    }
+
+    public Task<FilterComposite> loadImageAndFilter(final Context mContext, final FilterComposite filter, final boolean isThumbnail, final int size)
+    {
+        return loadImage(mContext, filter.getImageURL(), false, size)
+                .continueWithTask(new Continuation<Boolean, Task<FilterComposite>>() {
+                    @Override
+                    public Task<FilterComposite> then(Task<Boolean> task) throws Exception {
+                        return EditFlowManager.getInstance().asyncRunFilterOnImage(mContext, filter, size, isThumbnail, (isThumbnail ? filter.getThumbnailBitmap() : filter.getCurrentBitmap()));
+                    }
+                });
+    }
+
+    public Task<Void> ensureFilteredImagesExist(final Context mContext, final FilterComposite artifact)
+    {
+        ArrayList<Task<FilterComposite>> loadImageTasks = new ArrayList<>();
+
+        boolean isFilter;
+        int fullSize = mContext.getResources().getInteger(R.integer.max_filtered_image_size);
+        int thumbnailSize = (int)mContext.getResources().getDimension(R.dimen.app_edit_iec_thumbnail_size);
+
+        if(artifact.getThumbnailBitmap() == null)
+        {
+            loadImageTasks.add(loadImageAndFilter(mContext, artifact, true, thumbnailSize));
+        }
+
+        if(artifact.getCurrentBitmap() == null)
+        {
+            loadImageTasks.add(loadImageAndFilter(mContext, artifact, false, fullSize));
+        }
+
+        return Task.whenAll(loadImageTasks);
+    }
+
+
     public Task<Void> asyncPublishArtifact(final Context mContext, final FilterComposite artifactToPublish)
     {
 //        final PublishRequest checkResponse = checkSuccessfulUpload(artifactToPublish.getUniqueID());
-
-        return asyncCheckSuccessfulUpload(artifactToPublish.getUniqueID(), mContext)
+        return ensureFilteredImagesExist(mContext, artifactToPublish)
+                .continueWithTask(new Continuation<Void, Task<PublishRequest>>() {
+                    @Override
+                    public Task<PublishRequest> then(Task<Void> task) throws Exception {
+                        return asyncCheckSuccessfulUpload(artifactToPublish.getUniqueID(), mContext);
+                    }
+                })
                 .continueWithTask(new Continuation<PublishRequest, Task<Void>>() {
                     @Override
                     public Task<Void> then(Task<PublishRequest> task) throws Exception {

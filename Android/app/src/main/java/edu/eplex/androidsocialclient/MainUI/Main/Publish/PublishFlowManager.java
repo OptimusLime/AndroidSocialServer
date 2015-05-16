@@ -45,7 +45,7 @@ import eplex.win.FastNEATJava.utils.NeatParameters;
 public class PublishFlowManager {
 
     //all done, we call this code to know it was us -- i made this up randomly 4021 -- seemed awesome.
-    public static int PUBLISH_SCREEN_REQUEST_CODE = 4021;
+    public final static int PUBLISH_SCREEN_REQUEST_CODE = 4021;
 
     static final String EXTRA_FILTER_WID = "filterWID";
     static final String EXTRA_INNER_FILTER_WID = "innerWID";
@@ -109,6 +109,8 @@ public class PublishFlowManager {
         //we've finished with our filter, we need to replace our old filter
         //lets stick it in the cloud!
         //I want to go back
+
+
         Bundle conData = new Bundle();
         conData.putString("filter", finalFilter.getUniqueID());
         Intent intent = new Intent();

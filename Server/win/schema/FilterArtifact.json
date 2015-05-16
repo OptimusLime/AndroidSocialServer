@@ -1,5 +1,6 @@
 {
     "photoCaption" : "String",
+    "s3Key" : "String",
     "hashtags" :  {
         "type": "array", 
         "items":  {"type": "String"}

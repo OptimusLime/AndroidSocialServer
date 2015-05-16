@@ -4,10 +4,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
 import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFlowManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Publish.PublishFlowManager;
 import edu.eplex.androidsocialclient.R;
 
 /**
@@ -61,7 +63,19 @@ public class MainEditScreen extends ActionBarActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        FilterManager.getInstance().asyncSaveFiltersToFile(this);
+
+        FilterManager fm = FilterManager.getInstance();
+        switch (requestCode)
+        {
+            case EditFlowManager.EDIT_SCREEN_REQUEST_CODE:
+                fm.asyncSaveFiltersToFile(this);
+                break;
+            default:
+                fm.asyncSaveFiltersToFile(this);
+                break;
+        }
+
+
     }
 }
 

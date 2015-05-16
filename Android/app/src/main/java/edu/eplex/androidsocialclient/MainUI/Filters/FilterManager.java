@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,12 +52,23 @@ public class FilterManager {
             this.currentFilters = existingFilters;
         }
     }
+    public static class SaveAllList
+    {
+        public ArrayList<FilterComposite> existing;
+        public ArrayList<FilterComposite> published;
+        public SaveAllList()
+        {
+            existing = new ArrayList<>();
+            published = new ArrayList<>();
+        }
+    }
 
     public enum FilterEventAction
     {
         Add,
         Remove,
-        BothAddRemove
+        BothAddRemove,
+        Publish
     }
 
     public class ChangeCompositeFilterEvent
@@ -64,6 +76,7 @@ public class FilterManager {
         public FilterEventAction action;
         public List<FilterComposite> addedFilters;
         public List<FilterComposite> removedFilters;
+        public List<FilterComposite> publishedFilters;
 
         //derrrrr
         public ChangeCompositeFilterEvent(FilterComposite filter, FilterEventAction action) throws Exception {
@@ -76,6 +89,10 @@ public class FilterManager {
                 case Remove:
                     this.removedFilters = Arrays.asList(filter);
                     break;
+                case Publish:
+                    this.publishedFilters = Arrays.asList(filter);
+                    break;
+
                 case BothAddRemove:
                     throw new Exception("Can't create add/remove filter event with a single filter!");
             }
@@ -94,7 +111,9 @@ public class FilterManager {
 
     FilterComposite lastEditedFilter;
     ArrayList<FilterComposite> existingFilters = new ArrayList<FilterComposite>();
+    ArrayList<FilterComposite> publishedFilters = new ArrayList<FilterComposite>();
     Map<String, FilterComposite> filterMap = new HashMap<>();
+    Map<String, FilterComposite> publishMap = new HashMap<>();
 
     private static FilterManager instance = null;
 
@@ -132,7 +151,6 @@ public class FilterManager {
     {
         this.lastEditedFilter = lastEditedFilter;
     }
-
 
     //Add a new composite filter -- passing in the image to work with
     public FilterComposite createNewComposite(Context mContext, String imageURL) throws Exception {
@@ -174,10 +192,34 @@ public class FilterManager {
 
         asyncSaveFiltersToFile(mContext);
 
-
         //now we must update our filter event
         //removed a filter -- alter our followers -- they're so needy
         ChangeCompositeFilterEvent changeEvent = new ChangeCompositeFilterEvent(filter, FilterEventAction.Remove);
+
+        //goodbyeyoudevil
+        TabFlowManager.getInstance().getUiEventBus().post(changeEvent);
+    }
+
+    public void publishedCompositeFilter(Context mContext, final FilterComposite filter, boolean shouldSave) throws Exception
+    {
+        //if somethign exists, we must remove it
+        if(this.filterMap.containsKey(filter.getUniqueID()))
+        {
+            //remove the filter please
+            this.existingFilters.remove(filter);
+            this.filterMap.remove(filter.getUniqueID());
+        }
+
+        publishedFilters.add(filter);
+        publishMap.put(filter.getUniqueID(), filter);
+
+        //otherwise, we're simply adding it -- save it up
+        if(shouldSave)
+            asyncSaveFiltersToFile(mContext);
+
+        //now we must update our filter event
+        //removed a filter -- alter our followers -- they're so needy
+        ChangeCompositeFilterEvent changeEvent = new ChangeCompositeFilterEvent(filter, FilterEventAction.Publish);
 
         //goodbyeyoudevil
         TabFlowManager.getInstance().getUiEventBus().post(changeEvent);
@@ -201,7 +243,11 @@ public class FilterManager {
                 final ByteArrayOutputStream out = new ByteArrayOutputStream();
                 final ObjectMapper mapper = new ObjectMapper();
 
-                mapper.writeValue(out, existingFilters);
+                SaveAllList sal = new SaveAllList();
+                sal.existing = existingFilters;
+                sal.published = publishedFilters;
+
+                mapper.writeValue(out, sal);
 
                 FileOutputStream fos = mContext.openFileOutput(FILTER_MAP_SAVE_LOCATION, Context.MODE_PRIVATE);
                 fos.write(out.toByteArray());
@@ -220,18 +266,36 @@ public class FilterManager {
 
                 ObjectMapper mapper = new ObjectMapper();
 
-                ArrayList<FilterComposite> filterMap = mapper.readValue(
-                        new InputStreamReader(mContext.openFileInput(FILTER_MAP_SAVE_LOCATION)),
-                        new TypeReference<ArrayList<FilterComposite>>(){});
+//                ArrayList<FilterComposite> filterMap = mapper.readValue(
+//                        new InputStreamReader(mContext.openFileInput(FILTER_MAP_SAVE_LOCATION)),
+//                        new TypeReference<ArrayList<FilterComposite>>(){});
+                SaveAllList sal =  null;
+                try {
+                    sal = mapper.readValue(
+                            new InputStreamReader(mContext.openFileInput(FILTER_MAP_SAVE_LOCATION)),
+                            new TypeReference<SaveAllList>() {
+                            });
+                }
+                catch (Exception e)
+                {
+                    return null;
+                }
 
+                ArrayList<FilterComposite> existing = sal.existing;
+                ArrayList<FilterComposite> published = sal.published;
                 FilterManager fm = FilterManager.getInstance();
 
-                for(int i=0; i < filterMap.size();i++){
+                for(int i=0; i < existing.size();i++){
                     //grab our filter from the list
-                    FilterComposite filter  = filterMap.get(i);
+                    FilterComposite filter  = existing.get(i);
 
                     //create a new object -- do the normal signaling to listeners here
                     fm.createNewComposite(mContext, filter, false);
+                }
+
+                for(int i=0; i < published.size(); i++)
+                {
+                    fm.publishedCompositeFilter(mContext, published.get(i), false);
                 }
 
 //                    Iterator it = filterMap.entrySet().iterator();
