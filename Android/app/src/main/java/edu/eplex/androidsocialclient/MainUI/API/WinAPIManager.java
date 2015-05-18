@@ -621,6 +621,35 @@ public class WinAPIManager {
 
         return tcs.getTask();
     }
+    public Task<ArrayList<FeedItem>> asyncGetLatestByHashtagAfter(String hashtag, int count, long lastTime) {
+        String tString = null;
+        if(lastTime != -1)
+            tString = "" + lastTime;
+        return asyncGetLatestByHashtagAfter(hashtag, count, tString);
+    }
+    public Task<ArrayList<FeedItem>> asyncGetLatestByHashtagAfter(String hashtag, int count, String lastTime)
+    {
+        final Task<ArrayList<FeedItem>>.TaskCompletionSource tcs = Task.create();
+
+        feedAPI.asyncGetLatestByHashtag(hashtag, lastTime, count, new Callback<ArrayList<FeedItem>>() {
+            @Override
+            public void success(ArrayList<FeedItem> feedItems, Response response) {
+
+                if(response.getStatus() == 200)
+                    tcs.setResult(feedItems);
+                else
+                    tcs.setError(new Exception("Status: " + response.getStatus() + " r: " + response.getReason()));
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                tcs.setError(error);
+            }
+        });
+
+        return tcs.getTask();
+    }
+
 
 //    //WIN API Mananger handles talking to the server to negotiate publishing and what have you
 //    private void createAPIAdapter(Context context)

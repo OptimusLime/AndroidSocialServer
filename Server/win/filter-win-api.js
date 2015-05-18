@@ -198,7 +198,7 @@ function launchExpress()
 			  			var date = Date.now();
 			  			var hashtags = filterArtifacts[wid].hashtags;
 			  			for(var i=0; i < hashtags.length; i++)
-			  				toSaveConnection[wid + "-" + i] = {s3Key: uuidUpload, wid: wid, username: user, hashtag: hashtags[i], date: date};
+			  				toSaveConnection[wid + "-" + i] = {s3Key: uuidUpload, wid: wid, username: user, hashtag: hashtags[i].toLowerCase(), date: date};
 
 			  			//now lets keep track of our hash tags in a separate database object
 			  			return winAPIObject.dataAccess.saveDatabaseObjects(customHashMatch.schemaName, toSaveConnection);	
@@ -228,6 +228,32 @@ function launchExpress()
 
 				//look back the most recent s3s
 				winAPIObject.dataAccess.loadRecentArtifacts({before: beforeDate, after: afterDate}, feedCount, customS3Match.schemaName)
+					.then(function(models)
+					{
+						console.log('Loaded latest: ', models);
+
+						//send back the models
+						res.json(models).end();
+					})
+					.catch(function(err)
+					{
+						console.log('Error fetching recent', require('util').inspect(err, false, 10));
+			  			//server error
+			  			res.status(500).send('Error fetching recent ' + (err.message || err)).end();
+					});
+
+			});
+
+			app.get("/hashtag", function(req, res)
+			{
+				//start searching from a certain time -- or simply start from now
+				var afterDate = req.query.after;
+				var beforeDate = req.query.before;
+				var hashtag = req.query.hashtag;
+				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
+
+				//look back the most recent s3s
+				winAPIObject.dataAccess.loadRecentArtifactsByHashtag(hashtag, {before: beforeDate, after: afterDate}, feedCount, customHashMatch.schemaName)
 					.then(function(models)
 					{
 						console.log('Loaded latest: ', models);

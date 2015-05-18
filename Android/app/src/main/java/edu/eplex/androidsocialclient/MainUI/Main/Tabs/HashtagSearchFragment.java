@@ -55,6 +55,8 @@ public class HashtagSearchFragment extends Fragment {
 
     long lastTime = -1;
 
+    String lastSearch = null;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
@@ -153,6 +155,19 @@ public class HashtagSearchFragment extends Fragment {
             public void onSearch(String searchTerm) {
 
                 Toast.makeText(getActivity(), "Searching for: " + searchTerm, Toast.LENGTH_SHORT).show();
+
+                searchTerm = searchTerm.replace(" ", "");
+                searchTerm = "#" + searchTerm;
+                lastSearch = searchTerm;
+
+                //last time is research with every search click
+                lastTime = -1;
+                
+                //clear the adapter please
+                mAdapter.clear();
+                mAdapter.notifyDataSetChanged();
+
+                updateSearchData();
             }
 
             @Override
@@ -164,16 +179,19 @@ public class HashtagSearchFragment extends Fragment {
 
     }
 
+
+
     void updateSearchData()
     {
+        if(lastSearch == null)
+            return;
 
         int count = 10;
 
-        WinAPIManager.getInstance().asyncGetLatestFeedAfter(count, lastTime)
+        WinAPIManager.getInstance().asyncGetLatestByHashtagAfter(lastSearch, count, lastTime)
                 .continueWith(new Continuation<ArrayList<FeedItem>, Void>() {
                     @Override
                     public Void then(Task<ArrayList<FeedItem>> task) throws Exception {
-
 
                         //complete the refresh
                         refreshFrame.refreshComplete();
@@ -197,7 +215,6 @@ public class HashtagSearchFragment extends Fragment {
                             //then let the adapter know the data is ready
 //                            mAdapter.notifyDataSetChanged();
                         }
-
 
                         return null;
                     }

@@ -9,6 +9,7 @@ public class FeedItem {
     public String s3Key;
     public String username;
     public long date;
+    public String hashtag;
 
     public FeedItem()
     {

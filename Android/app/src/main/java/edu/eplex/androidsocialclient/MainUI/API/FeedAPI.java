@@ -38,4 +38,9 @@ public interface FeedAPI {
     @GET("/latest")
      ArrayList<FeedItem> syncGenerateUpload(@Query("after") String startTime);
 
+
+    @GET("/hashtag")
+    void asyncGetLatestByHashtag(@Query("hashtag") String hashtag, @Query("after") String startTime, @Query("count") int number, Callback<ArrayList<FeedItem>> cb);
+
+
 }
