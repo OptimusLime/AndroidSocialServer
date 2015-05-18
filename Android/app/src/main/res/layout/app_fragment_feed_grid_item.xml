@@ -9,6 +9,7 @@
         android:id="@+id/app_feed_grid_item_image_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        fresco:placeholderImage="@drawable/ic_action_emo_tongue_black"
         />
 
 </LinearLayout>

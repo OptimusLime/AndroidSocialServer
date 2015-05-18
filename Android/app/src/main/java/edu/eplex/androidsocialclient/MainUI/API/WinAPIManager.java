@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -37,6 +38,7 @@ import bolts.Continuation;
 import bolts.Task;
 import dagger.ObjectGraph;
 import edu.eplex.androidsocialclient.MainUI.API.Publish.Objects.Confirmation;
+import edu.eplex.androidsocialclient.MainUI.API.Publish.Objects.FeedItem;
 import edu.eplex.androidsocialclient.MainUI.API.Publish.Objects.UploadURL;
 import edu.eplex.androidsocialclient.MainUI.API.Publish.PublishRequest;
 import edu.eplex.androidsocialclient.MainUI.API.Publish.PublishResponse;
@@ -46,7 +48,9 @@ import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
 import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFlowManager;
 import edu.eplex.androidsocialclient.R;
+import retrofit.Callback;
 import retrofit.RestAdapter;
+import retrofit.RetrofitError;
 import retrofit.client.Header;
 import retrofit.client.OkClient;
 import retrofit.client.Request;
@@ -81,6 +85,9 @@ public class WinAPIManager {
 
     @Inject
     S3UploadAPI s3UploadAPI;
+
+    @Inject
+    FeedAPI feedAPI;
 
 //    OkHttpClient client = new OkHttpClient();
 
@@ -517,8 +524,7 @@ public class WinAPIManager {
                                                     Log.d("WINAPIMANAGER", "Successful upload!");
                                                 }
                                                 return true;
-                                            }
-                                            else {//otherwise, remove the wid -- we didn't succeed -- we need to be careful
+                                            } else {//otherwise, remove the wid -- we didn't succeed -- we need to be careful
                                                 confirmedUploads.remove(artifactToPublish.getUniqueID());
                                                 //throw new Error("Publish failed.");
                                                 return false;
@@ -543,8 +549,7 @@ public class WinAPIManager {
                                                     Log.d("WINAPIMANAGER", "Successful upload!");
                                                 }
                                                 return true;
-                                            }
-                                            else {//otherwise, remove the wid -- we didn't succeed -- we need to be careful
+                                            } else {//otherwise, remove the wid -- we didn't succeed -- we need to be careful
                                                 confirmedUploads.remove(artifactToPublish.getUniqueID());
 //                                                throw new Error("Publish failed.");
                                                 return false;
@@ -555,13 +560,67 @@ public class WinAPIManager {
                     }
                 });
 
-
-
-
-
-
     }
 
+//    public Task<ArrayList<FeedItem>> asyncGetLatestFeed(int count, long time)
+//    {
+//        String tString = null;
+//        if(time > 0)
+//            tString = "" + time;
+//
+//        return asyncGetLatestFeed(count, tString);
+//    }
+    public Task<ArrayList<FeedItem>> asyncGetLatestFeed(int count)
+    {
+        final Task<ArrayList<FeedItem>>.TaskCompletionSource tcs = Task.create();
+
+
+        feedAPI.asyncGetLatest(count, new Callback<ArrayList<FeedItem>>() {
+            @Override
+            public void success(ArrayList<FeedItem> feedItems, Response response) {
+
+                if(response.getStatus() == 200)
+                    tcs.setResult(feedItems);
+                else
+                    tcs.setError(new Exception("Status: " + response.getStatus() + " r: " + response.getReason()));
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                tcs.setError(error);
+            }
+        });
+
+        return tcs.getTask();
+    }
+    public Task<ArrayList<FeedItem>> asyncGetLatestFeedAfter(int count, long lastTime) {
+        String tString = null;
+        if(lastTime != -1)
+            tString = "" + lastTime;
+        return asyncGetLatestFeedAfter(count, tString);
+    }
+    public Task<ArrayList<FeedItem>> asyncGetLatestFeedAfter(int count, String lastTime)
+    {
+        final Task<ArrayList<FeedItem>>.TaskCompletionSource tcs = Task.create();
+
+        feedAPI.asyncGetLatest(lastTime, count, new Callback<ArrayList<FeedItem>>() {
+            @Override
+            public void success(ArrayList<FeedItem> feedItems, Response response) {
+
+                if(response.getStatus() == 200)
+                    tcs.setResult(feedItems);
+                else
+                    tcs.setError(new Exception("Status: " + response.getStatus() + " r: " + response.getReason()));
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                tcs.setError(error);
+            }
+        });
+
+        return tcs.getTask();
+    }
 
 //    //WIN API Mananger handles talking to the server to negotiate publishing and what have you
 //    private void createAPIAdapter(Context context)

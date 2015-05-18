@@ -221,12 +221,13 @@ function launchExpress()
 			app.get("/latest", function(req, res)
 			{
 				//start searching from a certain time -- or simply start from now
-				var startDate = req.query.after || Date.now();
+				var afterDate = req.query.after;
+				var beforeDate = req.query.before;
 
 				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
 
 				//look back the most recent s3s
-				winAPIObject.dataAccess.loadRecentArtifacts(startDate, feedCount, customS3Match.schemaName)
+				winAPIObject.dataAccess.loadRecentArtifacts({before: beforeDate, after: afterDate}, feedCount, customS3Match.schemaName)
 					.then(function(models)
 					{
 						console.log('Loaded latest: ', models);

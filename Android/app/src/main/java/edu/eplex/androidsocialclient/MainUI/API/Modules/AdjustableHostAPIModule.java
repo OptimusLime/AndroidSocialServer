@@ -4,6 +4,7 @@ import android.content.Context;
 
 import dagger.Module;
 import dagger.Provides;
+import edu.eplex.androidsocialclient.MainUI.API.FeedAPI;
 import edu.eplex.androidsocialclient.MainUI.API.S3UploadAPI;
 import edu.eplex.androidsocialclient.MainUI.API.PublishAPI;
 import edu.eplex.androidsocialclient.MainUI.API.WinAPIManager;
@@ -51,6 +52,11 @@ public class AdjustableHostAPIModule {
     @Provides
     public PublishAPI providePublishAPI(){
         return restAdapter.create(PublishAPI.class);
+    }
+
+    @Provides
+    public FeedAPI provideFeedAPI(){
+        return restAdapter.create(FeedAPI.class);
     }
 
     @Provides

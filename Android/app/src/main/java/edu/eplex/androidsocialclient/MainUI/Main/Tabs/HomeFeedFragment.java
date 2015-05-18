@@ -3,6 +3,7 @@ package edu.eplex.androidsocialclient.MainUI.Main.Tabs;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -27,13 +28,18 @@ import android.widget.TextView;
 import com.facebook.drawee.view.SimpleDraweeView;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 
+import bolts.Continuation;
+import bolts.Task;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import edu.eplex.androidsocialclient.MainUI.API.Publish.Objects.FeedItem;
 import edu.eplex.androidsocialclient.MainUI.API.WinAPIManager;
 import edu.eplex.androidsocialclient.R;
 
+import edu.eplex.androidsocialclient.Utilities.ScreenUtilities;
 import in.srain.cube.views.ptr.PtrClassicFrameLayout;
 import in.srain.cube.views.ptr.PtrDefaultHandler;
 import in.srain.cube.views.ptr.PtrFrameLayout;
@@ -52,6 +58,8 @@ public class HomeFeedFragment extends Fragment {
     public PtrClassicFrameLayout refreshFrame;
 
     private GridViewAdapter mAdapter;
+
+    long lastTime = -1;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -82,11 +90,12 @@ public class HomeFeedFragment extends Fragment {
             e.printStackTrace();
         }
 
+
         refreshFrame.setLastUpdateTimeRelateObject(this);
         refreshFrame.setPtrHandler(new PtrHandler() {
             @Override
             public void onRefreshBegin(PtrFrameLayout frame) {
-//                updateData();
+                updateData();
 
                 //need to get data
                 Log.d("HOMEFEEDFRAGMENT", "Get more data");
@@ -110,23 +119,133 @@ public class HomeFeedFragment extends Fragment {
         refreshFrame.postDelayed(new Runnable() {
             @Override
             public void run() {
-                // mPtrFrame.autoRefresh();
+                refreshFrame.autoRefresh();
             }
         }, 100);
 
+//        updateData();
+
 
         return rootView;
+    }
+    void updateData()
+    {
+
+        //
+        int count = 10;
+
+//lastTime
+        WinAPIManager.getInstance().asyncGetLatestFeedAfter(count, lastTime)
+                .continueWith(new Continuation<ArrayList<FeedItem>, Void>() {
+                    @Override
+                    public Void then(Task<ArrayList<FeedItem>> task) throws Exception {
+
+
+                        //complete the refresh
+                        refreshFrame.refreshComplete();
+
+                        //get our feed items
+                        ArrayList<FeedItem> items = task.getResult();
+                        if (task.getResult() != null && items.size() > 0) {
+                            for (int i = 0; i < items.size(); i++) {
+                                FeedItem f = items.get(i);
+
+                                if (i == 0)
+                                    lastTime = f.date;
+                                else
+                                    lastTime = Math.max(f.date, lastTime);
+
+                            }
+
+                            //add to the adapter plz
+                            mAdapter.addAll(items);
+
+                            //then let the adapter know the data is ready
+//                            mAdapter.notifyDataSetChanged();
+                        }
+
+
+                        return null;
+                    }
+                }, Task.UI_THREAD_EXECUTOR);
+
+
     }
 
     public class GridViewAdapter extends ArrayAdapter<FeedItem> {
         private FragmentActivity context;
 
+        HashSet<String> existing = new HashSet<>();
         int layoutResourceId;
 
         public GridViewAdapter(FragmentActivity context, int layoutResourceId, ArrayList<FeedItem> data) {
             super(context, layoutResourceId, data);
             this.context = context;
             this.layoutResourceId = layoutResourceId;
+        }
+
+        @Override
+        public void clear() {
+            super.clear();
+            existing.clear();
+        }
+
+        @Override
+        public void remove(FeedItem object) {
+            super.remove(object);
+            existing.remove(object.wid);
+        }
+
+
+        @Override
+        public void addAll(Collection<? extends FeedItem> collection) {
+
+            Object[] cArray = collection.toArray();
+            for(int i=0; i < collection.size(); i++)
+            {
+                FeedItem fi = (FeedItem)cArray[i];
+                if(existing.contains(fi.wid))
+                    collection.remove(cArray[i]);
+                else
+                    existing.add(fi.wid);
+            }
+
+            super.addAll(collection);
+        }
+
+        @Override
+        public void add(FeedItem object) {
+            if(!existing.contains(object.wid))
+            {
+                existing.add(object.wid);
+                super.add(object);
+            }
+        }
+
+        @Override
+        public void addAll(FeedItem... items) {
+
+            Collection<FeedItem> nItems = new ArrayList<>();
+
+            for(int i=0; i < items.length; i++) {
+                FeedItem fi = (FeedItem) items[i];
+                if (!existing.contains(fi.wid)){
+                    existing.add(fi.wid);
+                    nItems.add(fi);
+                }
+            }
+
+            if(nItems.size() > 0) {
+                FeedItem[] fArray = new FeedItem[nItems.size()];
+                nItems.toArray(fArray);
+                super.addAll(fArray);
+            }
+        }
+
+        @Override
+        public void insert(FeedItem object, int index) {
+            if(!existing.contains(object.wid))
+                super.insert(object, index);
         }
 
         @Override
@@ -147,6 +266,14 @@ public class HomeFeedFragment extends Fragment {
             //we get the image directly from S3
             Uri uri = Uri.parse(baseS3Server + "/" + fi.username + "/" + fi.s3Key + "/" + WinAPIManager.FILTER_FULL);
             SimpleDraweeView draweeView = (SimpleDraweeView) row.findViewById(R.id.app_feed_grid_item_image_view);
+
+            Point screenSize = ScreenUtilities.ScreenSize(context);
+            int size = Math.min(screenSize.x, screenSize.y);
+
+            draweeView.getLayoutParams().width = size;
+            draweeView.getLayoutParams().height = size;
+
+
             draweeView.setImageURI(uri);
 
             return row;

@@ -22,12 +22,9 @@
             android:fadingEdge="none"
             android:focusable="false"
             android:horizontalSpacing="10dp"
+            android:verticalSpacing="10dp"
             android:listSelector="@android:color/transparent"
-            android:numColumns="2"
-            android:paddingBottom="12dp"
-            android:paddingLeft="12dp"
-            android:paddingRight="12dp"
-            android:scrollbars="none"
+            android:numColumns="1"
             android:stretchMode="columnWidth" />
 
     </in.srain.cube.views.ptr.PtrClassicFrameLayout>
