@@ -51,7 +51,7 @@ public class HomeFeedFragment extends Fragment {
     @InjectView(R.id.app_feed_header_grid_view_frame)
     public PtrClassicFrameLayout refreshFrame;
 
-    private ListAdapter mAdapter;
+    private GridViewAdapter mAdapter;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -72,9 +72,15 @@ public class HomeFeedFragment extends Fragment {
             }
         });
 
-        mAdapter = new GridViewAdapter(getActivity(), R.layout.app_fragment_feed_grid_item, null);
-        refreshGridView.setAdapter(mAdapter);
+        mAdapter = new GridViewAdapter(getActivity(), R.layout.app_fragment_feed_grid_item, new ArrayList<FeedItem>());
 
+        try {
+            refreshGridView.setAdapter(mAdapter);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
 
         refreshFrame.setLastUpdateTimeRelateObject(this);
         refreshFrame.setPtrHandler(new PtrHandler() {

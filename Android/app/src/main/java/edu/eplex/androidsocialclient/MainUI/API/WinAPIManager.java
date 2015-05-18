@@ -357,14 +357,16 @@ public class WinAPIManager {
                     pr.accessToken = "bobsyourunclefool";
                     pr.filterArtifacts = new HashMap<String, FilterArtifact>();
                     FilterArtifact fa = artifactToPublish.getFilterArtifact();
+                    //need to read in privacy choice from somewhere -- not here though
+                    fa.isPrivate = "false";
                     pr.filterArtifacts.put(fa.wid(), fa);
 
                     saveSuccessfulFilterUpload(artifactToPublish.getUniqueID(), pr, mContext);
 
                     return publishAPI.syncConfirmUpload(pr);
                 }
-
-                return null;
+                else
+                    throw new Error("Upload to S3 failed: " + (task.getError() != null ? task.getError().getMessage() : " unknown reason"));
             }
         };
     }
@@ -443,7 +445,7 @@ public class WinAPIManager {
     }
 
 
-    public Task<Void> asyncPublishArtifact(final Context mContext, final FilterComposite artifactToPublish)
+    public Task<Boolean> asyncPublishArtifact(final Context mContext, final FilterComposite artifactToPublish)
     {
 //        final PublishRequest checkResponse = checkSuccessfulUpload(artifactToPublish.getUniqueID());
         return ensureFilteredImagesExist(mContext, artifactToPublish)
@@ -453,9 +455,9 @@ public class WinAPIManager {
                         return asyncCheckSuccessfulUpload(artifactToPublish.getUniqueID(), mContext);
                     }
                 })
-                .continueWithTask(new Continuation<PublishRequest, Task<Void>>() {
+                .continueWithTask(new Continuation<PublishRequest, Task<Boolean>>() {
                     @Override
-                    public Task<Void> then(Task<PublishRequest> task) throws Exception {
+                    public Task<Boolean> then(Task<PublishRequest> task) throws Exception {
 
                         final PublishRequest checkResponse = task.getResult();
 
@@ -506,19 +508,21 @@ public class WinAPIManager {
                                 }
                             })
                                     .continueWith(ConfirmUpload(mContext, pr, artifactToPublish))
-                                    .continueWith(new Continuation<Confirmation, Void>() {
+                                    .continueWith(new Continuation<Confirmation, Boolean>() {
                                         @Override
-                                        public Void then(Task<Confirmation> task) throws Exception {
+                                        public Boolean then(Task<Confirmation> task) throws Exception {
 
                                             if (task.getResult() != null) {
                                                 if (task.getResult().uuid.equals(pr.uuid)) {
                                                     Log.d("WINAPIMANAGER", "Successful upload!");
                                                 }
+                                                return true;
                                             }
-                                            else //otherwise, remove the wid -- we didn't succeed -- we need to be careful
+                                            else {//otherwise, remove the wid -- we didn't succeed -- we need to be careful
                                                 confirmedUploads.remove(artifactToPublish.getUniqueID());
-
-                                            return null;
+                                                //throw new Error("Publish failed.");
+                                                return false;
+                                            }
                                         }
                                     });
                         } else {
@@ -530,19 +534,21 @@ public class WinAPIManager {
                                 }
                             })
                                     .continueWith(ConfirmUpload(mContext, checkResponse, artifactToPublish))
-                                    .continueWith(new Continuation<Confirmation, Void>() {
+                                    .continueWith(new Continuation<Confirmation, Boolean>() {
                                         @Override
-                                        public Void then(Task<Confirmation> task) throws Exception {
+                                        public Boolean then(Task<Confirmation> task) throws Exception {
 
                                             if (task.getResult() != null) {
                                                 if (task.getResult().uuid.equals(checkResponse.uuid)) {
                                                     Log.d("WINAPIMANAGER", "Successful upload!");
                                                 }
+                                                return true;
                                             }
-                                            else //otherwise, remove the wid -- we didn't succeed -- we need to be careful
+                                            else {//otherwise, remove the wid -- we didn't succeed -- we need to be careful
                                                 confirmedUploads.remove(artifactToPublish.getUniqueID());
-
-                                            return null;
+//                                                throw new Error("Publish failed.");
+                                                return false;
+                                            }
                                         }
                                     });
                         }

@@ -8,7 +8,7 @@ public class FeedItem {
     public String wid;
     public String s3Key;
     public String username;
-    public String date;
+    public long date;
 
     public FeedItem()
     {

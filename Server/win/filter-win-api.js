@@ -54,8 +54,8 @@ var winConfiguration = {
 var configLocation = __dirname + "/../access-credentials.json";
 
 
-var customS3Match = {schemaName: "S3_connection", schemaJSON: {wid: "String", s3Key: "String", username: "String", date: "Date"}};
-var customHashMatch = {schemaName: "Hash_connection", schemaJSON: {wid: "String", s3Key: "String", username: "String", hashtag: "String", date: "Date"}};
+var customS3Match = {schemaName: "S3_connection", schemaJSON: {wid: "String", s3Key: "String", username: "String", date: "Number"}};
+var customHashMatch = {schemaName: "Hash_connection", schemaJSON: {wid: "String", s3Key: "String", username: "String", hashtag: "String", date: "Number"}};
 
 function initializeServerObjects()
 {
@@ -159,8 +159,9 @@ function launchExpress()
 			  		.then(function(isCompleted)
 			  		{	
 			  			//must match the upload key with the filter artifacts -- this way we know where to get the s3 uploads
-			  			for(var key in filterArtifacts)
+			  			for(var key in filterArtifacts){
 			  				filterArtifacts[key].s3Key = uuidUpload;
+			  			}
 
 			  			console.log('Checked upload: ', isCompleted);
 			  			console.log('Artifacts: ', filterArtifacts);

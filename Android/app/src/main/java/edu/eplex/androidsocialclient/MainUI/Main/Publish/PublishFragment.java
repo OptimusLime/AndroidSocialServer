@@ -166,22 +166,22 @@ public class PublishFragment extends Fragment {
 
 
         WinAPIManager.getInstance().asyncPublishArtifact(getActivity(), toPublishFilter)
-            .continueWith(new Continuation<Void, Void>() {
+            .continueWith(new Continuation<Boolean, Void>() {
                 @Override
-                public Void then(Task<Void> task) throws Exception {
+                public Void then(Task<Boolean> task) throws Exception {
 
                     publishInProgress = false;
 
                     Log.d("PUBFRAG", "Returned from publish: " + task.isCompleted());
 
-                    if(task.isCompleted())
-                    {
-                        PublishFlowManager.getInstance().finishPublishArtifactActivity(getActivity(), toPublishFilter);
-                    }
-                    else if(task.isCancelled() || task.isFaulted())
+                   if(task.isCancelled() || task.isFaulted())
                     {
                         //failed!
                         failedToPublishImageError();
+                    }
+                    else if(task.isCompleted() && task.getResult())
+                    {
+                        PublishFlowManager.getInstance().finishPublishArtifactActivity(getActivity(), toPublishFilter);
                     }
                     else {
 //                        Toast.makeText(getActivity(), "Publish successful: " + toPublishFilter.getUniqueID(), Toast.LENGTH_SHORT).show();

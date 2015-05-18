@@ -52,7 +52,7 @@ public class FilterArtifact implements Artifact {
     public ArrayList<String> hashtags;
 
     @JsonProperty("isPrivate")
-    public Boolean isPrivate;
+    public String isPrivate = "false";
 
     @Override
     public String wid() {

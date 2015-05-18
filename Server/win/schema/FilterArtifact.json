@@ -14,5 +14,5 @@
         "user": "String",
         "session": "String"
       },
-    "isPrivate" : "Boolean"
+    "isPrivate" : "String"
 }
