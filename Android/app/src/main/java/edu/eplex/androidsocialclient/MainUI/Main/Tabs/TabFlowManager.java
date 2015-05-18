@@ -138,7 +138,7 @@ public class TabFlowManager {
                 case Search:
                     return new TakePictureFragment();
                 case Feed:
-                    return new UserSettingsFragment();
+                    return new HomeFeedFragment();
                 case User:
                     return new UserSettingsFragment();
                 default:

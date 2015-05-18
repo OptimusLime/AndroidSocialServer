@@ -17,10 +17,10 @@ var createFiles = function(props)
     var prepend = user + "/";
 
     return [
-        {prepend: prepend, append: "/filterThumbnail"},
-        {prepend: prepend, append: "/filterFull"},
-        {prepend: prepend, append: "/imageFull"},
-        {prepend: prepend, append: "/imageThumbnail"}
+        {prepend: prepend, append: "/filterThumbnail.png"},
+        {prepend: prepend, append: "/filterFull.png"},
+        {prepend: prepend, append: "/imageFull.png"},
+        {prepend: prepend, append: "/imageThumbnail.png"}
     ];
 }
 
@@ -38,6 +38,8 @@ var metaProps = {
 
 var winConfiguration = {
     mainArtifactType : "FilterArtifact",
+    defaultFeedFetch: 10, 
+    maxFeedFetch : 25,
     validator: {
         multipleErrors : true,
         allowAnyObjects : false,
@@ -52,7 +54,8 @@ var winConfiguration = {
 var configLocation = __dirname + "/../access-credentials.json";
 
 
-var customS3Match = {schemaName: "S3_connection", schemaJSON: {wid: "String", s3Key: "String"}};
+var customS3Match = {schemaName: "S3_connection", schemaJSON: {wid: "String", s3Key: "String", username: "String", date: "Date"}};
+var customHashMatch = {schemaName: "Hash_connection", schemaJSON: {wid: "String", s3Key: "String", username: "String", hashtag: "String", date: "Date"}};
 
 function initializeServerObjects()
 {
@@ -71,6 +74,7 @@ function initializeServerObjects()
 				winAPIObject = winObject;
 
 				winAPIObject.dataAccess.syncLoadCustomSchema(customS3Match.schemaName, customS3Match.schemaJSON);
+				winAPIObject.dataAccess.syncLoadCustomSchema(customHashMatch.schemaName, customHashMatch.schemaJSON);
 			})
 			.catch(function(err)
 			{
@@ -177,12 +181,26 @@ function launchExpress()
 			  		{
 			  			var toSaveConnection = {};
 			  			var wid = Object.keys(filterArtifacts)[0];
-			  			toSaveConnection[wid] = {s3Key: uuidUpload, wid: wid};
+			  			var date = Date.now();
+			  			var hashtags = filterArtifacts[wid].hashtags;
+			  			toSaveConnection[wid] = {s3Key: uuidUpload, wid: wid, username: user, date: date};
 
 			  			console.log("To save connection: ", toSaveConnection);
 
 			  			//now lets keep track of our s3 connection in a separate database object
 			  			return winAPIObject.dataAccess.saveDatabaseObjects(customS3Match.schemaName, toSaveConnection);			  			
+			  		})
+			  		.then(function()
+			  		{
+			  			var toSaveConnection = {};
+			  			var wid = Object.keys(filterArtifacts)[0];
+			  			var date = Date.now();
+			  			var hashtags = filterArtifacts[wid].hashtags;
+			  			for(var i=0; i < hashtags.length; i++)
+			  				toSaveConnection[wid + "-" + i] = {s3Key: uuidUpload, wid: wid, username: user, hashtag: hashtags[i], date: date};
+
+			  			//now lets keep track of our hash tags in a separate database object
+			  			return winAPIObject.dataAccess.saveDatabaseObjects(customHashMatch.schemaName, toSaveConnection);	
 			  		})
 			  		.then(function()
 			  		{
@@ -196,6 +214,32 @@ function launchExpress()
 			  			//server error
 			  			res.status(500).send('Error initialize upload ' + (err.message || err)).end();
 			  		});
+			});
+
+
+			app.get("/latest", function(req, res)
+			{
+				//start searching from a certain time -- or simply start from now
+				var startDate = req.query.after || Date.now();
+
+				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
+
+				//look back the most recent s3s
+				winAPIObject.dataAccess.loadRecentArtifacts(startDate, feedCount, customS3Match.schemaName)
+					.then(function(models)
+					{
+						console.log('Loaded latest: ', models);
+
+						//send back the models
+						res.json(models).end();
+					})
+					.catch(function(err)
+					{
+						console.log('Error fetching recent', require('util').inspect(err, false, 10));
+			  			//server error
+			  			res.status(500).send('Error fetching recent ' + (err.message || err)).end();
+					});
+
 			});
 
 

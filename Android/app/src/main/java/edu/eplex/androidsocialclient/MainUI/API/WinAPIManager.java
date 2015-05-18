@@ -67,10 +67,10 @@ public class WinAPIManager {
 //    public static final MediaType PLAINTEXT
 //            = MediaType.parse("text/plain");
 
-    static String FILTER_THUMB = "filterThumbnail";
-    static String FILTER_FULL = "filterFull";
-    static String IMAGE_THUMB = "imageThumbnail";
-    static String IMAGE_FULL = "imageFull";
+    public static String FILTER_THUMB = "filterThumbnail.png";
+    public static String FILTER_FULL = "filterFull.png";
+    public static String IMAGE_THUMB = "imageThumbnail.png";
+    public static String IMAGE_FULL = "imageFull.png";
 
 
     @Inject

@@ -51,6 +51,9 @@ public class FilterArtifact implements Artifact {
     @JsonProperty("hashtags")
     public ArrayList<String> hashtags;
 
+    @JsonProperty("isPrivate")
+    public Boolean isPrivate;
+
     @Override
     public String wid() {
         return this.wid;

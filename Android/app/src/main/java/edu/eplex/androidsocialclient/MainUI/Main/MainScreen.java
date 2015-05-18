@@ -12,6 +12,8 @@ import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 
+import com.facebook.drawee.backends.pipeline.Fresco;
+
 import java.util.Arrays;
 
 import dagger.ObjectGraph;
@@ -46,6 +48,8 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Fresco.initialize(this);
 
         //start loading things in -- async please
         FilterManager.getInstance().asyncLoadFiltersFromFile(this);

@@ -1,0 +1,12 @@
+{
+	"name" : "test",
+	"private" : true,
+	"dependencies" : 
+	{
+		"should" : "*",
+		"assert" : "*",
+		"colors" : "*",
+		"optimuslime-traverse" : "*",
+		"superagent" : "*"
+	}
+}

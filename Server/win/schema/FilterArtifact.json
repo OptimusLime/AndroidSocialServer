@@ -13,5 +13,6 @@
         "timeofcreation" : "Number",
         "user": "String",
         "session": "String"
-      }
+      },
+    "isPrivate" : "Boolean"
 }
