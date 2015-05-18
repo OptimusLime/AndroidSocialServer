@@ -1,7 +1,5 @@
 package edu.eplex.androidsocialclient.MainUI.Filters.Evolution;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -125,7 +123,12 @@ public class FilterLocalOffspringGenerator implements ArtifactOffspringGenerator
     public Artifact createArtifactFromParents(List<Artifact> parents)
     {
         if(parents.size() == 0)
-            throw new NotImplementedException("Must have at least 1 parent object");
+            try {
+                throw new Exception("Must have at least 1 parent object");
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
 
         if(parents.size() > 1 && MathUtils.nextDouble() < np.pOffspringSexual)
         {

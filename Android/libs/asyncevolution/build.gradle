@@ -55,15 +55,8 @@ dependencies {
     compile 'com.fasterxml.jackson.core:jackson-core:2.4.1.1'
     compile 'com.fasterxml.jackson.core:jackson-databind:2.4.1.1'
 
-    //handling http requests or requests in the background thread
-    compile 'com.octo.android.robospice:robospice:1.4.12'
-    compile 'com.octo.android.robospice:robospice-spring-android:1.4.12'
-
     //sticky grids for sticky header action
     compile 'com.tonicartos:stickygridheaders:1.0.1'
-
-    //for doing easy APIs
-    compile 'com.squareup.retrofit:retrofit:1.9.0'
 
     //Core
     compile 'com.github.gabrielemariotti.cards:cardslib-core:2.0.1'

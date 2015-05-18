@@ -64,8 +64,7 @@ public class AsyncInfiniteHome implements HomeGridCard.HomeGridCardButtonHandler
     @Inject
     PhenotypeCache<HomeGridCard> gridCardCache;
 
-    @Inject
-    AsyncSeedLoader homeUIArtifactLoader;
+
 
     Map<String, Artifact> allArtifactMap = new HashMap<String, Artifact>();
 
@@ -87,8 +86,7 @@ public class AsyncInfiniteHome implements HomeGridCard.HomeGridCardButtonHandler
         //that will create appropriate phenotype caches and async artifact objects
         graph.inject(this);
 
-        //inject our artifact loader (so it can pull in the proper API services
-        graph.inject(homeUIArtifactLoader);
+
 
         //inject the inner workings of our async artifact-to-UI object
         graph.inject(asyncArtifactToUIMapper);
@@ -156,19 +154,7 @@ public class AsyncInfiniteHome implements HomeGridCard.HomeGridCardButtonHandler
 
     Task<Void> loadNextBatchOfItems(JsonNode params)
     {
-        return homeUIArtifactLoader.asyncLoadSeeds(params)
-                .continueWithTask(new Continuation<List<Artifact>, Task<Void>>() {
-                    @Override
-                    public Task<Void> then(Task<List<Artifact>> task) throws Exception {
-
-                        List<Artifact> allSeeds = task.getResult();
-                        for (Artifact seed : allSeeds)
-                            allArtifactMap.put(seed.wid(), seed);
-
-                        //now we need to display all these artifacts
-                        return asyncGetMoreCards(allSeeds);
-                    }
-                });
+       return null;
     }
 
     //we've been summoned to fetch new card objects

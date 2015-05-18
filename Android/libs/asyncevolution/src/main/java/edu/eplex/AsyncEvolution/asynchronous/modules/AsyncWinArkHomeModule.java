@@ -3,9 +3,7 @@ package edu.eplex.AsyncEvolution.asynchronous.modules;
 import android.app.Activity;
 import android.graphics.Bitmap;
 
-import edu.eplex.AsyncEvolution.api.HomeAPIService;
 import edu.eplex.AsyncEvolution.asynchronous.implementation.AsyncArtifactToHomeCard;
-import edu.eplex.AsyncEvolution.asynchronous.implementation.AsyncScrollHomeUI;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncArtifactToPhenotype;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncArtifactToUI;
 import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncPhenotypeToUI;
@@ -19,29 +17,24 @@ import dagger.Module;
 import dagger.Provides;
 import eplex.win.winBackbone.Artifact;
 import edu.eplex.AsyncEvolution.interfaces.PhenotypeCache;
-import retrofit.RestAdapter;
 
 /**
  * Created by paul on 10/19/14.
  */
 @Module(
         injects={
-                AsyncScrollHomeUI.class,
                 AsyncInfiniteHome.class,
                 AsyncArtifactToHomeCard.class}
 )
 public class AsyncWinArkHomeModule {
 
     Activity activity;
-    RestAdapter winarkAPI;
 
     public AsyncWinArkHomeModule(Activity activity)
     {
         this.activity = activity;
 
-        winarkAPI = new RestAdapter.Builder()
-                .setEndpoint("http://winark.org/apps/win-Picbreeder/api")
-                .build();
+
     }
 
     @Provides
@@ -62,11 +55,6 @@ public class AsyncWinArkHomeModule {
     }
 
 
-    //Handle loading our artifacts from the Home API
-    @Provides
-    public AsyncSeedLoader provideAsyncSeedLoading(){
-        return new AsyncScrollHomeUI();
-    }
 
     //now we handle AsyncArtifactToUI.class injections
     //this provides the conversion between artifact and network outputs,
@@ -79,12 +67,6 @@ public class AsyncWinArkHomeModule {
     @Provides
     public AsyncPhenotypeToUI<double[][], HomeGridCard> providePhenotypeToUIConverter(){
         return new AsyncCPPNOutputToHomeCard();
-    }
-
-    @Provides
-    public HomeAPIService provideHomeAPIService()
-    {
-        return winarkAPI.create(HomeAPIService.class);
     }
 
 }
