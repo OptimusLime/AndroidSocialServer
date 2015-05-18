@@ -79,8 +79,12 @@ dependencies {
 //    compile 'com.jmpergar:AwesomeText:1.0.0'
     compile 'com.amulyakhare:com.amulyakhare.textdrawable:1.0.1'
     //pull to refresh library for feeds -- kthx
-
     compile 'in.srain.cube:ultra-ptr:1.0.9'
+
+    //PersistentSearch bar for hashtag searches
+    compile 'com.quinny898.library.persistentsearch:library:1.0.0-SNAPSHOT'
+
+    //image library from facebook -- for the feeds
     compile ('com.facebook.fresco:fresco:0.5.0+'){
         // exclusion is not neccessary, but generally a good idea.
         exclude group: 'com.squareup.okhttp', module: 'okhttp'

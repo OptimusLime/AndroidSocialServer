@@ -89,6 +89,7 @@ public class TabFlowManager {
         if(mainTagActivity == null)
             throw new Exception("Need to set main tag activity. Did you forget?");
 
+
         //now we done it, lets do the switch
         //-- for now we simply smooth scroll to victory
         mainTagActivity.switchToTab(toTab.ordinal(), true);
@@ -123,27 +124,47 @@ public class TabFlowManager {
     //handle the pager for our tabs -- we're the flow manager damnit- IT'S WHAT WE DO
     public static class ViewPagerAdapter extends FragmentStatePagerAdapter {
 
+
+        HashMap<TabID, Fragment> savedFragments = new HashMap<>();
+
         public ViewPagerAdapter(FragmentManager fm) {
             super(fm);
+        }
 
+        public HashMap<TabID, Fragment> GetFragmentMap()
+        {
+            return this.savedFragments;
         }
 
         public Fragment getItem(int num) {
             TabID tab = TabID.values()[num];
+
+            if(savedFragments.containsKey(tab))
+                return savedFragments.get(tab);
+
+            Fragment f;
             switch(tab) {
                 case Camera:
-                    return new SelectPictureFragment();
+                    f = new SelectPictureFragment();
+                    break;
                 case Workshop:
-                    return new WorkshopFragment();
+                    f = new WorkshopFragment();
+                    break;
                 case Search:
-                    return new TakePictureFragment();
+                    f = new HashtagSearchFragment();
+                    break;
                 case Feed:
-                    return new HomeFeedFragment();
+                    f = new HomeFeedFragment();
+                    break;
                 case User:
-                    return new UserSettingsFragment();
+                    f =  new UserSettingsFragment();
                 default:
-                    return new UserSettingsFragment();
+                    f =  new UserSettingsFragment();
             }
+
+            savedFragments.put(tab, f);
+
+            return f;
         }
 
         @Override
@@ -171,6 +192,21 @@ public class TabFlowManager {
             }
         }
 
+    }
+
+    public void audioSearchText(ArrayList<String> searchWords)
+    {
+        HashtagSearchFragment hsf = null;
+
+        HashMap<TabID, Fragment> fragMap = mainTagActivity.adapter.GetFragmentMap();
+
+        //grab our search fragment please
+        hsf = (HashtagSearchFragment)fragMap.get(TabID.Search);
+
+        if(hsf != null)
+        {
+            hsf.setSearchValue(searchWords);
+        }
     }
 
 }

@@ -3,6 +3,7 @@ package edu.eplex.androidsocialclient.MainUI.Main;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
@@ -11,9 +12,14 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 
 import com.facebook.drawee.backends.pipeline.Fresco;
+import com.quinny898.library.persistentsearch.SearchBox;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import dagger.ObjectGraph;
@@ -36,12 +42,15 @@ import it.neokree.materialtabs.MaterialTabListener;
  */
 public class MainScreen extends ActionBarActivity implements MaterialTabListener {
     MaterialTabHost tabHost;
-    ViewPager pager;
-    TabFlowManager.ViewPagerAdapter adapter;
+    public ViewPager pager;
+    public TabFlowManager.ViewPagerAdapter adapter;
 
     @Override
     protected void onStart() {
         super.onStart();
+
+//        hideKeyboard();
+
     }
 
 
@@ -77,7 +86,7 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
             public void onPageSelected(int position) {
                 // when user do a swipe the selected tab change
                 tabHost.setSelectedNavigationItem(position);
-
+                hideKeyboard();
             }
         });
 
@@ -99,6 +108,7 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
         //send it in!
         WinAPIManager.getInstance().injectAPIManager(graph);
 
+        hideKeyboard();
     }
 
     public void switchToTab(TabFlowManager.TabID tab, boolean smooth)
@@ -110,11 +120,32 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
     public void switchToTab(int pos, boolean smooth)
     {
         pager.setCurrentItem(pos, smooth);
+        //always hide keyboard on switching
+        hideKeyboard();
+    }
+
+    void hideKeyboard()
+    {
+        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+
+        try {
+//            this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+            this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+
+//            inputMethodManager.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(), 0);
+            inputMethodManager.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(), 0);
+        }
+        catch (NullPointerException e)
+        {
+            inputMethodManager.hideSoftInputFromWindow(this.pager.getWindowToken(), 0);
+
+        }
     }
 
     @Override
     public void onTabSelected(MaterialTab tab) {
         pager.setCurrentItem(tab.getPosition());
+        hideKeyboard();
     }
 
     @Override
@@ -134,8 +165,19 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
 
         Log.d("MAINEDITSCREEN", "Activity RESULT from " + requestCode);
 
+
+        ArrayList<String> matches;
         switch (requestCode)
         {
+            case SearchBox.VOICE_RECOGNITION_CODE:
+                if(resultCode == FragmentActivity.RESULT_OK) {
+                    matches = data
+                            .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+
+                    TabFlowManager.getInstance().audioSearchText(matches);
+                }
+                break;
+
             case EditFlowManager.EDIT_SCREEN_REQUEST_CODE:
                 fm.asyncSaveFiltersToFile(this);
 
@@ -149,6 +191,7 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
                         Log.d("MAINSCREEN", "Closed activity after successful publish, now publishing.");
 
                         fm.publishedCompositeFilter(this, fm.getFilter(data.getStringExtra("filter")), true);
+                        TabFlowManager.getInstance().switchToTab(TabFlowManager.TabID.Workshop, TabFlowManager.TabID.Feed);
                     }
                     catch (Exception e)
                     {
@@ -163,6 +206,8 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
 
                 break;
         }
+
+
     }
 
 

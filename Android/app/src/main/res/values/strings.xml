@@ -45,6 +45,7 @@
     <string name="mainImageCPPNScaleDown">0.5</string>
 
     <integer name="max_filtered_image_size">960</integer>
+    <string name="default_filter_search">#filter search</string>
 
 
 
