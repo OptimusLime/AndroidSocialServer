@@ -117,6 +117,14 @@ public class HashtagSearchFragment extends Fragment {
         // default is true
         refreshFrame.setKeepHeaderWhenRefresh(true);
 
+        //if this isn't our first rodeo, do another search fetch
+        lastSearch = WinAPIManager.getInstance().lastSearchString();
+        if(lastSearch != null) {
+            lastTime = -1;
+            searchBox.populateEditText(new ArrayList<String>(Arrays.asList(lastSearch)));;
+            updateSearchData();
+        }
+
         return rootView;
     }
 
@@ -162,7 +170,7 @@ public class HashtagSearchFragment extends Fragment {
 
                 //last time is research with every search click
                 lastTime = -1;
-                
+
                 //clear the adapter please
                 mAdapter.clear();
                 mAdapter.notifyDataSetChanged();
@@ -178,8 +186,6 @@ public class HashtagSearchFragment extends Fragment {
         });
 
     }
-
-
 
     void updateSearchData()
     {

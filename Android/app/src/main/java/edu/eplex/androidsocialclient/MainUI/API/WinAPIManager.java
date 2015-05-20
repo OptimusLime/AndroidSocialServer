@@ -438,15 +438,16 @@ public class WinAPIManager {
         int fullSize = mContext.getResources().getInteger(R.integer.max_filtered_image_size);
         int thumbnailSize = (int)mContext.getResources().getDimension(R.dimen.app_edit_iec_thumbnail_size);
 
-        if(artifact.getThumbnailBitmap() == null)
-        {
+        //For now, do this regardless of what happens to ensuyre that we aren't usign recycled bitmap
+//        if(artifact.getThumbnailBitmap() == null)
+//        {
             loadImageTasks.add(loadImageAndFilter(mContext, artifact, true, thumbnailSize));
-        }
+//        }
 
-        if(artifact.getCurrentBitmap() == null)
-        {
+//        if(artifact.getCurrentBitmap() == null)
+//        {
             loadImageTasks.add(loadImageAndFilter(mContext, artifact, false, fullSize));
-        }
+//        }
 
         return Task.whenAll(loadImageTasks);
     }
@@ -621,7 +622,13 @@ public class WinAPIManager {
 
         return tcs.getTask();
     }
+    String lastSearch;
+    public String lastSearchString()
+    {
+        return lastSearch;
+    }
     public Task<ArrayList<FeedItem>> asyncGetLatestByHashtagAfter(String hashtag, int count, long lastTime) {
+
         String tString = null;
         if(lastTime != -1)
             tString = "" + lastTime;
@@ -629,6 +636,7 @@ public class WinAPIManager {
     }
     public Task<ArrayList<FeedItem>> asyncGetLatestByHashtagAfter(String hashtag, int count, String lastTime)
     {
+        lastSearch = hashtag.replace("#", "");
         final Task<ArrayList<FeedItem>>.TaskCompletionSource tcs = Task.create();
 
         feedAPI.asyncGetLatestByHashtag(hashtag, lastTime, count, new Callback<ArrayList<FeedItem>>() {

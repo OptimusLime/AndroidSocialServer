@@ -1,5 +1,13 @@
 #!/usr/bin/env node
 
+/*
+ example call from andorid-icons base folder: 
+./nodecopy -x ldpi -n ic_action_clock -l ~/Eplex/WIN/AndroidSocialServer/Android/app/src/main/res/ -c black,white
+
+copies everything but ldpi of the ic_action_clock icon to the location specified after -l, and for the black and white versions of the icons
+
+*/
+
 /**
  * Module dependencies.
  */

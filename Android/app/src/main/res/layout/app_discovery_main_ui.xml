@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/app_discovery_toolbar"
+        android:layout_height="@dimen/all_toolbar_height"
+        android:layout_width="match_parent"
+        android:layout_marginBottom="0dp"
+        android:paddingBottom="0dp"
+        android:background="@color/primary_app_blue"
+        app:theme="@style/RegistrationToolbarTheme"
+        />
+
+
+        <!-- for icon tabs -->
+        <it.neokree.materialtabs.MaterialTabHost
+            android:id="@+id/app_discovery_materialTabHost"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/app_bottom_tab_height"
+            app:iconColor="@color/app_bottom_tab_icon"
+            app:materialTabsPrimaryColor="@color/primary_app_blue"
+            app:accentColor="@color/app_bottom_tab_accent"
+            app:hasIcons="true"
+            android:layout_below="@id/app_discovery_toolbar"
+            />
+
+    <android.support.v4.view.ViewPager
+        android:id="@+id/app_discovery_view_pager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/app_discovery_materialTabHost"
+        />
+
+
+
+</RelativeLayout>

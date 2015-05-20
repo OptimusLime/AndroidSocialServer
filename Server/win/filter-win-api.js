@@ -161,6 +161,11 @@ function launchExpress()
 			  			//must match the upload key with the filter artifacts -- this way we know where to get the s3 uploads
 			  			for(var key in filterArtifacts){
 			  				filterArtifacts[key].s3Key = uuidUpload;
+		  					var gf = filterArtifacts[key].genomeFilters;
+			  				for(var i=0; i < gf.length; i++){
+			  					delete gf[i].nodeLookup;
+			  					delete gf[i].connectionLookup;
+			  				}
 			  			}
 
 			  			console.log('Checked upload: ', isCompleted);

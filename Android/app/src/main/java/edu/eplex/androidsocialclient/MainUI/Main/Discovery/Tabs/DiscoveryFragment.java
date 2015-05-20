@@ -1,55 +1,70 @@
-package edu.eplex.androidsocialclient.MainUI.Main.Tabs;
+package edu.eplex.androidsocialclient.MainUI.Main.Discovery.Tabs;
 
 import android.content.Context;
-import android.database.DataSetObserver;
-import android.graphics.Color;
 import android.graphics.Point;
-import android.graphics.drawable.ColorDrawable;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
-import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
+import android.support.v4.view.ViewPager;
+import android.text.Html;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ListAdapter;
-import android.widget.TextView;
+import android.widget.Toast;
 
+import com.afollestad.materialdialogs.Alignment;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.facebook.drawee.view.SimpleDraweeView;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import bolts.Continuation;
 import bolts.Task;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
+import butterknife.OnClick;
 import edu.eplex.androidsocialclient.MainUI.API.Publish.Objects.FeedItem;
 import edu.eplex.androidsocialclient.MainUI.API.WinAPIManager;
+import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
+import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
+import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Discovery.DiscoveryFlowManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFlowManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Publish.PublishFlowManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Tabs.TabFlowManager;
 import edu.eplex.androidsocialclient.R;
-
 import edu.eplex.androidsocialclient.Utilities.ScreenUtilities;
 import in.srain.cube.views.ptr.PtrClassicFrameLayout;
 import in.srain.cube.views.ptr.PtrDefaultHandler;
 import in.srain.cube.views.ptr.PtrFrameLayout;
 import in.srain.cube.views.ptr.PtrHandler;
-
+import it.neokree.materialtabs.MaterialTabHost;
 
 /**
- * Created by paul on 5/17/15.
+ * Created by paul on 3/16/15.
  */
-public class HomeFeedFragment extends Fragment {
+public class DiscoveryFragment extends Fragment {
+
+    DiscoveryFlowManager.DiscoveryID discoverTabID;
+
+    public void setDiscoverTabID(DiscoveryFlowManager.DiscoveryID id)
+    {
+        this.discoverTabID = id;
+    }
 
     @InjectView(R.id.app_feed_header_grid_view)
     public GridView refreshGridView;
@@ -70,7 +85,7 @@ public class HomeFeedFragment extends Fragment {
         ButterKnife.inject(this, rootView);
 
         //then register for events -- we'll get one as soon as this happens
-        TabFlowManager.getInstance().registerUIEvents(this);
+        DiscoveryFlowManager.getInstance().registerUIEvents(this);
 
         refreshGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -123,14 +138,10 @@ public class HomeFeedFragment extends Fragment {
             }
         }, 100);
 
-//        updateData();
-
-
         return rootView;
     }
     void updateData()
     {
-
         //
         int count = 10;
 
@@ -282,5 +293,6 @@ public class HomeFeedFragment extends Fragment {
 
 
     }
+
 
 }

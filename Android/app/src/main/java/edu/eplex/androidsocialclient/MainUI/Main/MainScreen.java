@@ -26,6 +26,7 @@ import dagger.ObjectGraph;
 import edu.eplex.androidsocialclient.MainUI.API.Modules.AdjustableHostAPIModule;
 import edu.eplex.androidsocialclient.MainUI.API.WinAPIManager;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Discovery.DiscoveryFlowManager;
 import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFlowManager;
 import edu.eplex.androidsocialclient.MainUI.Main.Publish.PublishFlowManager;
 import edu.eplex.androidsocialclient.MainUI.Main.Tabs.SelectPictureFragment;
@@ -176,6 +177,9 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
 
                     TabFlowManager.getInstance().audioSearchText(matches);
                 }
+                break;
+            case DiscoveryFlowManager.DISCOVERY_SCREEN_REQUEST_CODE:
+                //need to handle returning from discovery -- k thx
                 break;
 
             case EditFlowManager.EDIT_SCREEN_REQUEST_CODE:

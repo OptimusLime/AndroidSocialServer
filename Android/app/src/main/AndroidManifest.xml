@@ -34,6 +34,7 @@
         <activity android:name="edu.eplex.androidsocialclient.MainUI.Main.MainEditScreen"
              />
         <activity android:name="edu.eplex.androidsocialclient.MainUI.Main.MainPublishScreen"/>
+        <activity android:name="edu.eplex.androidsocialclient.MainUI.Main.MainDiscoveryScreen"/>
 
         <!--Tell facebook what our app id is here-->
         <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="@string/facebook_app_id"/>

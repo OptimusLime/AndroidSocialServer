@@ -46,7 +46,9 @@
 
     <integer name="max_filtered_image_size">960</integer>
     <string name="default_filter_search">#filter search</string>
+<!--Discovery Text-->
 
+    <string name="discovery_title">Discover filters</string>
 
 
 

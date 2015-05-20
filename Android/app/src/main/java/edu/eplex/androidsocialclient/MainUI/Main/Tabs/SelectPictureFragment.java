@@ -17,13 +17,16 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.lang.reflect.Method;
+import java.util.logging.Filter;
 
 import javax.inject.Inject;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import butterknife.OnClick;
+import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Discovery.DiscoveryFlowManager;
 import edu.eplex.androidsocialclient.R;
 import edu.eplex.androidsocialclient.Utilities.Constants;
 import edu.eplex.androidsocialclient.Utilities.UriToUrl;
@@ -157,9 +160,16 @@ public class SelectPictureFragment extends Fragment {
 
         //create our new composite -- then peace outta here -- we der dunnn yo'
 //        for(int i=0; i < 10; i++)
-        FilterManager.getInstance().createNewComposite(getActivity(), imageUri.toString());//UriToUrl.get(getActivity(), imageUri));
+        FilterComposite comp = FilterManager.getInstance().createNewComposite(getActivity(), imageUri.toString());//UriToUrl.get(getActivity(), imageUri));
 
         switchTabs();
+
+        //launch the publish discovery tool
+        Intent intent = DiscoveryFlowManager.getInstance().createDiscoveryIntent(getActivity(), comp);
+
+        getActivity().overridePendingTransition(0, 0);
+        getActivity().startActivityForResult(intent, DiscoveryFlowManager.DISCOVERY_SCREEN_REQUEST_CODE);
+
         //fly out and away!
 //        flyIn("switchTabs");
 
