@@ -75,6 +75,14 @@ function initializeServerObjects()
 
 				winAPIObject.dataAccess.syncLoadCustomSchema(customS3Match.schemaName, customS3Match.schemaJSON);
 				winAPIObject.dataAccess.syncLoadCustomSchema(customHashMatch.schemaName, customHashMatch.schemaJSON);
+
+				var popularityProperty = 'parent';
+				var schemaInfo =  winAPIObject.dataModification.createPopularitySchema(popularityProperty, 
+					winConfiguration.mainArtifactType);
+
+				//we have to send in the name afterwards for addditional clarity to mongodb
+				winAPIObject.dataAccess.syncLoadCustomSchema(schemaInfo.schemaName, schemaInfo.schemaJSON, schemaInfo.schemaName);
+
 			})
 			.catch(function(err)
 			{
@@ -258,8 +266,8 @@ function launchExpress()
 				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
 
 				//look back the most recent s3s
-				winAPIObject.dataAccess.loadRecentArtifactsByProperties({hashtag: hashtag}, {before: beforeDate, after: afterDate}, 
-					feedCount, customHashMatch.schemaName)
+				winAPIObject.dataAccess.loadRecentArtifactsByProperties({hashtag: hashtag},
+				 customHashMatch.schemaName, {start: {before: beforeDate, after: afterDate}, count: feedCount})
 					.then(function(models)
 					{
 						console.log('Loaded latest: ', models);
@@ -325,7 +333,8 @@ function launchExpress()
 				//this tells us the wids of the most recent  for this hashtag -- 
 				//if we have tons and tons of hashtags, this is the fastest read we could do instead of looking through ALL the genotype array objects
 				//then we simply return all objects matching these ids
-				winAPIObject.dataAccess.loadRecentArtifactsByProperties({hashtag: hashtag}, {before: beforeDate, after: afterDate}, feedCount, customHashMatch.schemaName)
+				winAPIObject.dataAccess.loadRecentArtifactsByProperties({hashtag: hashtag}, 
+					customHashMatch.schemaName, {start: {before: beforeDate, after: afterDate}, count: feedCount})
 					.then(function(models)
 					{
 						var wids = [];
@@ -348,6 +357,34 @@ function launchExpress()
 			  			//server error
 			  			res.status(500).send('Error fetching recent ' + (err.message || err)).end();
 					});
+
+			});
+
+			app.get('/artifacts/popular', function(req, res)
+			{
+				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
+
+				var popularityProperty = 'parent';
+				var remapIDToWID = 'wid';
+				var schemaInfo =  winAPIObject.dataModification.createPopularitySchema(popularityProperty, 
+					winConfiguration.mainArtifactType);
+
+				winAPIObject.dataModification.countModelByProperty(popularityProperty, 
+					winConfiguration.mainArtifactType)
+					.then(function()
+					{
+						//lets do this thang -- get the model we want!
+						return winAPIObject.dataModification.getArtifactsByHighestPropertyCount(remapIDToWID, schemaInfo.schemaName, {count: feedCount});
+					})
+					.then(function(results)
+					{	
+						res.json(results).end();
+					})
+					.catch(function(err)
+					{
+						console.log('Error fetching popular', require('util').inspect(err, false, 10));
+			  			res.status(500).send('Error fetching recent ' + (err.message || err)).end();
+					})
 
 			});
 

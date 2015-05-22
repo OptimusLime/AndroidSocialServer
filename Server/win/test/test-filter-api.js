@@ -19,7 +19,8 @@ var endpoint = {
     hashtagArtifacts : serverLocation + "/artifacts/hashtag",
     hashtagFeed : serverLocation + "/hashtag",
 	recent : serverLocation + "/latest",
-	generate : serverLocation + "/upload/generate"
+	generate : serverLocation + "/upload/generate",
+    popularArtifacts: serverLocation + '/artifacts/popular'
 }
 
 var ins = function(obj, val)
@@ -119,10 +120,25 @@ describe('Testing WIN Filter API -',function(){
                 //grab the body -- what was in it?
                 console.log(res.body);
 
+                done();
+            });
+    });
+
+    it('Get artifacts by popularity',function(done){
+
+        superagent
+            .get(endpoint.popularArtifacts)
+            .query({property: '_id'})
+            .query({count: 10})
+            .end(function(err, res){
+
+                if(err)
+                    throw err;
+                //grab the body -- what was in it?
+                console.log(res.body);
+
 
                 done();
-
-
             });
 
 
