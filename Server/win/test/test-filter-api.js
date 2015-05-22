@@ -15,6 +15,9 @@ var next = function(range)
 var serverLocation = "http://localhost:8000";
 
 var endpoint = {
+    recentArtifacts : serverLocation + "/artifacts/latest",
+    hashtagArtifacts : serverLocation + "/artifacts/hashtag",
+    hashtagFeed : serverLocation + "/hashtag",
 	recent : serverLocation + "/latest",
 	generate : serverLocation + "/upload/generate"
 }
@@ -38,7 +41,7 @@ describe('Testing WIN Filter API -',function(){
        done();
     });
 
-    it('Get recent',function(done){
+    it('Get recent feed items',function(done){
 
     	superagent
     		.get(endpoint.recent)
@@ -55,6 +58,72 @@ describe('Testing WIN Filter API -',function(){
 
 
 			});
+
+
+    });
+
+
+    it('Get recent artifacts',function(done){
+
+        superagent
+            .get(endpoint.recentArtifacts)
+            .query({count: 10})
+            .end(function(err, res){
+
+                if(err)
+                    throw err;
+                //grab the body -- what was in it?
+                console.log(res.body);
+
+
+                done();
+
+
+            });
+
+
+    });
+
+     it('Get feed items by hashtag',function(done){
+
+        superagent
+            .get(endpoint.hashtagFeed)
+            .query({count: 10})
+            .query({hashtag: "#save"})
+            .end(function(err, res){
+
+                if(err)
+                    throw err;
+                //grab the body -- what was in it?
+                console.log(res.body);
+
+
+                done();
+
+
+            });
+
+
+    });
+
+    it('Get artifacts by hashtag',function(done){
+
+        superagent
+            .get(endpoint.hashtagArtifacts)
+            .query({count: 10})
+            .query({hashtag: "#save"})
+            .end(function(err, res){
+
+                if(err)
+                    throw err;
+                //grab the body -- what was in it?
+                console.log(res.body);
+
+
+                done();
+
+
+            });
 
 
     });

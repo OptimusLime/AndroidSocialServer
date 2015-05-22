@@ -258,7 +258,83 @@ function launchExpress()
 				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
 
 				//look back the most recent s3s
-				winAPIObject.dataAccess.loadRecentArtifactsByHashtag(hashtag, {before: beforeDate, after: afterDate}, feedCount, customHashMatch.schemaName)
+				winAPIObject.dataAccess.loadRecentArtifactsByProperties({hashtag: hashtag}, {before: beforeDate, after: afterDate}, 
+					feedCount, customHashMatch.schemaName)
+					.then(function(models)
+					{
+						console.log('Loaded latest: ', models);
+
+						//send back the models
+						res.json(models).end();
+					})
+					.catch(function(err)
+					{
+						console.log('Error fetching recent', require('util').inspect(err, false, 10));
+			  			//server error
+			  			res.status(500).send('Error fetching recent ' + (err.message || err)).end();
+					});
+
+			});
+
+			app.get("/artifacts/latest", function(req, res)
+			{
+				//start searching from a certain time -- or simply start from now
+				var afterDate = req.query.after;
+				var beforeDate = req.query.before;
+
+				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
+
+				//look back the most recent schema objects this tells us the wids of the most recent -- 
+				//if we have tons and tons of artifacts that are pretty large in size, 
+				//this is the fastest read we can do before we simply return all objects matching these ids
+				winAPIObject.dataAccess.loadRecentArtifacts({before: beforeDate, after: afterDate}, feedCount, customS3Match.schemaName)
+					.then(function(models)
+					{
+						var wids = [];
+						for(var i=0; i < models.length;i++)
+							wids.push(models[i].wid);
+
+						//got the models that have the hashtags -- now we need to turn them into artifacts
+						return winAPIObject.dataAccess.loadWINArtifacts(wids);		
+					})
+					.then(function(models)
+					{
+						console.log('Loaded latest: ', models);
+
+						//send back the models
+						res.json(models).end();
+					})
+					.catch(function(err)
+					{
+						console.log('Error fetching recent', require('util').inspect(err, false, 10));
+			  			//server error
+			  			res.status(500).send('Error fetching recent ' + (err.message || err)).end();
+					});
+
+			});
+
+			app.get("/artifacts/hashtag", function(req, res)
+			{
+				//start searching from a certain time -- or simply start from now
+				var afterDate = req.query.after;
+				var beforeDate = req.query.before;
+				var hashtag = req.query.hashtag;
+				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
+
+				//look back the most recent schema objects --
+				//this tells us the wids of the most recent  for this hashtag -- 
+				//if we have tons and tons of hashtags, this is the fastest read we could do instead of looking through ALL the genotype array objects
+				//then we simply return all objects matching these ids
+				winAPIObject.dataAccess.loadRecentArtifactsByProperties({hashtag: hashtag}, {before: beforeDate, after: afterDate}, feedCount, customHashMatch.schemaName)
+					.then(function(models)
+					{
+						var wids = [];
+						for(var i=0; i < models.length;i++)
+							wids.push(models[i].wid);
+
+						//got the models that have the hashtags -- now we need to turn them into artifacts
+						return winAPIObject.dataAccess.loadWINArtifacts(wids);		
+					})
 					.then(function(models)
 					{
 						console.log('Loaded latest: ', models);
