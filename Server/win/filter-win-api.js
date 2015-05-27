@@ -56,6 +56,7 @@ var configLocation = __dirname + "/../access-credentials.json";
 
 var customS3Match = {schemaName: "S3_connection", schemaJSON: {wid: "String", s3Key: "String", username: "String", date: "Number"}};
 var customHashMatch = {schemaName: "Hash_connection", schemaJSON: {wid: "String", s3Key: "String", username: "String", hashtag: "String", date: "Number"}};
+var customFavoriteMatch = {schemaName: "favorite_filters", schemaJSON: {wid: "String", username: "String", date: "Number"}};
 
 function initializeServerObjects()
 {
@@ -75,6 +76,7 @@ function initializeServerObjects()
 
 				winAPIObject.dataAccess.syncLoadCustomSchema(customS3Match.schemaName, customS3Match.schemaJSON);
 				winAPIObject.dataAccess.syncLoadCustomSchema(customHashMatch.schemaName, customHashMatch.schemaJSON);
+				winAPIObject.dataAccess.syncLoadCustomSchema(customFavoriteMatch.schemaName, customFavoriteMatch.schemaJSON);
 
 				var popularityProperty = 'parent';
 				var schemaInfo =  winAPIObject.dataModification.createPopularitySchema(popularityProperty, 
@@ -384,10 +386,75 @@ function launchExpress()
 					{
 						console.log('Error fetching popular', require('util').inspect(err, false, 10));
 			  			res.status(500).send('Error fetching recent ' + (err.message || err)).end();
-					})
-
+					});
 			});
 
+			//like something!
+			app.post('/artifacts/favorite/:username/:wid', function(req, res)
+			{
+				//need to check on user logged in for favorites 
+				var user = req.params.username;
+				var wid = req.params.wid;
+
+				//first we need to check if the wid of the artifact exists -- if so, add the favorite -- or maybe don't bother?
+				//if someone is saving invalid wids, who cares?  
+				if(typeof wid != "string" || typeof user != "string")
+				{
+					console.log('WID favorite isnt a string, foul play?');
+		  			res.status(400).send('Bad request: invalid wid type').end();
+		  			return;
+				}
+
+				//TODO: validate user HERE
+				var favorite = {wid: wid, username: user, date: Date.now()};
+
+				//save connection
+				winAPIObject.dataAccess.asyncCreateOrRemove(customFavoriteMatch.schemaName, ["wid", "username"], favorite)
+					.then(function(action)
+					{
+						if(action.created)
+							res.json({liked: true}).end();
+						else if(action.removed)
+							res.json({unliked: true}).end();
+						else
+						{
+							console.log('Error asyncCreateOrRemove', action);
+			  				res.status(500).send('Error asyncCreateOrRemove -- unknown action taken').end();
+						}
+					})
+					.catch(function(err)
+					{
+						console.log('Error saving favorite', require('util').inspect(err, false, 10));
+			  			res.status(500).send('Error fetching recent ' + (err.message || err)).end();
+					})
+			});
+
+			app.get('/artifacts/favorites', function(req, res)
+			{
+				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
+
+				var popularityProperty = 'parent';
+				var remapIDToWID = 'wid';
+				var schemaInfo =  winAPIObject.dataModification.createPopularitySchema(popularityProperty, 
+					winConfiguration.mainArtifactType);
+
+				winAPIObject.dataModification.countModelByProperty(popularityProperty, 
+					winConfiguration.mainArtifactType)
+					.then(function()
+					{
+						//lets do this thang -- get the model we want!
+						return winAPIObject.dataModification.getArtifactsByHighestPropertyCount(remapIDToWID, schemaInfo.schemaName, {count: feedCount});
+					})
+					.then(function(results)
+					{	
+						res.json(results).end();
+					})
+					.catch(function(err)
+					{
+						console.log('Error fetching popular', require('util').inspect(err, false, 10));
+			  			res.status(500).send('Error fetching recent ' + (err.message || err)).end();
+					})
+			});
 
 			//now we setup our app on the desired port
 			app.listen(port, function()

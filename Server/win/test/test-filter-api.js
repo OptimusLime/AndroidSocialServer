@@ -20,7 +20,8 @@ var endpoint = {
     hashtagFeed : serverLocation + "/hashtag",
 	recent : serverLocation + "/latest",
 	generate : serverLocation + "/upload/generate",
-    popularArtifacts: serverLocation + '/artifacts/popular'
+    popularArtifacts: serverLocation + '/artifacts/popular',
+    favoriteArtifacts: serverLocation + '/artifacts/favorite'
 }
 
 var ins = function(obj, val)
@@ -142,6 +143,23 @@ describe('Testing WIN Filter API -',function(){
             });
 
 
+    });
+
+    it('Post a favorite artifact',function(done){
+
+        superagent
+            .post(endpoint.favoriteArtifacts + '/paul/testfavorite')
+            .end(function(err, res){
+
+                if(err)
+                    throw err;
+                
+                //grab the body -- what was in it?
+                console.log(res.body);
+
+
+                done();
+            });
     });
 
 
