@@ -104,7 +104,7 @@ public class FilterManager {
 
     //Very simple naming convention -- just append to the size of the filters -- is it your 5th filter? Then the default name is Filter 5.
     //DERRRRRR
-    String nextReadableName()
+    public String nextReadableName()
     {
         return BASE_DEFAULT_NAME + (existingFilters.size() + BASE_DEFAULT_NUMBER_ADD);
     }
