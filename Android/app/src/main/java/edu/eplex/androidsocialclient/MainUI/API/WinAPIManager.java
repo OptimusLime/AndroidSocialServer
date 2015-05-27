@@ -89,6 +89,9 @@ public class WinAPIManager {
     @Inject
     FeedAPI feedAPI;
 
+    @Inject
+    DiscoveryAPI discoveryAPI;
+
 //    OkHttpClient client = new OkHttpClient();
 
     private static WinAPIManager instance = null;
@@ -657,6 +660,48 @@ public class WinAPIManager {
 
         return tcs.getTask();
     }
+
+    public Task<ArrayList<FilterArtifact>> asyncGetLatestArtifacts(final String lastTime, final int count)
+    {
+        return Task.callInBackground(new Callable<ArrayList<FilterArtifact>>() {
+            @Override
+            public ArrayList<FilterArtifact> call() throws Exception {
+                return discoveryAPI.syncGetLatestArtifacts(lastTime, count);
+            }
+        });
+    }
+    public Task<ArrayList<FilterArtifact>> asyncGetHashtagArtifacts(final String hashtag, final String lastTime, final int count)
+    {
+        return Task.callInBackground(new Callable<ArrayList<FilterArtifact>>() {
+            @Override
+            public ArrayList<FilterArtifact> call() throws Exception {
+                return discoveryAPI.syncGetHashtagArtifacts(hashtag, lastTime, count);
+            }
+        });
+    }
+    public Task<ArrayList<FilterArtifact>> asyncGetPopularArtifacts(final int skipCount, final int count)
+    {
+        return Task.callInBackground(new Callable<ArrayList<FilterArtifact>>() {
+            @Override
+            public ArrayList<FilterArtifact> call() throws Exception {
+                return discoveryAPI.syncGetPopularArtifacts(skipCount, count);
+            }
+        });
+    }
+
+    public Task<ArrayList<FilterArtifact>> asyncGetFavoriteArtifacts(final String username, final int skipCount, final int count)
+    {
+        return Task.callInBackground(new Callable<ArrayList<FilterArtifact>>() {
+            @Override
+            public ArrayList<FilterArtifact> call() throws Exception {
+                return discoveryAPI.syncGetFavoriteArtifacts(username, skipCount, count);
+            }
+        });
+    }
+
+
+
+
 
 
 //    //WIN API Mananger handles talking to the server to negotiate publishing and what have you

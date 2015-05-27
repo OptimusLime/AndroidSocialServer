@@ -20,6 +20,13 @@ import eplex.win.winBackbone.Artifact;
  */
 public class FilterArtifact implements Artifact {
 
+    public class Meta
+    {
+        public String user;
+        public long timeofcreation;
+        public String session;
+        public String s3Key;
+    }
     public FilterArtifact(NeatGenome singleFilterGenome)
     {
         genomeFilters = new ArrayList<>();
@@ -53,6 +60,12 @@ public class FilterArtifact implements Artifact {
 
     @JsonProperty("isPrivate")
     public String isPrivate = "false";
+
+    //dates must be added to all objects being saved
+    public long date;
+
+    //meta information stored with each object
+    public Meta meta;
 
     @Override
     public String wid() {

@@ -36,6 +36,8 @@ public class NeatGenome
 
     double fitness;
 
+    public long date;
+
     public String dbType = "NEATGenotype";
 
     @JsonProperty("nodes")

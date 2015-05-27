@@ -167,34 +167,12 @@ function launchExpress()
 
 			  	s3Storage.asyncConfirmUploadComplete(uuidUpload)
 			  		.then(function(isCompleted)
-			  		{	
-			  			//must match the upload key with the filter artifacts -- this way we know where to get the s3 uploads
-			  			for(var key in filterArtifacts){
-			  				filterArtifacts[key].s3Key = uuidUpload;
-		  					var gf = filterArtifacts[key].genomeFilters;
-			  				for(var i=0; i < gf.length; i++){
-			  					delete gf[i].nodeLookup;
-			  					delete gf[i].connectionLookup;
-			  				}
-			  			}
-
-			  			console.log('Checked upload: ', isCompleted);
-			  			console.log('Artifacts: ', filterArtifacts);
-			  			console.log('metainfo', metaInfo);
-			  			//doofus say waaaaa -- send back the storage location, problem solved!
-		  				//res.json(storageLocations).end();
-		  				if(isCompleted.success)
-		  				{
-		  					//great success!
-		  					//what ever shall we do?!?!?	
-		  					return winAPIObject.dataAccess.publishWINArtifacts(filterArtifacts, metaInfo);
-		  				}
-		  				else
-		  					throw new Error("Upload to S3 cannot be confirmed.");
-
-			  		})
-			  		.then(function()
 			  		{
+			  			if(!isCompleted.success)
+		  				{
+		  					throw new Error("Cannot confirm S3 upload.")
+		  				}
+
 			  			var toSaveConnection = {};
 			  			var wid = Object.keys(filterArtifacts)[0];
 			  			var date = Date.now();
@@ -217,6 +195,29 @@ function launchExpress()
 
 			  			//now lets keep track of our hash tags in a separate database object
 			  			return winAPIObject.dataAccess.saveDatabaseObjects(customHashMatch.schemaName, toSaveConnection);	
+			  		})
+			  		.then(function()
+			  		{	
+			  			//must match the upload key with the filter artifacts -- this way we know where to get the s3 uploads
+			  			for(var key in filterArtifacts){
+			  				//save the s3 uplaod key
+			  				filterArtifacts[key].meta.s3Key = uuidUpload;
+		  					var gf = filterArtifacts[key].genomeFilters;
+			  				for(var i=0; i < gf.length; i++){
+			  					delete gf[i].nodeLookup;
+			  					delete gf[i].connectionLookup;
+			  				}
+			  			}
+
+			  			console.log('Checked upload: ', isCompleted);
+			  			console.log('Artifacts: ', filterArtifacts);
+			  			console.log('metainfo', metaInfo);
+
+			  			//doofus say waaaaa -- send back the storage location, problem solved!
+		  				//res.json(storageLocations).end();
+	  					//great success!
+	  					//what ever shall we do?!?!?	
+	  					return winAPIObject.dataAccess.publishWINArtifacts(filterArtifacts, metaInfo);
 			  		})
 			  		.then(function()
 			  		{
@@ -365,6 +366,13 @@ function launchExpress()
 			app.get('/artifacts/popular', function(req, res)
 			{
 				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
+				var start = parseInt(req.query.skip || 0);
+				if(isNaN(start))
+				{
+					console.log('start value isnt a number');
+		  			res.status(400).send('Bad request: invalid start location').end();
+		  			return;
+				}
 
 				var popularityProperty = 'parent';
 				var remapIDToWID = 'wid';
@@ -376,7 +384,7 @@ function launchExpress()
 					.then(function()
 					{
 						//lets do this thang -- get the model we want!
-						return winAPIObject.dataModification.getArtifactsByHighestPropertyCount(remapIDToWID, schemaInfo.schemaName, {count: feedCount});
+						return winAPIObject.dataModification.getArtifactsByHighestPropertyCount(remapIDToWID, schemaInfo.schemaName, {skip: start, count: feedCount});
 					})
 					.then(function(results)
 					{	
@@ -395,6 +403,7 @@ function launchExpress()
 				//need to check on user logged in for favorites 
 				var user = req.params.username;
 				var wid = req.params.wid;
+				console.log('wid: ' + (typeof wid) + ' user: ' + (typeof user));
 
 				//first we need to check if the wid of the artifact exists -- if so, add the favorite -- or maybe don't bother?
 				//if someone is saving invalid wids, who cares?  
@@ -429,31 +438,49 @@ function launchExpress()
 					})
 			});
 
-			app.get('/artifacts/favorites', function(req, res)
+			app.get('/artifacts/favorite/:username', function(req, res)
 			{
+				var user = req.params.username;
+				var start = req.query.start;
 				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
 
-				var popularityProperty = 'parent';
-				var remapIDToWID = 'wid';
-				var schemaInfo =  winAPIObject.dataModification.createPopularitySchema(popularityProperty, 
-					winConfiguration.mainArtifactType);
+				var sInt = parseInt(start);
 
-				winAPIObject.dataModification.countModelByProperty(popularityProperty, 
-					winConfiguration.mainArtifactType)
-					.then(function()
+				if(isNaN(sInt))
+				{
+					console.log('start value isnt a number');
+		  			res.status(400).send('Bad request: invalid start location').end();
+		  			return;
+				}
+
+				//TODO: need to verify the user is the one making the requests! 
+				//lets pull out al the liked objects for the user plz
+				var query = {username: user};
+				var options = {sort: {}, skip: sInt, count: feedCount};
+
+				winAPIObject.dataAccess.loadRecentArtifactsByProperties(query, customFavoriteMatch.schemaName, options)
+					.then(function(models)
 					{
-						//lets do this thang -- get the model we want!
-						return winAPIObject.dataModification.getArtifactsByHighestPropertyCount(remapIDToWID, schemaInfo.schemaName, {count: feedCount});
+						//we got all of our favorites for this user -- now pull out the wids and load those objects -- if they exist!
+						var wids = [];
+						for(var i=0; i < models.length;i++)
+							wids.push(models[i].wid);
+
+						//got the models that have the hashtags -- now we need to turn them into artifacts
+						return winAPIObject.dataAccess.loadWINArtifacts(wids);		
 					})
-					.then(function(results)
-					{	
-						res.json(results).end();
+					.then(function(models)
+					{
+						console.log('Loaded latest: ', models);
+
+						//send back the models
+						res.json(models).end();
 					})
 					.catch(function(err)
 					{
-						console.log('Error fetching popular', require('util').inspect(err, false, 10));
-			  			res.status(500).send('Error fetching recent ' + (err.message || err)).end();
-					})
+						console.log('Error fetching favorite', require('util').inspect(err, false, 10));
+			  			res.status(500).send('Error fetching favs ' + (err.message || err)).end();
+					});
 			});
 
 			//now we setup our app on the desired port

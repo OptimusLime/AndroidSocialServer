@@ -18,6 +18,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Filterable;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -29,6 +30,7 @@ import com.facebook.drawee.view.SimpleDraweeView;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.logging.Filter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,7 +39,6 @@ import bolts.Task;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import butterknife.OnClick;
-import edu.eplex.androidsocialclient.MainUI.API.Publish.Objects.FeedItem;
 import edu.eplex.androidsocialclient.MainUI.API.WinAPIManager;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
@@ -95,7 +96,7 @@ public class DiscoveryFragment extends Fragment {
             }
         });
 
-        mAdapter = new GridViewAdapter(getActivity(), R.layout.app_fragment_feed_grid_item, new ArrayList<FeedItem>());
+        mAdapter = new GridViewAdapter(getActivity(), R.layout.app_fragment_feed_grid_item, new ArrayList<FilterArtifact>());
 
         try {
             refreshGridView.setAdapter(mAdapter);
@@ -145,28 +146,32 @@ public class DiscoveryFragment extends Fragment {
         //
         int count = 10;
 
-        lastTime = -1;
+        String lt = null;
+        if(lastTime != 0 && lastTime != -1)
+            lt = "" + lastTime;
+//        lastTime = -1;
 //lastTime
-        WinAPIManager.getInstance().asyncGetLatestFeedAfter(count, lastTime)
-                .continueWith(new Continuation<ArrayList<FeedItem>, Void>() {
+        WinAPIManager.getInstance().asyncGetLatestArtifacts(lt, count)
+                .continueWith(new Continuation<ArrayList<FilterArtifact>, Void>() {
                     @Override
-                    public Void then(Task<ArrayList<FeedItem>> task) throws Exception {
-
+                    public Void then(Task<ArrayList<FilterArtifact>> task) throws Exception {
 
                         //complete the refresh
                         refreshFrame.refreshComplete();
 
                         //get our feed items
-                        ArrayList<FeedItem> items = task.getResult();
+                        ArrayList<FilterArtifact> items = task.getResult();
                         if (task.getResult() != null && items.size() > 0) {
                             for (int i = 0; i < items.size(); i++) {
-                                FeedItem f = items.get(i);
 
-                                if (i == 0)
-                                    lastTime = f.date;
-                                else
+                                FilterArtifact f = items.get(i);
+
+                                if(f.date != 0)
                                     lastTime = Math.max(f.date, lastTime);
-
+                                else if(f.meta != null)
+                                {
+                                    lastTime = Math.max(f.meta.timeofcreation, lastTime); ;
+                                }
                             }
 
                             //add to the adapter plz
@@ -176,7 +181,6 @@ public class DiscoveryFragment extends Fragment {
 //                            mAdapter.notifyDataSetChanged();
                         }
 
-
                         return null;
                     }
                 }, Task.UI_THREAD_EXECUTOR);
@@ -184,13 +188,13 @@ public class DiscoveryFragment extends Fragment {
 
     }
 
-    public class GridViewAdapter extends ArrayAdapter<FeedItem> {
+    public class GridViewAdapter extends ArrayAdapter<FilterArtifact> {
         private FragmentActivity context;
 
         HashSet<String> existing = new HashSet<>();
         int layoutResourceId;
 
-        public GridViewAdapter(FragmentActivity context, int layoutResourceId, ArrayList<FeedItem> data) {
+        public GridViewAdapter(FragmentActivity context, int layoutResourceId, ArrayList<FilterArtifact> data) {
             super(context, layoutResourceId, data);
             this.context = context;
             this.layoutResourceId = layoutResourceId;
@@ -203,60 +207,60 @@ public class DiscoveryFragment extends Fragment {
         }
 
         @Override
-        public void remove(FeedItem object) {
+        public void remove(FilterArtifact object) {
             super.remove(object);
-            existing.remove(object.wid);
+            existing.remove(object.wid());
         }
 
 
         @Override
-        public void addAll(Collection<? extends FeedItem> collection) {
+        public void addAll(Collection<? extends FilterArtifact> collection) {
 
             Object[] cArray = collection.toArray();
             for(int i=0; i < cArray.length; i++)
             {
-                FeedItem fi = (FeedItem)cArray[i];
-                if(existing.contains(fi.wid))
+                FilterArtifact fi = (FilterArtifact)cArray[i];
+                if(existing.contains(fi.wid()))
                     collection.remove(cArray[i]);
                 else
-                    existing.add(fi.wid);
+                    existing.add(fi.wid());
             }
 
             super.addAll(collection);
         }
 
         @Override
-        public void add(FeedItem object) {
-            if(!existing.contains(object.wid))
+        public void add(FilterArtifact object) {
+            if(!existing.contains(object.wid()))
             {
-                existing.add(object.wid);
+                existing.add(object.wid());
                 super.add(object);
             }
         }
 
         @Override
-        public void addAll(FeedItem... items) {
+        public void addAll(FilterArtifact... items) {
 
-            Collection<FeedItem> nItems = new ArrayList<>();
+            Collection<FilterArtifact> nItems = new ArrayList<>();
 
             for(int i=0; i < items.length; i++) {
-                FeedItem fi = (FeedItem) items[i];
-                if (!existing.contains(fi.wid)){
-                    existing.add(fi.wid);
+                FilterArtifact fi = (FilterArtifact) items[i];
+                if (!existing.contains(fi.wid())){
+                    existing.add(fi.wid());
                     nItems.add(fi);
                 }
             }
 
             if(nItems.size() > 0) {
-                FeedItem[] fArray = new FeedItem[nItems.size()];
+                FilterArtifact[] fArray = new FilterArtifact[nItems.size()];
                 nItems.toArray(fArray);
                 super.addAll(fArray);
             }
         }
 
         @Override
-        public void insert(FeedItem object, int index) {
-            if(!existing.contains(object.wid))
+        public void insert(FilterArtifact object, int index) {
+            if(!existing.contains(object.wid()))
                 super.insert(object, index);
         }
 
@@ -271,12 +275,12 @@ public class DiscoveryFragment extends Fragment {
             } else {
             }
 
-            FeedItem fi = this.getItem(position);
+            FilterArtifact fi = this.getItem(position);
 
             String baseS3Server = context.getResources().getString(R.string.s3_bucket_url_endpoint);
 
             //we get the image directly from S3
-            Uri uri = Uri.parse(baseS3Server + "/" + fi.username + "/" + fi.s3Key + "/" + WinAPIManager.FILTER_FULL);
+//            Uri uri = Uri.parse(baseS3Server + "/" + fi.username + "/" + fi.s3Key + "/" + WinAPIManager.FILTER_FULL);
             SimpleDraweeView draweeView = (SimpleDraweeView) row.findViewById(R.id.app_feed_grid_item_image_view);
 
             Point screenSize = ScreenUtilities.ScreenSize(context);
@@ -285,8 +289,7 @@ public class DiscoveryFragment extends Fragment {
             draweeView.getLayoutParams().width = size;
             draweeView.getLayoutParams().height = size;
 
-
-            draweeView.setImageURI(uri);
+//            draweeView.setImageURI(uri);
 
             return row;
         }
