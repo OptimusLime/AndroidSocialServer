@@ -114,6 +114,7 @@ public class FilterManager {
     ArrayList<FilterComposite> publishedFilters = new ArrayList<FilterComposite>();
     Map<String, FilterComposite> filterMap = new HashMap<>();
     Map<String, FilterComposite> publishMap = new HashMap<>();
+    Map<String, FilterComposite> temporaryFilters = new HashMap<>();
 
     private static FilterManager instance = null;
 
@@ -150,6 +151,35 @@ public class FilterManager {
     public void setLastEditedFilter(FilterComposite lastEditedFilter)
     {
         this.lastEditedFilter = lastEditedFilter;
+    }
+
+    public FilterComposite createTemporaryFilter(String imageURL)
+    {
+        FilterComposite fc = new FilterComposite(imageURL, cuid.getInstance().generate(), "");
+        temporaryFilters.put(fc.getUniqueID(), fc);
+        return fc;
+    }
+
+    public FilterComposite getTemporaryFilter(String wid)
+    {
+        return temporaryFilters.get(wid);
+    }
+
+    public void makeTemporaryFilterPermanent(Context mContext, String wid)
+    {
+        FilterComposite fc= temporaryFilters.get(wid);
+        temporaryFilters.remove(wid);
+
+        try {
+            createNewComposite(mContext, fc, true);
+        }
+        catch (Exception e) {
+
+        }
+    }
+    public void deleteTemporaryFilter(String wid)
+    {
+        temporaryFilters.remove(wid);
     }
 
     //Add a new composite filter -- passing in the image to work with

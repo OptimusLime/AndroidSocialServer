@@ -140,7 +140,10 @@ public class DiscoveryFlowManager {
         {
             //grab info from intent
             String filterID = intent.getStringExtra(EXTRA_FILTER_WID);
-            return fm.getFilter(filterID);
+            FilterComposite fc =  fm.getFilter(filterID);
+            if(fc == null)
+                fc = fm.getTemporaryFilter(filterID);
+            return fc;
         }
     }
 

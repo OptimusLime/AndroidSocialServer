@@ -3,12 +3,68 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:fresco="http://schemas.android.com/apk/res-auto"
     android:layout_height="match_parent"
-    android:layout_width="match_parent">
+    android:layout_width="match_parent"
+    android:orientation="vertical">
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/all_toolbar_height"
+        android:orientation="horizontal"
+        android:layout_gravity="center_vertical"
+        android:gravity="center_vertical"
+        >
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_action_user_black"
+            android:tint="@color/primary_app_blue"
+            android:layout_margin="@dimen/button_margin_leftright"
+            android:background="@drawable/app_discovery_grid_circle_background"
+            />
 
-    <ImageView
-        android:id="@+id/app_feed__artifact_grid_item_image_view"
+        <TextView
+            android:id="@+id/app_feed_artifact_grid_username_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/primary_app_blue"
+            android:text="Username"/>
+
+
+    </LinearLayout>
+
+
+    <com.facebook.drawee.view.SimpleDraweeView
+        android:id="@+id/app_feed_artifact_grid_item_image_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        fresco:placeholderImage="@drawable/ic_action_emo_tongue_black"
         />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center"
+        android:gravity="center"
+        >
+
+        <ImageButton
+            android:id="@+id/app_feed_artifact_grid_button_original"
+            android:layout_width="@dimen/card_button_width"
+            android:layout_height="@dimen/card_button_height"
+            android:layout_weight="1"
+            android:background="@drawable/app_discovery_grid_action_button"
+            android:src="@drawable/ic_action_picture_black"
+            />
+
+        <ImageButton
+            android:id="@+id/app_feed_artifact_grid_button_branch"
+            android:layout_width="@dimen/card_button_width"
+            android:layout_height="@dimen/card_button_height"
+            android:layout_weight="1"
+            android:background="@drawable/app_discovery_grid_action_button"
+            android:src="@drawable/ic_action_publish_black"
+            />
+
+    </LinearLayout>
 
 </LinearLayout>

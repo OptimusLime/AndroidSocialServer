@@ -292,6 +292,22 @@ public class EditFilterIEC extends Fragment {
                     evolution.clearParents();
                     evolution.selectParents(Arrays.asList(filterArtifact.wid()));
 
+                    for(int i=0; i < filterImageAdapter.getCount(); i++)
+                    {
+                        FilterComposite fc = filterImageAdapter.getItem(i);
+                        if(fc.getUniqueID() != selected.getUniqueID())
+                        {
+                            //clear every mini bitmap out whenever you go to the next image
+                            if(fc.getFilteredBitmap() != null) {
+                                fc.getFilteredBitmap().recycle();
+                            }
+                            if(fc.getFilteredThumbnailBitmap() != null)
+                                fc.getFilteredThumbnailBitmap().recycle();
+                            fc.setFilteredBitmap(null);
+                            fc.setFilteredThumbnailBitmap(null);
+                        }
+                    }
+
                     //clear it out, then fill it up!
                     filterImageAdapter.clear();
 
@@ -390,6 +406,11 @@ public class EditFilterIEC extends Fragment {
         //now we have to install in the main image!
         if(filterComposite == selectedFilter)
             return;
+
+        if(selectedFilter != null && selectedFilter.getFilteredBitmap() != null) {
+            selectedFilter.getFilteredBitmap().recycle();
+            selectedFilter.setFilteredBitmap(null);
+        }
 
         selectedFilter = filterComposite;
 

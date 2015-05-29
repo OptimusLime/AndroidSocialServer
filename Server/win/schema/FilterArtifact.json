@@ -9,10 +9,6 @@
         "type": "array", 
         "items":  {"type": "String", "$ref" : "NEATGenotype"}
       },
-    "meta": {
-        "timeofcreation" : "Number",
-        "user": "String",
-        "session": "String"
-      },
+    
     "isPrivate" : "String"
 }

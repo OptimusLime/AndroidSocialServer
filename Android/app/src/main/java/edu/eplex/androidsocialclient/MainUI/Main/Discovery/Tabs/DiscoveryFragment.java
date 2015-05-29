@@ -23,17 +23,21 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Filterable;
 import android.widget.GridView;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.Alignment;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.facebook.drawee.view.SimpleDraweeView;
+import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.Callable;
 import java.util.logging.Filter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -202,12 +206,108 @@ public class DiscoveryFragment extends Fragment {
 
     }
 
+
+    public class GridViewInjectionHolder {
+
+        @InjectView(R.id.app_feed_artifact_grid_username_text_view)
+        public TextView gridUsernameTextView;
+
+        @InjectView(R.id.app_feed_artifact_grid_item_image_view)
+        public SimpleDraweeView gridArtifactImageView;
+
+        @InjectView(R.id.app_feed_artifact_grid_button_original)
+        public ImageButton gridArtifactOriginalButton;
+
+        @InjectView(R.id.app_feed_artifact_grid_button_branch)
+        public ImageButton gridArtifactBranchButton;
+
+
+        @OnClick(R.id.app_feed_artifact_grid_button_original)
+        public void onOriginalClick()
+        {
+            //need to handle what happens with an original click
+
+            Task.call(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    if(!isOriginal) {
+                        FilterArtifact fi = filterComposite.getFilterArtifact();
+
+                        String baseS3Server = context.getResources().getString(R.string.s3_bucket_url_endpoint);
+                        Uri uri = Uri.parse(baseS3Server + "/" + fi.meta.user + "/" + fi.meta.s3Key + "/" + WinAPIManager.FILTER_FULL);
+                        Toast.makeText(context, "or: " + uri, Toast.LENGTH_SHORT).show();
+                        gridArtifactImageView.setImageBitmap(null);
+                        gridArtifactImageView.setImageURI(uri);
+                        isOriginal = true;
+                    }
+                    else {
+                        //replace with previous image
+                        gridArtifactImageView.setImageBitmap(filterComposite.getFilteredBitmap());
+                        isOriginal = false;
+                    }
+
+                    return null;
+                }
+            }, Task.UI_THREAD_EXECUTOR);
+
+        }
+
+        @OnClick(R.id.app_feed_artifact_grid_button_branch)
+        public void onBranchClick()
+        {
+            //need to handle what happens with a branch click
+            Toast.makeText(context, "Want to branch to load filtered image.", Toast.LENGTH_SHORT).show();
+
+            FilterArtifact fa = filterComposite.getFilterArtifact();
+
+            //must make this filter artifact a descendant of the original!
+            //thus save the current wid
+            String wid = fa.wid();
+            //swap the wid for the filter for a brand new ID
+            fa.setWID(cuid.getInstance().generate());
+
+            //set the original wid as one of the parents!
+            fa.setParents(Lists.newArrayList(wid));
+
+            //need to close the intent with this object basically
+            interestedFilter.setFilterArtifact(fa);
+
+            //filter achieved!
+            DiscoveryFlowManager.getInstance().finishDiscoveryActivity(getActivity(), interestedFilter);
+        }
+
+        private FragmentActivity context;
+        private FilterComposite filterComposite;
+        private boolean isOriginal;
+
+        public GridViewInjectionHolder(FragmentActivity context, FilterComposite fc)
+        {
+           setContextAndComposite(context,fc);
+        }
+        public void setContextAndComposite(FragmentActivity context, FilterComposite fc)
+        {
+            this.context = context;
+            this.filterComposite = fc;
+            isOriginal = false;
+        }
+
+        public void updateView()
+        {
+            gridUsernameTextView.setText(filterComposite.getFilterArtifact().meta.user);
+        }
+
+
+    }
+
+
+
     public class GridViewAdapter extends ArrayAdapter<FilterArtifact> {
         private FragmentActivity context;
 
         FilterComposite baseFilter;
         HashSet<String> existing = new HashSet<>();
         HashMap<String, FilterComposite> filters = new HashMap<>();
+        HashMap<String, GridViewInjectionHolder> viewHolders = new HashMap<>();
         int layoutResourceId;
 
         public GridViewAdapter(FragmentActivity context, int layoutResourceId, FilterComposite baseFilter, ArrayList<FilterArtifact> data) {
@@ -294,22 +394,29 @@ public class DiscoveryFragment extends Fragment {
 
             FilterArtifact fi = this.getItem(position);
             final FilterComposite fc;
-
+            final GridViewInjectionHolder gvi;
             if(filters.containsKey(fi.wid()))
             {
                 fc = filters.get(fi.wid());
+                gvi = viewHolders.get(fi.wid());
+                gvi.setContextAndComposite(context, fc);
             }
             else
             {
                 fc= new FilterComposite(baseFilter.getImageURL(), fi, cuid.getInstance().generate(), FilterManager.getInstance().nextReadableName());
+                gvi = new GridViewInjectionHolder(context, fc);
                 filters.put(fi.wid(), fc);
+                viewHolders.put(fi.wid(), gvi);
             }
 
-            String baseS3Server = context.getResources().getString(R.string.s3_bucket_url_endpoint);
+            //load up the injected views - k thx
+            ButterKnife.inject(gvi, row);
+            gvi.updateView();
+
 
             //we get the image directly from S3
 //            Uri uri = Uri.parse(baseS3Server + "/" + fi.username + "/" + fi.s3Key + "/" + WinAPIManager.FILTER_FULL);
-            final ImageView imageView = (ImageView) row.findViewById(R.id.app_feed__artifact_grid_item_image_view);
+            final SimpleDraweeView imageView = (SimpleDraweeView) row.findViewById(R.id.app_feed_artifact_grid_item_image_view);
 
             Point screenSize = ScreenUtilities.ScreenSize(context);
             int size = Math.min(screenSize.x, screenSize.y);
@@ -322,7 +429,7 @@ public class DiscoveryFragment extends Fragment {
             Bitmap bp = fc.getFilteredBitmap();
             if(bp == null)
             {
-                imageView.setImageDrawable(context.getResources().getDrawable(R.drawable.ic_action_emo_tongue_black));
+//                imageView.setImageDrawable(context.getResources().getDrawable(R.drawable.ic_action_emo_tongue_black));
 
                 try {
                     //need to lazy load in the main image -- then async run the filter plz
@@ -341,22 +448,18 @@ public class DiscoveryFragment extends Fragment {
             imageView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
-                    if (event.getAction() == MotionEvent.ACTION_DOWN)
-                    {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
                         //we want to display the chosen filter's original image
                         touchImage[0] = true;
-                        if(fc != null)
+                        if (fc != null)
                             imageView.setImageBitmap(fc.getCurrentBitmap());
 
                         //need to return true if we handle the up action later
                         return true;
-                    }
-                    else if(event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL)
-                    {
-                        if(touchImage[0])
-                        {
+                    } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                        if (touchImage[0]) {
                             touchImage[0] = false;
-                            if(fc != null)
+                            if (fc != null)
                                 imageView.setImageBitmap(fc.getFilteredBitmap());
                         }
 

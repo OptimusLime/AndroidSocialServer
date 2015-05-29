@@ -160,7 +160,12 @@ public class SelectPictureFragment extends Fragment {
 
         //create our new composite -- then peace outta here -- we der dunnn yo'
 //        for(int i=0; i < 10; i++)
-        FilterComposite comp = FilterManager.getInstance().createNewComposite(getActivity(), imageUri.toString());//UriToUrl.get(getActivity(), imageUri));
+//        FilterComposite comp = FilterManager.getInstance().createNewComposite(getActivity(), imageUri.toString());//UriToUrl.get(getActivity(), imageUri));
+
+        FilterComposite comp = FilterManager.getInstance().createTemporaryFilter(imageUri.toString());
+
+        //keep a copy of "last edited" -- discovery will read this to grab the filter
+        FilterManager.getInstance().setLastEditedFilter(comp);
 
         switchTabs();
 

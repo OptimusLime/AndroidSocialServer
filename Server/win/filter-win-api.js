@@ -33,7 +33,8 @@ var s3Storage;
 var metaProps = {
     user: "string",
     timeofcreation: "Number",
-    session: "String"
+    session: "String",
+    s3Key: "String"
 }
 
 var winConfiguration = {
@@ -198,10 +199,15 @@ function launchExpress()
 			  		})
 			  		.then(function()
 			  		{	
+
+			  			metaInfo.s3Key = uuidUpload;
+
 			  			//must match the upload key with the filter artifacts -- this way we know where to get the s3 uploads
 			  			for(var key in filterArtifacts){
 			  				//save the s3 uplaod key
-			  				filterArtifacts[key].meta.s3Key = uuidUpload;
+			  				// filterArtifacts[key].meta = metaInfo;
+			  				filterArtifacts[key].s3Key = uuidUpload;
+
 		  					var gf = filterArtifacts[key].genomeFilters;
 			  				for(var i=0; i < gf.length; i++){
 			  					delete gf[i].nodeLookup;
@@ -209,7 +215,7 @@ function launchExpress()
 			  				}
 			  			}
 
-			  			console.log('Checked upload: ', isCompleted);
+			  			// console.log('Checked upload: ', isCompleted);
 			  			console.log('Artifacts: ', filterArtifacts);
 			  			console.log('metainfo', metaInfo);
 
@@ -295,6 +301,7 @@ function launchExpress()
 
 				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
 
+				var widToS3Key = {};
 				//look back the most recent schema objects this tells us the wids of the most recent -- 
 				//if we have tons and tons of artifacts that are pretty large in size, 
 				//this is the fastest read we can do before we simply return all objects matching these ids
@@ -302,15 +309,26 @@ function launchExpress()
 					.then(function(models)
 					{
 						var wids = [];
-						for(var i=0; i < models.length;i++)
-							wids.push(models[i].wid);
+						for(var i=0; i < models.length;i++){
+							var mod = models[i];
+							wids.push(mod.wid);
+							widToS3Key[mod.wid] = mod.s3Key;
+						}
 
 						//got the models that have the hashtags -- now we need to turn them into artifacts
 						return winAPIObject.dataAccess.loadWINArtifacts(wids);		
 					})
 					.then(function(models)
 					{
-						console.log('Loaded latest: ', models);
+						// console.log('Loaded latest: ', models);
+
+						for(var i=0; i < models.length; i++)
+						{
+							var mod = models[i];
+
+							if(!mod.meta.s3Key)
+								mod.meta.s3Key = widToS3Key[mod.wid];
+						}
 
 						//send back the models
 						res.json(models).end();

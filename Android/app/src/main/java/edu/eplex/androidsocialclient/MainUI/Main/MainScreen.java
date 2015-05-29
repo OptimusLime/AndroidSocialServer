@@ -180,6 +180,35 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
                 break;
             case DiscoveryFlowManager.DISCOVERY_SCREEN_REQUEST_CODE:
                 //need to handle returning from discovery -- k thx
+
+                if(resultCode == FragmentActivity.RESULT_OK) {
+
+                   FilterManager.getInstance().makeTemporaryFilterPermanent(this, data.getStringExtra("filter"));
+
+                    try {
+                        TabFlowManager.getInstance().switchToTab(TabFlowManager.TabID.Camera, TabFlowManager.TabID.Workshop);
+                    } catch (Exception e) {
+                    }
+                }
+                else
+                {
+                    try {
+                        TabFlowManager.getInstance().switchToTab(TabFlowManager.TabID.Workshop, TabFlowManager.TabID.Camera);
+                    } catch (Exception e) {
+                    }
+                    if(data == null)
+                    {
+                        if(fm.getLastEditedFilter() != null)
+                            fm.deleteTemporaryFilter(fm.getLastEditedFilter().getUniqueID());
+                    }
+                    else
+                    {
+                        String df = data.getStringExtra("filter");
+                        if(df != null)
+                            fm.deleteTemporaryFilter(df);
+                    }
+                }
+
                 break;
 
             case EditFlowManager.EDIT_SCREEN_REQUEST_CODE:
