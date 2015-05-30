@@ -1,5 +1,6 @@
 package edu.eplex.androidsocialclient.MainUI.Main.Publish;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -147,6 +148,8 @@ public class PublishFragment extends Fragment {
     {
         if(publishInProgress)
             return;
+
+
 
         publishInProgress = true;
 

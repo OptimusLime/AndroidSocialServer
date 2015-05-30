@@ -1,5 +1,6 @@
 package edu.eplex.androidsocialclient.MainUI.API;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -353,7 +354,7 @@ public class WinAPIManager {
 //    }
 
 
-    Continuation<Void, Confirmation> ConfirmUpload(final Context mContext, final PublishRequest pr, final FilterComposite artifactToPublish)
+    Continuation<Void, Confirmation> ConfirmUpload(final Context mContext, final PublishRequest pr, final FilterComposite artifactToPublish, final ProgressDialog progress)
     {
         return new Continuation<Void, Confirmation>() {
             @Override
@@ -370,6 +371,8 @@ public class WinAPIManager {
                     //need to read in privacy choice from somewhere -- not here though
                     fa.isPrivate = "false";
                     pr.filterArtifacts.put(fa.wid(), fa);
+
+                    updateProgressMainThread(progress, "Upload confirmed. Finishing publish...", false);
 
                     saveSuccessfulFilterUpload(artifactToPublish.getUniqueID(), pr, mContext);
 
@@ -455,14 +458,38 @@ public class WinAPIManager {
         return Task.whenAll(loadImageTasks);
     }
 
+    void updateProgressMainThread(final ProgressDialog progress, final String message, final boolean dismiss)
+    {
+        Task.call(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                if(message != null)
+                    progress.setMessage(message);
+                if(dismiss)
+                    progress.dismiss();
+                return null;
+            }
+        }, Task.UI_THREAD_EXECUTOR);
+    }
 
     public Task<Boolean> asyncPublishArtifact(final Context mContext, final FilterComposite artifactToPublish)
     {
+
+
+        final ProgressDialog progress = new ProgressDialog(mContext);
+        progress.setTitle("Publishing");
+        progress.setMessage("Generating images...");
+        progress.setCancelable(false); //prevent from closing/canceling
+        progress.setCanceledOnTouchOutside(false);
+        progress.show();
 //        final PublishRequest checkResponse = checkSuccessfulUpload(artifactToPublish.getUniqueID());
         return ensureFilteredImagesExist(mContext, artifactToPublish)
                 .continueWithTask(new Continuation<Void, Task<PublishRequest>>() {
                     @Override
                     public Task<PublishRequest> then(Task<Void> task) throws Exception {
+
+                        updateProgressMainThread(progress, "Checking server...", false);
+
                         return asyncCheckSuccessfulUpload(artifactToPublish.getUniqueID(), mContext);
                     }
                 })
@@ -471,6 +498,8 @@ public class WinAPIManager {
                     public Task<Boolean> then(Task<PublishRequest> task) throws Exception {
 
                         final PublishRequest checkResponse = task.getResult();
+                        updateProgressMainThread(progress, "Beginning upload...", false);
+
 
                         if (checkResponse == null) {
                             //we have to do everything
@@ -485,6 +514,8 @@ public class WinAPIManager {
                             }).continueWithTask(new Continuation<PublishResponse, Task<Void>>() {
                                 @Override
                                 public Task<Void> then(Task<PublishResponse> task) throws Exception {
+
+                                    updateProgressMainThread(progress, "Uploading to S3...", false);
 
                                     //we got the publish response, we need to check for errors
                                     if (task.getResult() != null) {
@@ -518,18 +549,22 @@ public class WinAPIManager {
                                     return null;
                                 }
                             })
-                                    .continueWith(ConfirmUpload(mContext, pr, artifactToPublish))
+                                    .continueWith(ConfirmUpload(mContext, pr, artifactToPublish, progress))
                                     .continueWith(new Continuation<Confirmation, Boolean>() {
                                         @Override
                                         public Boolean then(Task<Confirmation> task) throws Exception {
 
+                                            updateProgressMainThread(progress, null, true);
+
                                             if (task.getResult() != null) {
+
                                                 if (task.getResult().uuid.equals(pr.uuid)) {
                                                     Log.d("WINAPIMANAGER", "Successful upload!");
                                                 }
                                                 return true;
                                             } else {//otherwise, remove the wid -- we didn't succeed -- we need to be careful
                                                 confirmedUploads.remove(artifactToPublish.getUniqueID());
+
                                                 //throw new Error("Publish failed.");
                                                 return false;
                                             }
@@ -543,12 +578,15 @@ public class WinAPIManager {
                                     return null;
                                 }
                             })
-                                    .continueWith(ConfirmUpload(mContext, checkResponse, artifactToPublish))
+                                    .continueWith(ConfirmUpload(mContext, checkResponse, artifactToPublish, progress))
                                     .continueWith(new Continuation<Confirmation, Boolean>() {
                                         @Override
                                         public Boolean then(Task<Confirmation> task) throws Exception {
 
+                                            updateProgressMainThread(progress, null, true);
+
                                             if (task.getResult() != null) {
+
                                                 if (task.getResult().uuid.equals(checkResponse.uuid)) {
                                                     Log.d("WINAPIMANAGER", "Successful upload!");
                                                 }
