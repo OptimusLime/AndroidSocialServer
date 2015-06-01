@@ -117,6 +117,7 @@ public class WinAPIManager {
     HashMap<String, PublishRequest> confirmedUploads;// = new HashMap<>();
     final static String SUCCESSFUL_UPLOAD_SAVE_LOCATION = "SavedUploadRequests";
 
+
     public Task<Void> saveSuccessfulFilterUpload(String wid, PublishRequest pr, final Context mContext)
     {
         if(confirmedUploads ==null)

@@ -43,8 +43,9 @@ public class NEATInitializer {
         np.pMutateConnectionWeights = .72;
         np.pMutateChangeActivations = .02;
         np.pNodeMutateActivationRate = 0.2;
-
-        np.connectionWeightRange = 3.0;
+        np.postSexualMutations = 5;
+        np.postAsexualMutations = 5;
+        np.connectionWeightRange = .8;
         np.disallowRecurrence = true;
         return  np;
     }

@@ -22,6 +22,7 @@ import edu.eplex.AsyncEvolution.cppn.implementations.Filters.AsyncCPPNToFilterCa
 import edu.eplex.AsyncEvolution.interfaces.PhenotypeCache;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
 import edu.eplex.androidsocialclient.MainUI.IECFilters;
+import edu.eplex.androidsocialclient.MainUI.Main.Discovery.Tabs.ScratchFragment;
 import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFilterIEC;
 import eplex.win.FastNEATJava.utils.NeatParameters;
 import eplex.win.winBackbone.Artifact;
@@ -34,6 +35,7 @@ import eplex.win.winBackbone.ArtifactOffspringGenerator;
         injects={
                 EditFilterIEC.class,
                 IECFilters.class,
+                ScratchFragment.class,
                 //this next injects must match the asyncinteractiveevolution callback
                 AsyncLocalIEC.class,
                 AsyncArtifactToCard.class}
@@ -87,6 +89,7 @@ public class FilterEvolutionInjectModule {
 
         //pull the asset manager from our set (I hope) activity
         seedLoader.assetManager = activity.getAssets();
+        seedLoader.neatParameters = np;
         seedLoader.customSeeds = seeds;
         seedLoader.seedFileLocation = "filterseeds/basicSeed.json";
 

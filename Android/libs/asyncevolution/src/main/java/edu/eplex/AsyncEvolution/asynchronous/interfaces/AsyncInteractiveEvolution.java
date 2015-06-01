@@ -3,6 +3,7 @@ package edu.eplex.AsyncEvolution.asynchronous.interfaces;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -15,6 +16,13 @@ import eplex.win.winBackbone.ArtifactOffspringGenerator;
  * Created by paul on 8/14/14.
  */
 public abstract class AsyncInteractiveEvolution {
+
+    public enum SessionPublishType
+    {
+        publicPublish,
+        privatePublish
+    }
+
     //seed loader handles initialization of the Interactive Evolution session
     //you can have seeds loaded from file, or preferably from a server
     //you can't really trust client uploads, so it's best to fetch from the server
@@ -43,8 +51,9 @@ public abstract class AsyncInteractiveEvolution {
 
 
     //configure with some parameters of course!
-    public abstract Task<Void> asyncInitialize(JsonNode configuration);
+    public abstract Task<Void> asyncInitialize(JsonNode configuration, List<Artifact> parents);
 
     public abstract List<Artifact> lastOffspring();
+    public abstract Map<SessionPublishType, Map<String, Artifact>> prepareArtifactSessionToPublish(String selectedWID);
 
 }

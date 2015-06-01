@@ -116,6 +116,7 @@
     <orderEntry type="library" exported="" name="gson-2.3.1" level="project" />
     <orderEntry type="library" exported="" name="floatingactionbutton-1.2.0" level="project" />
     <orderEntry type="library" exported="" name="play-services-identity-6.5.87" level="project" />
+    <orderEntry type="library" exported="" name="AwesomeText-1.0.0" level="project" />
     <orderEntry type="library" exported="" name="fresco-0.5.0" level="project" />
     <orderEntry type="library" exported="" name="fbcore-0.5.0" level="project" />
     <orderEntry type="library" exported="" name="javax.inject-1" level="project" />

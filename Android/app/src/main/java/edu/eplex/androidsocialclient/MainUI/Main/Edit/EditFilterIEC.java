@@ -19,11 +19,13 @@ import android.widget.Toast;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Lists;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.logging.Filter;
 
@@ -141,9 +143,10 @@ public class EditFilterIEC extends Fragment {
     void completeClick()
     {
         FilterComposite originalFilter = FilterManager.getInstance().getLastEditedFilter();
-        clearEvolutionMemory(selectedFilter);
 
-        EditFlowManager.getInstance().finishIECFilter(getActivity(), originalFilter, selectedFilter);
+        clearEvolutionMemory(selectedFilter);
+        EditFlowManager.getInstance().finishIECFilter(getActivity(), originalFilter,
+                selectedFilter, evolution.prepareArtifactSessionToPublish(selectedFilter.getFilterArtifact().wid()));
     }
 
     @OnClick(R.id.app_edit_iec_action_button_back)
@@ -184,30 +187,46 @@ public class EditFilterIEC extends Fragment {
         //first we initialize all our internal organs, so to speak
         initializeUI(activity);
 
-        //then we send off our evolution process to initialize itself!
-        return evolution.asyncInitialize(iecParams)
+        //don't start with anything please
+        final FilterComposite filter = FilterManager.getInstance().getLastEditedFilter();
+        if(filter  == null || filter.getFilterArtifact() == null)
+            return null;
+
+        return evolution.asyncInitialize(iecParams, Lists.newArrayList((Artifact)filter.getFilterArtifact()))
                 .continueWithTask(new Continuation<Void, Task<Void>>() {
                     @Override
                     public Task<Void> then(Task<Void> task) throws Exception {
-//
-                        List<Artifact> allSeeds = evolution.seeds();
-//                        for (Artifact seed : allSeeds)
-//                            allArtifactMap.put(seed.wid(), seed);
-
-                        //don't start with anything please
-                        FilterComposite filter = FilterManager.getInstance().getLastEditedFilter();
-                        FilterComposite startingFilter = null;
-                        if(filter.getFilterArtifact() != null && filter.getFilterArtifact().wid().equals(allSeeds.get(0).wid()))
-                        {
-                            //clone the filter and add it as our first individual
-                            startingFilter = filter.clone();
-                        }
-
                         //start by fetching the minimal required for displaying -- 6/8 should do!
-                        addMoreOffspring(6, startingFilter);
+                        addMoreOffspring(6, filter);
                         return null;
                     }
                 }, Task.UI_THREAD_EXECUTOR);
+
+
+//        //then we send off our evolution process to initialize itself!
+//        return evolution.asyncInitialize(iecParams)
+//                .continueWithTask(new Continuation<Void, Task<Void>>() {
+//                    @Override
+//                    public Task<Void> then(Task<Void> task) throws Exception {
+////
+//                        List<Artifact> allSeeds = evolution.seeds();
+////                        for (Artifact seed : allSeeds)
+////                            allArtifactMap.put(seed.wid(), seed);
+//
+//                        //don't start with anything please
+//                        FilterComposite filter = FilterManager.getInstance().getLastEditedFilter();
+//                        FilterComposite startingFilter = null;
+//                        if(filter.getFilterArtifact() != null && filter.getFilterArtifact().wid().equals(allSeeds.get(0).wid()))
+//                        {
+//                            //clone the filter and add it as our first individual
+//                            startingFilter = filter.clone();
+//                        }
+//
+//                        //start by fetching the minimal required for displaying -- 6/8 should do!
+//                        addMoreOffspring(6, startingFilter);
+//                        return null;
+//                    }
+//                }, Task.UI_THREAD_EXECUTOR);
     }
 
 

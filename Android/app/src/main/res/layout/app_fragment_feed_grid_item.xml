@@ -3,13 +3,64 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:fresco="http://schemas.android.com/apk/res-auto"
     android:layout_height="match_parent"
-    android:layout_width="match_parent">
+    android:layout_width="match_parent"
+    android:layout_gravity="center_vertical"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    >
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/all_toolbar_height"
+        android:orientation="horizontal"
+        android:layout_gravity="center_vertical"
+        android:gravity="center_vertical"
+        >
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_action_user_black"
+            android:tint="@color/primary_app_blue"
+            android:layout_margin="@dimen/button_margin_leftright"
+            android:background="@drawable/app_discovery_grid_circle_background"
+            />
 
+        <TextView
+            android:id="@+id/app_feed_grid_username_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/primary_app_blue"
+            android:text="Username"/>
+
+    </LinearLayout>
     <com.facebook.drawee.view.SimpleDraweeView
         android:id="@+id/app_feed_grid_item_image_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         fresco:placeholderImage="@drawable/ic_action_emo_tongue_black"
         />
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center_vertical"
+        android:gravity="center_vertical"
+        >
+    <TextView
+        android:id="@+id/app_feed_grid_photocaption_username_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/button_margin_leftright"
+        android:textSize="8pt"
+        android:textColor="@color/primary_app_blue"
+        android:text="Username:"/>
 
+        <TextView
+            android:id="@+id/app_feed_grid_photocaption_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/button_margin_leftright"
+            android:textColor="@color/primary_app_blue"
+            android:textSize="6pt"
+            android:text="caption"/>
+    </LinearLayout>
 </LinearLayout>

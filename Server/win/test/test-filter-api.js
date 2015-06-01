@@ -128,6 +128,7 @@ describe('Testing WIN Filter API -',function(){
 
     it('Get artifacts by popularity',function(done){
 
+        console.log('Artifacts by pop');
         superagent
             .get(endpoint.popularArtifacts)
             .query({property: '_id'})
@@ -137,7 +138,7 @@ describe('Testing WIN Filter API -',function(){
                 if(err)
                     throw err;
                 //grab the body -- what was in it?
-                console.log(res.body);
+                console.log('Pop artifcats: ', res.body);
 
 
                 done();

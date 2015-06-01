@@ -375,7 +375,7 @@ public class IECFilters extends Fragment implements GridCard.GridCardButtonHandl
         initializeUI(activity);
 
         //then we send off our evolution process to initialize itself!
-        return evolution.asyncInitialize(iecParams)
+        return evolution.asyncInitialize(iecParams,null)
                 .continueWithTask(new Continuation<Void, Task<Void>>() {
                     @Override
                     public Task<Void> then(Task<Void> task) throws Exception {

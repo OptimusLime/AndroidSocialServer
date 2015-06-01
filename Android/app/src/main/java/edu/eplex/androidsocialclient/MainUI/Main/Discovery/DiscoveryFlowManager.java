@@ -1,5 +1,6 @@
 package edu.eplex.androidsocialclient.MainUI.Main.Discovery;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
@@ -14,15 +15,24 @@ import android.view.WindowManager;
 
 import com.squareup.otto.Bus;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 
+import dagger.ObjectGraph;
+import edu.eplex.AsyncEvolution.main.NEATInitializer;
+import edu.eplex.androidsocialclient.MainUI.Filters.Evolution.FilterEvolutionInjectModule;
+import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
 import edu.eplex.androidsocialclient.MainUI.Main.Discovery.Tabs.DiscoveryFragment;
 import edu.eplex.androidsocialclient.MainUI.Main.Discovery.Tabs.ScratchFragment;
+import edu.eplex.androidsocialclient.MainUI.Main.Edit.EditFlowManager;
 import edu.eplex.androidsocialclient.MainUI.Main.MainDiscoveryScreen;
 import edu.eplex.androidsocialclient.R;
+import eplex.win.FastNEATJava.utils.NeatParameters;
 
 /**
  * Created by paul on 3/16/15.
@@ -93,8 +103,14 @@ public class DiscoveryFlowManager {
             registered.remove(object);
         }
     }
-    public void finishDiscoveryActivity(FragmentActivity activity, FilterComposite finalFilter)
+    public void finishDiscoveryActivity(FragmentActivity activity, String filterType, FilterComposite finalFilter)
     {
+
+        FilterArtifact fa = finalFilter.getFilterArtifact();
+
+        //add branch point for this artifact
+        FilterManager.getInstance().addBranchPoint(fa.wid(), filterType, fa);
+
         //we've finished with our filter, we need to replace our old filter
         //lets stick it in the cloud!
         //I want to go back
@@ -203,9 +219,11 @@ public class DiscoveryFlowManager {
     public static class ViewPagerAdapter extends FragmentStatePagerAdapter {
 
         HashMap<DiscoveryID, Fragment> savedFragments = new HashMap<>();
+        FragmentActivity mContext;
 
-        public ViewPagerAdapter(FragmentManager fm) {
+        public ViewPagerAdapter(FragmentManager fm, FragmentActivity context) {
             super(fm);
+            this.mContext = context;
         }
 
         public HashMap<DiscoveryID, Fragment> GetFragmentMap()
@@ -231,7 +249,18 @@ public class DiscoveryFlowManager {
                     break;
                 case Scratch:
                 default:
-                    f = new ScratchFragment();
+                    ScratchFragment s = new ScratchFragment();
+
+                    //create our parameters
+                    NeatParameters np = NEATInitializer.DefaultNEATParameters();
+
+                    List<FilterArtifact> seedArtifacts = new ArrayList<>();
+
+                    //we need to inject our objects!
+                    ObjectGraph graph = ObjectGraph.create(Arrays.asList(new FilterEvolutionInjectModule(mContext, np, seedArtifacts)).toArray());
+                    graph.inject(s);
+
+                    f = s;
                     break;
             }
 

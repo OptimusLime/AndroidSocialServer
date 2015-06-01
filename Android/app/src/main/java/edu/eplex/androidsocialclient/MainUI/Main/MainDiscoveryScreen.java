@@ -82,7 +82,7 @@ public class MainDiscoveryScreen extends ActionBarActivity implements MaterialTa
         FilterComposite currentFilter = efm.getFilterFromEditIntent(intent);
 
         // init view pager
-        adapter = new DiscoveryFlowManager.ViewPagerAdapter(getSupportFragmentManager());
+        adapter = new DiscoveryFlowManager.ViewPagerAdapter(getSupportFragmentManager(), this);
         pager.setAdapter(adapter);
         pager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override

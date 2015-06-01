@@ -54,9 +54,8 @@ var winConfiguration = {
 
 var configLocation = __dirname + "/../access-credentials.json";
 
-
-var customS3Match = {schemaName: "S3_connection", schemaJSON: {wid: "String", s3Key: "String", username: "String", date: "Number"}};
-var customHashMatch = {schemaName: "Hash_connection", schemaJSON: {wid: "String", s3Key: "String", username: "String", hashtag: "String", date: "Number"}};
+var customS3Match = {schemaName: "S3_connection", schemaJSON: {wid: "String", s3Key: "String", username: "String", date: "Number", photoCaption: "String"}};
+var customHashMatch = {schemaName: "Hash_connection", schemaJSON: {wid: "String", s3Key: "String", username: "String", hashtag: "String", date: "Number", photoCaption: "String"}};
 var customFavoriteMatch = {schemaName: "favorite_filters", schemaJSON: {wid: "String", username: "String", date: "Number"}};
 
 function initializeServerObjects()
@@ -162,6 +161,16 @@ function launchExpress()
 
 			  	//also grab the wid item as well
 			  	var filterArtifacts = req.body.filterArtifacts;
+			  	for(var key in filterArtifacts)
+			  	{
+			  		filterArtifacts[key].parents = filterArtifacts[key].parents || [];
+			  		var genomes = filterArtifacts[key].genomeFilters;
+			  		for(var i=0; i < genomes.length; i++)
+			  		{
+			  			var ng = genomes[i];
+			  			ng.parents = ng.parents || [];
+			  		}
+			  	}
 
         		var metaInfo = {user: user, timeofcreation: Date.now(), session: "funtimesession"};
         		console.log('Confirming upload for uuid: ', uuidUpload);
@@ -178,7 +187,7 @@ function launchExpress()
 			  			var wid = Object.keys(filterArtifacts)[0];
 			  			var date = Date.now();
 			  			var hashtags = filterArtifacts[wid].hashtags;
-			  			toSaveConnection[wid] = {s3Key: uuidUpload, wid: wid, username: user, date: date};
+			  			toSaveConnection[wid] = {s3Key: uuidUpload, wid: wid, username: user, date: date, photoCaption: filterArtifacts[wid].photoCaption};
 
 			  			console.log("To save connection: ", toSaveConnection);
 
@@ -192,7 +201,8 @@ function launchExpress()
 			  			var date = Date.now();
 			  			var hashtags = filterArtifacts[wid].hashtags;
 			  			for(var i=0; i < hashtags.length; i++)
-			  				toSaveConnection[wid + "-" + i] = {s3Key: uuidUpload, wid: wid, username: user, hashtag: hashtags[i].toLowerCase(), date: date};
+			  				toSaveConnection[wid + "-" + i] = {s3Key: uuidUpload, wid: wid, 
+			  					username: user, hashtag: hashtags[i].toLowerCase(), date: date, photoCaption: filterArtifacts[wid].photoCaption};
 
 			  			//now lets keep track of our hash tags in a separate database object
 			  			return winAPIObject.dataAccess.saveDatabaseObjects(customHashMatch.schemaName, toSaveConnection);	
@@ -302,6 +312,7 @@ function launchExpress()
 				var feedCount = Math.min(winConfiguration.maxFeedFetch, req.query.count || winConfiguration.defaultFeedFetch)
 
 				var widToS3Key = {};
+				var widToDate = {};
 				//look back the most recent schema objects this tells us the wids of the most recent -- 
 				//if we have tons and tons of artifacts that are pretty large in size, 
 				//this is the fastest read we can do before we simply return all objects matching these ids
@@ -329,6 +340,8 @@ function launchExpress()
 							if(!mod.meta.s3Key)
 								mod.meta.s3Key = widToS3Key[mod.wid];
 						}
+
+						models.sort(function(a,b){return b.date - a.date;})
 
 						//send back the models
 						res.json(models).end();
@@ -406,6 +419,22 @@ function launchExpress()
 					})
 					.then(function(results)
 					{	
+						var widList = [];
+						for(var i=0; i < results.length; i++)
+						{
+							if(typeof results[i].wid == "string")
+								widList.push(results[i].wid);
+						}
+
+						// console.log('Highest pop res:', results);
+						console.log('Highest pop list:', widList);
+
+						//got the models that are popular -- now we need to turn them into artifacts
+						return winAPIObject.dataAccess.loadWINArtifacts(widList);			
+					})
+					.then(function(results){
+
+						console.log('High pop res: ', results);
 						res.json(results).end();
 					})
 					.catch(function(err)

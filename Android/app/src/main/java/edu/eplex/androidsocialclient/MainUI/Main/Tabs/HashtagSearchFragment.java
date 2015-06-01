@@ -189,8 +189,11 @@ public class HashtagSearchFragment extends Fragment {
 
     void updateSearchData()
     {
-        if(lastSearch == null)
+        if(lastSearch == null) {
+            //complete the refresh
+            refreshFrame.refreshComplete();
             return;
+        }
 
         int count = 10;
 

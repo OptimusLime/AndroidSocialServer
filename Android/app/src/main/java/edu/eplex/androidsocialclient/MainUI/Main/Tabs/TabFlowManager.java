@@ -25,6 +25,8 @@ import edu.eplex.androidsocialclient.R;
  */
 public class TabFlowManager {
 
+    public static final String HASHTAG_PATTERN = "(#[\\p{L}0-9-_]+)";
+
     //what tab are we??? How do the tabs behave for switching?
     public enum TabID
     {

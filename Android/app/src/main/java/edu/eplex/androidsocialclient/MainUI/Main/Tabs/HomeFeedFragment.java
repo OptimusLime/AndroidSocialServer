@@ -26,6 +26,8 @@ import android.widget.ListAdapter;
 import android.widget.TextView;
 
 import com.facebook.drawee.view.SimpleDraweeView;
+import com.google.common.collect.Lists;
+import com.jmpergar.awesometext.AwesomeTextHandler;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,6 +39,7 @@ import butterknife.ButterKnife;
 import butterknife.InjectView;
 import edu.eplex.androidsocialclient.MainUI.API.Publish.Objects.FeedItem;
 import edu.eplex.androidsocialclient.MainUI.API.WinAPIManager;
+import edu.eplex.androidsocialclient.MainUI.Main.Publish.PublishFragment;
 import edu.eplex.androidsocialclient.R;
 
 import edu.eplex.androidsocialclient.Utilities.ScreenUtilities;
@@ -60,6 +63,7 @@ public class HomeFeedFragment extends Fragment {
     private GridViewAdapter mAdapter;
 
     long lastTime = -1;
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -172,7 +176,37 @@ public class HomeFeedFragment extends Fragment {
 
 
     }
+    public class HashtagsSpanRenderer implements AwesomeTextHandler.ViewSpanRenderer {
 
+        private final static int textSizeInDips = 18;
+        private final static int backgroundResource = R.drawable.common_hashtags_background;
+        private final static int textColorResource = android.R.color.white;
+
+        @Override
+        public View getView(final String text, Context context) {
+            TextView view = new TextView(context);
+            view.setText(text);
+            view.setTextSize(ScreenUtilities.dipsToPixels(context, textSizeInDips));
+            view.setBackgroundResource(backgroundResource);
+            int textColor = context.getResources().getColor(textColorResource);
+            view.setTextColor(textColor);
+
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    try {
+                        TabFlowManager.getInstance().switchToTab(TabFlowManager.TabID.Feed, TabFlowManager.TabID.Search);
+                        TabFlowManager.getInstance().audioSearchText(Lists.newArrayList(text));
+                    } catch (Exception e) {
+
+                    }
+                }
+            });
+
+
+            return view;
+        }
+    }
     public class GridViewAdapter extends ArrayAdapter<FeedItem> {
         private FragmentActivity context;
 
@@ -267,6 +301,30 @@ public class HomeFeedFragment extends Fragment {
             //we get the image directly from S3
             Uri uri = Uri.parse(baseS3Server + "/" + fi.username + "/" + fi.s3Key + "/" + WinAPIManager.FILTER_FULL);
             SimpleDraweeView draweeView = (SimpleDraweeView) row.findViewById(R.id.app_feed_grid_item_image_view);
+            TextView photoUsernameView = (TextView) row.findViewById(R.id.app_feed_grid_photocaption_username_text_view);
+            TextView photoCaptionView = (TextView) row.findViewById(R.id.app_feed_grid_photocaption_text_view);
+            TextView usernameTextView = (TextView) row.findViewById(R.id.app_feed_grid_username_text_view);
+
+            if(fi.username != null) {
+                usernameTextView.setText(fi.username);
+                photoUsernameView.setText(fi.username + ":");
+            }
+            else {
+                usernameTextView.setText("");
+                photoUsernameView.setText("");
+            }
+
+            if(fi.photoCaption != null && fi.username != null) {
+
+                photoCaptionView.setText(fi.photoCaption);
+
+                AwesomeTextHandler awesomeTextViewHandler = new AwesomeTextHandler();
+                awesomeTextViewHandler
+                        .addViewSpanRenderer(TabFlowManager.HASHTAG_PATTERN, new HashtagsSpanRenderer())
+                        .setView(photoCaptionView);
+            }
+            else
+                photoCaptionView.setText("");
 
             Point screenSize = ScreenUtilities.ScreenSize(context);
             int size = Math.min(screenSize.x, screenSize.y);

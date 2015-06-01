@@ -56,10 +56,15 @@ public class FilterManager {
     {
         public ArrayList<FilterComposite> existing;
         public ArrayList<FilterComposite> published;
+        public HashMap<String, FilterArtifact> branchPoints;
+        public HashMap<String, String> branchTypes;
+
         public SaveAllList()
         {
             existing = new ArrayList<>();
             published = new ArrayList<>();
+            branchPoints = new HashMap<>();
+            branchTypes = new HashMap<>();
         }
     }
 
@@ -264,6 +269,37 @@ public class FilterManager {
 
     final static String FILTER_MAP_SAVE_LOCATION = "SavedFilterMap";
 
+    public final static String SEED_TYPE = "SEED";
+    public final static String DISCOVER_TYPE = "DISCOVER";
+
+    HashMap<String, FilterArtifact> branchArtifact = new HashMap<>();
+    HashMap<String, String> branchTypes = new HashMap<>();
+    //    HashMap<String, NeatGenome> innerBranchGenomes = new HashMap<>();
+    public void addBranchPoint(String wid, String branchType, FilterArtifact a)
+    {
+        branchArtifact.put(wid, a);
+        branchTypes.put(wid, branchType);
+//        for(int i=0; i < a.genomeFilters.size(); i++)
+//        {
+//            NeatGenome ng = a.genomeFilters.get(i);
+//            innerBranchGenomes.put(ng.wid, ng);
+//        }
+    }
+
+    public void removeBranchPoint(String wid)
+    {
+        branchArtifact.remove(wid);
+        branchTypes.remove(wid);
+    }
+    public FilterArtifact getBranchPoint(String wid)
+    {
+        return branchArtifact.get(wid);
+    }
+    public String getBranchType(String wid)
+    {
+        return branchTypes.get(wid);
+    }
+
     public Task<Void> asyncSaveFiltersToFile(final Context mContext)
     {
         return Task.call(new Callable<Void>() {
@@ -276,6 +312,8 @@ public class FilterManager {
                 SaveAllList sal = new SaveAllList();
                 sal.existing = existingFilters;
                 sal.published = publishedFilters;
+                sal.branchPoints = branchArtifact;
+                sal.branchTypes = branchTypes;
 
                 mapper.writeValue(out, sal);
 
@@ -313,6 +351,8 @@ public class FilterManager {
 
                 ArrayList<FilterComposite> existing = sal.existing;
                 ArrayList<FilterComposite> published = sal.published;
+
+
                 FilterManager fm = FilterManager.getInstance();
 
                 for(int i=0; i < existing.size();i++){
@@ -327,6 +367,15 @@ public class FilterManager {
                 {
                     fm.publishedCompositeFilter(mContext, published.get(i), false);
                 }
+
+                for (Object o : sal.branchPoints.entrySet()) {
+                    Map.Entry<String, FilterArtifact> pair = (Map.Entry) o;
+
+                    String type = sal.branchTypes.get(pair.getKey());
+
+                    fm.addBranchPoint(pair.getKey(), type, pair.getValue());
+                }
+
 
 //                    Iterator it = filterMap.entrySet().iterator();
 //                    while (it.hasNext()) {

@@ -31,13 +31,19 @@ import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.inject.Inject;
+
 import bolts.Continuation;
 import bolts.Task;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import butterknife.OnClick;
+import dagger.ObjectGraph;
+import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncSeedLoader;
+import edu.eplex.AsyncEvolution.cardUI.EndlessGridScrollListener;
 import edu.eplex.androidsocialclient.MainUI.API.Publish.Objects.FeedItem;
 import edu.eplex.androidsocialclient.MainUI.API.WinAPIManager;
+import edu.eplex.androidsocialclient.MainUI.Filters.Evolution.FilterSeedLoader;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterComposite;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
@@ -62,9 +68,14 @@ public class ScratchFragment extends Fragment {
     @InjectView(R.id.app_feed_header_grid_view_frame)
     public PtrClassicFrameLayout refreshFrame;
 
-    private GridViewAdapter mAdapter;
-
+    private ArtifactViewAdapter mAdapter;
+    private FilterComposite interestedFilter;
     long lastTime = -1;
+
+    EndlessGridScrollListener mScrollListener;
+
+    @Inject
+    AsyncSeedLoader seedLoader;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -85,7 +96,14 @@ public class ScratchFragment extends Fragment {
             }
         });
 
-        mAdapter = new GridViewAdapter(getActivity(), R.layout.app_fragment_feed_grid_item, new ArrayList<FeedItem>());
+        //get the filter we wish to investigate
+        interestedFilter = FilterManager.getInstance().getLastEditedFilter();
+        if(interestedFilter == null)
+        {
+            interestedFilter = DiscoveryFlowManager.getInstance().getFilterFromDiscoveryIntent(getActivity().getIntent());
+        }
+
+        mAdapter = new ArtifactViewAdapter(getActivity(), FilterManager.SEED_TYPE, R.layout.app_fragment_artifact_grid_item, interestedFilter, new ArrayList<FilterArtifact>());
 
         try {
             refreshGridView.setAdapter(mAdapter);
@@ -95,12 +113,33 @@ public class ScratchFragment extends Fragment {
             e.printStackTrace();
         }
 
+        //here we're going to set our scroll listener for creating more objects and appending them!
+        mScrollListener = new EndlessGridScrollListener(refreshGridView);
+
+//        //lets set our callback item now -- this is called whenever the user scrolls to the bottom
+        mScrollListener.setRequestItemsCallback(new EndlessGridScrollListener.RequestItemsCallback() {
+            @Override
+            public void requestItems(int pageNumber) {
+//                System.out.println("On Refresh invoked..");
+
+                //add more cards, hoo-ray!!!
+
+                //every time it's the same process -- generate artifacts, convert to phenotype, display!
+                //rinse and repeat
+                //this gets appended to bottom -- do not insert at 0th position
+                updateData(false);
+                mScrollListener.notifyMorePages();
+            }
+        });
+//        //make sure to add our infinite scroller here
+        refreshGridView.setOnScrollListener(mScrollListener);
+
 
         refreshFrame.setLastUpdateTimeRelateObject(this);
         refreshFrame.setPtrHandler(new PtrHandler() {
             @Override
             public void onRefreshBegin(PtrFrameLayout frame) {
-                updateData();
+                updateData(true);
 
                 //need to get data
                 Log.d("HOMEFEEDFRAGMENT", "Get more data");
@@ -130,158 +169,29 @@ public class ScratchFragment extends Fragment {
 
         return rootView;
     }
-    void updateData()
+    void updateData(boolean insert)
     {
         //
-        int count = 10;
+        int count = 3;
 
         lastTime = -1;
-//lastTime
-        WinAPIManager.getInstance().asyncGetLatestFeedAfter(count, lastTime)
-                .continueWith(new Continuation<ArrayList<FeedItem>, Void>() {
-                    @Override
-                    public Void then(Task<ArrayList<FeedItem>> task) throws Exception {
 
+        ArrayList<FilterArtifact> generatedArtifacts = ((FilterSeedLoader)seedLoader).CreateRandomSeeds(count);
 
-                        //complete the refresh
-                        refreshFrame.refreshComplete();
+        //add to the adapter plz
+        if(insert)
+        {
+            for(int i=0; i < generatedArtifacts.size(); i++)
+                mAdapter.insert(generatedArtifacts.get(i), 0);
+        }
+        else
+            mAdapter.addAll(generatedArtifacts);
 
-                        //get our feed items
-                        ArrayList<FeedItem> items = task.getResult();
-                        if (task.getResult() != null && items.size() > 0) {
-                            for (int i = 0; i < items.size(); i++) {
-                                FeedItem f = items.get(i);
+        mAdapter.notifyDataSetChanged();
 
-                                if (i == 0)
-                                    lastTime = f.date;
-                                else
-                                    lastTime = Math.max(f.date, lastTime);
-
-                            }
-
-                            //add to the adapter plz
-                            mAdapter.addAll(items);
-
-                            //then let the adapter know the data is ready
-//                            mAdapter.notifyDataSetChanged();
-                        }
-
-
-                        return null;
-                    }
-                }, Task.UI_THREAD_EXECUTOR);
-
-
+        //complete the refresh
+        refreshFrame.refreshComplete();
     }
 
-    public class GridViewAdapter extends ArrayAdapter<FeedItem> {
-        private FragmentActivity context;
-
-        HashSet<String> existing = new HashSet<>();
-        int layoutResourceId;
-
-        public GridViewAdapter(FragmentActivity context, int layoutResourceId, ArrayList<FeedItem> data) {
-            super(context, layoutResourceId, data);
-            this.context = context;
-            this.layoutResourceId = layoutResourceId;
-        }
-
-        @Override
-        public void clear() {
-            super.clear();
-            existing.clear();
-        }
-
-        @Override
-        public void remove(FeedItem object) {
-            super.remove(object);
-            existing.remove(object.wid);
-        }
-
-
-        @Override
-        public void addAll(Collection<? extends FeedItem> collection) {
-
-            Object[] cArray = collection.toArray();
-            for(int i=0; i < cArray.length; i++)
-            {
-                FeedItem fi = (FeedItem)cArray[i];
-                if(existing.contains(fi.wid))
-                    collection.remove(cArray[i]);
-                else
-                    existing.add(fi.wid);
-            }
-
-            super.addAll(collection);
-        }
-
-        @Override
-        public void add(FeedItem object) {
-            if(!existing.contains(object.wid))
-            {
-                existing.add(object.wid);
-                super.add(object);
-            }
-        }
-
-        @Override
-        public void addAll(FeedItem... items) {
-
-            Collection<FeedItem> nItems = new ArrayList<>();
-
-            for(int i=0; i < items.length; i++) {
-                FeedItem fi = (FeedItem) items[i];
-                if (!existing.contains(fi.wid)){
-                    existing.add(fi.wid);
-                    nItems.add(fi);
-                }
-            }
-
-            if(nItems.size() > 0) {
-                FeedItem[] fArray = new FeedItem[nItems.size()];
-                nItems.toArray(fArray);
-                super.addAll(fArray);
-            }
-        }
-
-        @Override
-        public void insert(FeedItem object, int index) {
-            if(!existing.contains(object.wid))
-                super.insert(object, index);
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            View row = convertView;
-
-            if (row == null) {
-                LayoutInflater inflater = context.getLayoutInflater();
-                row = inflater.inflate(layoutResourceId, parent, false);
-
-            } else {
-            }
-
-            FeedItem fi = this.getItem(position);
-
-            String baseS3Server = context.getResources().getString(R.string.s3_bucket_url_endpoint);
-
-            //we get the image directly from S3
-            Uri uri = Uri.parse(baseS3Server + "/" + fi.username + "/" + fi.s3Key + "/" + WinAPIManager.FILTER_FULL);
-            SimpleDraweeView draweeView = (SimpleDraweeView) row.findViewById(R.id.app_feed_grid_item_image_view);
-
-            Point screenSize = ScreenUtilities.ScreenSize(context);
-            int size = Math.min(screenSize.x, screenSize.y);
-
-            draweeView.getLayoutParams().width = size;
-            draweeView.getLayoutParams().height = size;
-
-
-            draweeView.setImageURI(uri);
-
-            return row;
-        }
-
-
-    }
 
 }

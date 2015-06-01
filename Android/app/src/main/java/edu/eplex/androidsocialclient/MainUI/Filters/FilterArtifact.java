@@ -6,10 +6,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Filter;
 
 import eplex.win.FastNEATJava.genome.NeatGenome;
@@ -20,7 +24,7 @@ import eplex.win.winBackbone.Artifact;
  */
 public class FilterArtifact implements Artifact {
 
-    public class Meta
+    public static class Meta
     {
         public String user;
         public long timeofcreation;
@@ -61,11 +65,18 @@ public class FilterArtifact implements Artifact {
     @JsonProperty("isPrivate")
     public String isPrivate = "false";
 
+    public String s3Key = null;
+
     //dates must be added to all objects being saved
     public long date;
 
     //meta information stored with each object
     public Meta meta;
+
+    public static Meta createEmptyMeta()
+    {
+        return new Meta();
+    }
 
     @Override
     public String wid() {
@@ -94,7 +105,10 @@ public class FilterArtifact implements Artifact {
     public Artifact clone() {
         FilterArtifact fa = new FilterArtifact();
 
-        fa.setParents(new ArrayList<String>(this.parents));
+        if(this.parents != null)
+            fa.setParents(new ArrayList<String>(this.parents));
+        else
+            fa.setParents(null);
 
         //clone our own genomes
         for(int i=0; i < this.genomeFilters.size(); i++)
@@ -181,5 +195,128 @@ public class FilterArtifact implements Artifact {
             e.printStackTrace();
             return null;
         }
+    }
+
+    @Override
+    public void stripAllParents() {
+        this.setParents(null);
+        for(int i=0; i < genomeFilters.size(); i++)
+            genomeFilters.get(i).parents = null;
+    }
+
+    @Override
+    public Map<String, Artifact> setParentsFromArtifactMap(Map<String, Artifact> artifactMap) {
+
+        HashMap<String, Artifact> privateToSave = new HashMap<>();
+        HashMap<String, List<String>> ngParentMap = new HashMap<>();
+
+        //privately, we need to construct the chain from the final all the way back to the seeds
+        FilterArtifact a = (FilterArtifact)artifactMap.get(this.wid());
+        if(a == null)
+            return null;
+
+        HashSet<String> selectedPublicParents = new HashSet<>();
+        List<String> parents = a.parents();
+        List<String> np;
+
+        ArrayList<NeatGenome> genomes = a.genomeFilters;
+//        List<String> ngParents = new ArrayList<>();
+        for(int i=0; i < genomes.size();i++) {
+            NeatGenome ng = genomes.get(i);
+            if (ng.parents != null) {
+//                ngParents.addAll(ng.parents);
+                ngParentMap.put(ng.wid, Lists.newArrayList(ng.parents));
+            }
+            else
+                ngParentMap.put(ng.wid, null);
+        }
+//        Map<String, ArrayList<String>> innerGenomeParents = new HashMap<>();
+
+        while(parents != null && parents.size() > 0)
+        {
+            //grab the parents and build the map
+            //privately, we must save all parents please
+            np = new ArrayList<>();
+            for(int i=0; i < parents.size(); i++) {
+
+                FilterArtifact parent = (FilterArtifact)artifactMap.get(parents.get(i));
+
+                genomes = parent.genomeFilters;
+                for(int j=0;j < genomes.size(); j++){
+                    NeatGenome ng = genomes.get(j);
+                    if(ng.parents ==null)
+                        ngParentMap.put(ng.wid, null);
+                    else
+                        ngParentMap.put(ng.wid, Lists.newArrayList(ng.parents));
+                }
+
+                if(parent == null)
+                {
+                    //this must be somehow publicly loaded -- cuz we don't know anything about it locally!
+                    selectedPublicParents.add(parents.get(i));
+                }
+                else {
+                    List<String> ppp = parent.parents();
+                    if (ppp != null) {
+                        np.addAll(ppp);
+
+                        //not a seed -- therefore we must save!
+                        privateToSave.put(parent.wid(), parent);
+                    } else {
+                        //this is a seed -- we track this publicly
+                        selectedPublicParents.add(parent.wid());
+                    }
+                }
+            }
+
+            //now we have to investigate the next round please
+            parents = np;
+        }
+        //now we have public parents for the selected object -- lets clone and send back
+        Artifact privateClone = a.clone();
+        privateToSave.put(privateClone.wid(), privateClone);
+
+        //who are the actual seed parents we have?
+        this.setParents(Lists.newArrayList(selectedPublicParents));
+
+        //now who are the inner genomes connected to?
+        for(int g=0; g < a.genomeFilters.size(); g++) {
+
+            NeatGenome ng = a.genomeFilters.get(g);
+
+            //grab the parents
+            List<String> ngParents = ng.parents;
+
+            HashSet<String> tp = new HashSet<>();
+            HashSet<String> ngnp;
+            while (ngParents != null && ngParents.size() > 0) {
+                ngnp = new HashSet<>();
+
+                for (int i = 0; i < ngParents.size(); i++) {
+
+                    //here is a single parent
+                    String parent = ngParents.get(i);
+
+                    List<String> possibleGrandParents = ngParentMap.get(parent);
+
+                    if(possibleGrandParents == null)
+                    {
+                        //our parent has no parents -- it's the end of the line
+                        tp.add(parent);
+                    }
+                    else
+                    {
+                        //we have grandparents, we must investigate all
+                        ngnp.addAll(possibleGrandParents);
+                    }
+                }
+
+                ngParents = Lists.newArrayList(ngnp);
+            }
+
+            ng.parents = Lists.newArrayList(tp);
+        }
+
+        return privateToSave;
     }
 }

@@ -25,6 +25,8 @@ import android.widget.Filterable;
 import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,11 +34,16 @@ import com.afollestad.materialdialogs.Alignment;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.facebook.drawee.view.SimpleDraweeView;
 import com.google.common.collect.Lists;
+import com.quinny898.library.persistentsearch.SearchBox;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.logging.Filter;
 import java.util.regex.Matcher;
@@ -82,16 +89,42 @@ public class DiscoveryFragment extends Fragment {
     @InjectView(R.id.app_feed_header_grid_view_frame)
     public PtrClassicFrameLayout refreshFrame;
 
-    private GridViewAdapter mAdapter;
-    private FilterComposite interestedFilter;
+    public SearchBox searchBox;
 
+    private ArtifactViewAdapter mAdapter;
+    private FilterComposite interestedFilter;
+    private String lastSearch;
+
+    int skipCount = 0;
     long lastTime = -1;
+    long earliestTime = Long.MAX_VALUE;
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mAdapter.clearFilterMemory();
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-        View rootView = inflater.inflate(R.layout.app_fragment_feed, container, false);
+        View rootView;
 
+
+        if(discoverTabID == DiscoveryFlowManager.DiscoveryID.Search) {
+
+            rootView = inflater.inflate(R.layout.app_fragment_feed_search, container, false);
+            SearchBox sb = (SearchBox) rootView.findViewById(R.id.app_discovery_search_hash_searchbox);
+            this.searchBox = sb;
+            searchBox.setLogoText(getString(R.string.default_filter_search));
+            searchBox.enableVoiceRecognition(getActivity());
+            setSearchListener();
+        }
+        else
+        {
+            rootView = inflater.inflate(R.layout.app_fragment_feed, container, false);
+
+        }
         //we now have access to list view thanks to butterknife!
         ButterKnife.inject(this, rootView);
 
@@ -114,7 +147,7 @@ public class DiscoveryFragment extends Fragment {
             }
         });
 
-        mAdapter = new GridViewAdapter(getActivity(), R.layout.app_fragment_artifact_grid_item, interestedFilter, new ArrayList<FilterArtifact>());
+        mAdapter = new ArtifactViewAdapter(getActivity(), FilterManager.DISCOVER_TYPE, R.layout.app_fragment_artifact_grid_item, interestedFilter, new ArrayList<FilterArtifact>());
 
         try {
             refreshGridView.setAdapter(mAdapter);
@@ -129,7 +162,7 @@ public class DiscoveryFragment extends Fragment {
         refreshFrame.setPtrHandler(new PtrHandler() {
             @Override
             public void onRefreshBegin(PtrFrameLayout frame) {
-                updateData();
+                updateData(true);
 
                 //need to get data
                 Log.d("HOMEFEEDFRAGMENT", "Get more data");
@@ -141,6 +174,7 @@ public class DiscoveryFragment extends Fragment {
                 return PtrDefaultHandler.checkContentCanBePulledDown(frame, content, header);
             }
         });
+
         // the following are default settings
         refreshFrame.setResistance(1.7f);
         refreshFrame.setRatioOfHeaderHeightToRefresh(1.2f);
@@ -159,7 +193,98 @@ public class DiscoveryFragment extends Fragment {
 
         return rootView;
     }
-    void updateData()
+
+
+    void setSearchListener()
+    {
+        searchBox.setSearchListener(new SearchBox.SearchListener(){
+
+            @Override
+            public void onSearchOpened() {
+                //Use this to tint the screen
+            }
+
+            @Override
+            public void onSearchClosed() {
+                //Use this to un-tint the screen
+            }
+
+            @Override
+            public void onSearchTermChanged() {
+                //React to the search term changing
+                //Called after it has updated results
+            }
+
+            @Override
+            public void onSearch(String searchTerm) {
+
+//                Toast.makeText(getActivity(), "Searching for: " + searchTerm, Toast.LENGTH_SHORT).show();
+
+                searchTerm = searchTerm.replace(" ", "");
+                searchTerm = "#" + searchTerm;
+                lastSearch = searchTerm;
+
+                //last time is research with every search click
+                lastTime = -1;
+
+
+                //dump the memory before starting again
+//                mAdapter.clearFilterMemory();
+
+                //clear the adapter please
+                mAdapter.clear();
+                mAdapter.notifyDataSetChanged();
+
+                updateData(false);
+            }
+
+            @Override
+            public void onSearchCleared() {
+
+            }
+
+        });
+
+    }
+
+
+    Task<ArrayList<FilterArtifact>> getDiscoveryData()
+    {
+        int count = 10;
+
+        String lt = null;
+        if(lastTime != 0 && lastTime != -1)
+            lt = "" + lastTime;
+
+        switch (discoverTabID)
+        {
+            case Recent:
+                return WinAPIManager.getInstance().asyncGetLatestArtifacts(lt, count);
+
+            case Favorites:
+
+                //get favorites -- the latest -- no skips please
+                return WinAPIManager.getInstance().asyncGetFavoriteArtifacts("paul", 0, count);
+
+            case Popular:
+                //when updating data -- never skip any, just pull down latest -- skip count happens
+                //when scrolling infinitely
+                return WinAPIManager.getInstance().asyncGetPopularArtifacts(0, count);
+
+            case Search:
+                if(lastSearch == null)
+                    return null;
+
+                return WinAPIManager.getInstance().asyncGetHashtagArtifacts(lastSearch, lt, count);
+
+            default:
+                return null;
+        }
+    }
+
+
+
+    void updateData(final boolean insert)
     {
         //
         int count = 10;
@@ -169,312 +294,97 @@ public class DiscoveryFragment extends Fragment {
             lt = "" + lastTime;
 //        lastTime = -1;
 //lastTime
-        WinAPIManager.getInstance().asyncGetLatestArtifacts(lt, count)
-                .continueWith(new Continuation<ArrayList<FilterArtifact>, Void>() {
-                    @Override
-                    public Void then(Task<ArrayList<FilterArtifact>> task) throws Exception {
+        Task<ArrayList<FilterArtifact>> asyncGetArtifacts = getDiscoveryData();
 
-                        //complete the refresh
-                        refreshFrame.refreshComplete();
+        //if null -- skip it for now
+        if(asyncGetArtifacts == null) {
 
-                        //get our feed items
-                        ArrayList<FilterArtifact> items = task.getResult();
-                        if (task.getResult() != null && items.size() > 0) {
-                            for (int i = 0; i < items.size(); i++) {
+            refreshFrame.refreshComplete();
+            return;
+        }
 
-                                FilterArtifact f = items.get(i);
+        asyncGetArtifacts.continueWith(new Continuation<ArrayList<FilterArtifact>, Void>() {
+            @Override
+            public Void then(Task<ArrayList<FilterArtifact>> task) throws Exception {
 
-                                if(f.date != 0)
-                                    lastTime = Math.max(f.date, lastTime);
-                                else if(f.meta != null)
-                                {
-                                    lastTime = Math.max(f.meta.timeofcreation, lastTime); ;
+                //complete the refresh
+                refreshFrame.refreshComplete();
+
+                //get our feed items
+                ArrayList<FilterArtifact> items = task.getResult();
+                if (items != null && items.size() > 0) {
+
+
+                    //we need to sort search/recetn and favorites by date -- popular stays in the order it was transmitted
+                    switch (discoverTabID) {
+                        case Search:
+                        case Recent:
+                        case Favorites:
+                            Collections.sort(items, new Comparator<FilterArtifact>() {
+                                @Override
+                                public int compare(FilterArtifact lhs, FilterArtifact rhs) {
+
+                                    long d1, d2;
+                                    if (lhs.date != 0)
+                                        d1 = lhs.date;
+                                    else
+                                        d1 = lhs.meta.timeofcreation;
+
+                                    if (rhs.date != 0)
+                                        d2 = rhs.date;
+                                    else
+                                        d2 = rhs.meta.timeofcreation;
+
+                                    return (int) (d2 - d1);
                                 }
-                            }
-
-                            //add to the adapter plz
-                            mAdapter.addAll(items);
-
-                            //then let the adapter know the data is ready
-//                            mAdapter.notifyDataSetChanged();
-                        }
-
-                        return null;
+                            });
+                            break;
                     }
-                }, Task.UI_THREAD_EXECUTOR);
 
+                    for (int i = 0; i < items.size(); i++) {
 
-    }
+                        FilterArtifact f = items.get(i);
 
+                        if (f.date != 0) {
+                            lastTime = Math.max(f.date, lastTime);
+                            earliestTime = Math.min(f.date, earliestTime);
+                        } else if (f.meta != null) {
+                            lastTime = Math.max(f.meta.timeofcreation, lastTime);
+                            earliestTime = Math.min(f.meta.timeofcreation, earliestTime);
+                        }
+                    }
 
-    public class GridViewInjectionHolder {
-
-        @InjectView(R.id.app_feed_artifact_grid_username_text_view)
-        public TextView gridUsernameTextView;
-
-        @InjectView(R.id.app_feed_artifact_grid_item_image_view)
-        public SimpleDraweeView gridArtifactImageView;
-
-        @InjectView(R.id.app_feed_artifact_grid_button_original)
-        public ImageButton gridArtifactOriginalButton;
-
-        @InjectView(R.id.app_feed_artifact_grid_button_branch)
-        public ImageButton gridArtifactBranchButton;
-
-
-        @OnClick(R.id.app_feed_artifact_grid_button_original)
-        public void onOriginalClick()
-        {
-            //need to handle what happens with an original click
-
-            Task.call(new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
-                    if(!isOriginal) {
-                        FilterArtifact fi = filterComposite.getFilterArtifact();
-
-                        String baseS3Server = context.getResources().getString(R.string.s3_bucket_url_endpoint);
-                        Uri uri = Uri.parse(baseS3Server + "/" + fi.meta.user + "/" + fi.meta.s3Key + "/" + WinAPIManager.FILTER_FULL);
-                        Toast.makeText(context, "or: " + uri, Toast.LENGTH_SHORT).show();
-                        gridArtifactImageView.setImageBitmap(null);
-                        gridArtifactImageView.setImageURI(uri);
-                        isOriginal = true;
+                    if(insert)
+                    {
+                        for(int i=0; i < items.size(); i++)
+                        {
+                            mAdapter.insert(items.get(i),i);
+                        }
                     }
                     else {
-                        //replace with previous image
-                        gridArtifactImageView.setImageBitmap(filterComposite.getFilteredBitmap());
-                        isOriginal = false;
+                        //add to the adapter plz
+                        mAdapter.addAll(items);
                     }
 
-                    return null;
+                    mAdapter.notifyDataSetChanged();
+
+                    //how many to skip of all the objects we have? well a good few -- however many we have!
+                    skipCount = mAdapter.getCount();
+
+                    //then let the adapter know the data is ready
+//                            mAdapter.notifyDataSetChanged();
                 }
-            }, Task.UI_THREAD_EXECUTOR);
 
-        }
-
-        @OnClick(R.id.app_feed_artifact_grid_button_branch)
-        public void onBranchClick()
-        {
-            //need to handle what happens with a branch click
-            Toast.makeText(context, "Want to branch to load filtered image.", Toast.LENGTH_SHORT).show();
-
-            FilterArtifact fa = filterComposite.getFilterArtifact();
-
-            //must make this filter artifact a descendant of the original!
-            //thus save the current wid
-            String wid = fa.wid();
-            //swap the wid for the filter for a brand new ID
-            fa.setWID(cuid.getInstance().generate());
-
-            //set the original wid as one of the parents!
-            fa.setParents(Lists.newArrayList(wid));
-
-            //need to close the intent with this object basically
-            interestedFilter.setFilterArtifact(fa);
-
-            //filter achieved!
-            DiscoveryFlowManager.getInstance().finishDiscoveryActivity(getActivity(), interestedFilter);
-        }
-
-        private FragmentActivity context;
-        private FilterComposite filterComposite;
-        private boolean isOriginal;
-
-        public GridViewInjectionHolder(FragmentActivity context, FilterComposite fc)
-        {
-           setContextAndComposite(context,fc);
-        }
-        public void setContextAndComposite(FragmentActivity context, FilterComposite fc)
-        {
-            this.context = context;
-            this.filterComposite = fc;
-            isOriginal = false;
-        }
-
-        public void updateView()
-        {
-            gridUsernameTextView.setText(filterComposite.getFilterArtifact().meta.user);
-        }
+                return null;
+            }
+        }, Task.UI_THREAD_EXECUTOR);
 
 
     }
 
 
 
-    public class GridViewAdapter extends ArrayAdapter<FilterArtifact> {
-        private FragmentActivity context;
 
-        FilterComposite baseFilter;
-        HashSet<String> existing = new HashSet<>();
-        HashMap<String, FilterComposite> filters = new HashMap<>();
-        HashMap<String, GridViewInjectionHolder> viewHolders = new HashMap<>();
-        int layoutResourceId;
-
-        public GridViewAdapter(FragmentActivity context, int layoutResourceId, FilterComposite baseFilter, ArrayList<FilterArtifact> data) {
-            super(context, layoutResourceId, data);
-            this.context = context;
-            this.layoutResourceId = layoutResourceId;
-            this.baseFilter = baseFilter;
-        }
-
-        @Override
-        public void clear() {
-            super.clear();
-            existing.clear();
-        }
-
-        @Override
-        public void remove(FilterArtifact object) {
-            super.remove(object);
-            existing.remove(object.wid());
-        }
-
-
-        @Override
-        public void addAll(Collection<? extends FilterArtifact> collection) {
-
-            Object[] cArray = collection.toArray();
-            for(int i=0; i < cArray.length; i++)
-            {
-                FilterArtifact fi = (FilterArtifact)cArray[i];
-                if(existing.contains(fi.wid()))
-                    collection.remove(cArray[i]);
-                else
-                    existing.add(fi.wid());
-            }
-
-            super.addAll(collection);
-        }
-
-        @Override
-        public void add(FilterArtifact object) {
-            if(!existing.contains(object.wid()))
-            {
-                existing.add(object.wid());
-                super.add(object);
-            }
-        }
-
-        @Override
-        public void addAll(FilterArtifact... items) {
-
-            Collection<FilterArtifact> nItems = new ArrayList<>();
-
-            for(int i=0; i < items.length; i++) {
-                FilterArtifact fi = (FilterArtifact) items[i];
-                if (!existing.contains(fi.wid())){
-                    existing.add(fi.wid());
-                    nItems.add(fi);
-                }
-            }
-
-            if(nItems.size() > 0) {
-                FilterArtifact[] fArray = new FilterArtifact[nItems.size()];
-                nItems.toArray(fArray);
-                super.addAll(fArray);
-            }
-        }
-
-        @Override
-        public void insert(FilterArtifact object, int index) {
-            if(!existing.contains(object.wid()))
-                super.insert(object, index);
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            View row = convertView;
-
-            if (row == null) {
-                LayoutInflater inflater = context.getLayoutInflater();
-                row = inflater.inflate(layoutResourceId, parent, false);
-
-            } else {
-            }
-
-            FilterArtifact fi = this.getItem(position);
-            final FilterComposite fc;
-            final GridViewInjectionHolder gvi;
-            if(filters.containsKey(fi.wid()))
-            {
-                fc = filters.get(fi.wid());
-                gvi = viewHolders.get(fi.wid());
-                gvi.setContextAndComposite(context, fc);
-            }
-            else
-            {
-                fc= new FilterComposite(baseFilter.getImageURL(), fi, cuid.getInstance().generate(), FilterManager.getInstance().nextReadableName());
-                gvi = new GridViewInjectionHolder(context, fc);
-                filters.put(fi.wid(), fc);
-                viewHolders.put(fi.wid(), gvi);
-            }
-
-            //load up the injected views - k thx
-            ButterKnife.inject(gvi, row);
-            gvi.updateView();
-
-
-            //we get the image directly from S3
-//            Uri uri = Uri.parse(baseS3Server + "/" + fi.username + "/" + fi.s3Key + "/" + WinAPIManager.FILTER_FULL);
-            final SimpleDraweeView imageView = (SimpleDraweeView) row.findViewById(R.id.app_feed_artifact_grid_item_image_view);
-
-            Point screenSize = ScreenUtilities.ScreenSize(context);
-            int size = Math.min(screenSize.x, screenSize.y);
-
-            imageView.getLayoutParams().width = size;
-            imageView.getLayoutParams().height = size;
-
-            int filteredFullSize = context.getResources().getInteger(R.integer.medium_filtered_image_size);
-
-            Bitmap bp = fc.getFilteredBitmap();
-            if(bp == null)
-            {
-//                imageView.setImageDrawable(context.getResources().getDrawable(R.drawable.ic_action_emo_tongue_black));
-
-                try {
-                    //need to lazy load in the main image -- then async run the filter plz
-                    EditFlowManager.getInstance().lazyLoadFilterIntoImageView(context, fc, filteredFullSize, filteredFullSize, false, imageView);
-                }
-                catch (Exception e)
-                {
-                    Toast.makeText(context, "Unable to load filtered image.", Toast.LENGTH_SHORT).show();
-                }
-            }
-            else
-                imageView.setImageBitmap(bp);
-
-            final boolean[] touchImage = {false};
-
-            imageView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                        //we want to display the chosen filter's original image
-                        touchImage[0] = true;
-                        if (fc != null)
-                            imageView.setImageBitmap(fc.getCurrentBitmap());
-
-                        //need to return true if we handle the up action later
-                        return true;
-                    } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
-                        if (touchImage[0]) {
-                            touchImage[0] = false;
-                            if (fc != null)
-                                imageView.setImageBitmap(fc.getFilteredBitmap());
-                        }
-
-                    }
-
-                    return false;
-                }
-            });
-
-
-            return row;
-        }
-
-
-    }
 
 
 }

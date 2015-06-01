@@ -121,7 +121,7 @@ public class AsyncInfiniteIEC implements GridCard.GridCardButtonHandler, AsyncFe
         initializeUI();
 
         //then we send off our evolution process to initialize itself!
-        return evolution.asyncInitialize(params)
+        return evolution.asyncInitialize(params, null)
                 .continueWithTask(new Continuation<Void, Task<Void>>() {
                       @Override
                       public Task<Void> then(Task<Void> task) throws Exception {

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -134,4 +135,14 @@ public class FakeArtifact implements Artifact {
         }
     }
 
+    @Override
+    public Map<String, Artifact> setParentsFromArtifactMap(Map<String, Artifact> artifactMap) {
+        return null;
+    }
+
+    @Override
+    public void stripAllParents() {
+        this.setParents(null);
+
+    }
 }

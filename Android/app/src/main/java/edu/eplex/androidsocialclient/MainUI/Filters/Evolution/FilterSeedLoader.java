@@ -22,6 +22,7 @@ import edu.eplex.AsyncEvolution.backbone.Connection;
 import edu.eplex.AsyncEvolution.backbone.Node;
 import edu.eplex.AsyncEvolution.main.NEATInitializer;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
+import eplex.win.FastCPPNJava.activation.CPPNActivationFactory;
 import eplex.win.FastCPPNJava.activation.functions.BipolarSigmoid;
 import eplex.win.FastCPPNJava.activation.functions.Cos;
 import eplex.win.FastCPPNJava.activation.functions.Gaussian;
@@ -43,6 +44,7 @@ public class FilterSeedLoader implements AsyncSeedLoader{
     public AssetManager assetManager;
     public List<FilterArtifact> customSeeds;
     public String seedFileLocation = "seeds/basicSeed.json";
+    public NeatParameters neatParameters;
 
     @Override
     public Task<List<Artifact>> asyncLoadSeeds(JsonNode params) {
@@ -63,6 +65,91 @@ public class FilterSeedLoader implements AsyncSeedLoader{
                 return seedsFromFile();
             }
         });
+    }
+
+    public ArrayList<FilterArtifact> CreateRandomSeeds(int count)
+    {
+        ArrayList<FilterArtifact> artifactArrayList = new ArrayList<>();
+        for(int i=0; i < count; i++)
+            artifactArrayList.add(createArtifactSeed());
+
+        return artifactArrayList;
+    }
+
+
+    int inputCount = 9;
+    int outputCount = 9;
+
+    private FilterArtifact createArtifactSeed()
+    {
+
+        ArrayList<NeatNode> nodes = new ArrayList<NeatNode>();
+
+        int g = 0;
+        NeatNode bias = new NeatNode();
+        bias.gid = "" + g++;
+        bias.nodeType = NodeType.bias;
+        bias.activationFunction = Linear.class.getName();
+        bias.layer = 0;
+        bias.step = 0;
+
+        nodes.add(bias);
+
+        for(int i=0; i < inputCount; i++)
+        {
+            NeatNode inNode = new NeatNode();
+            inNode.gid = "" + g++;
+            inNode.nodeType = NodeType.input;
+            inNode.activationFunction = Linear.class.getName();
+            inNode.layer = 0;
+            inNode.step = 0;
+            nodes.add(inNode);
+        }
+
+        for(int i=0; i < outputCount; i++){
+
+            NeatNode outNode = new NeatNode();
+            outNode.gid = "" + g++;
+            outNode.nodeType = NodeType.output;
+            outNode.activationFunction = CPPNActivationFactory.getRandomActivationFunction();
+            outNode.layer = 10;
+            outNode.step = 0;
+            nodes.add(outNode);
+        }
+
+        //now we fully connnect everything
+
+        //where do the output nodes start?
+        int outputStart = inputCount + 1;
+
+        g = 0;
+        ArrayList<NeatConnection> connections = new ArrayList<NeatConnection>();
+
+        //for every input/bias node, wire to all the output nodes
+        for(int i=0; i < outputStart; i++)
+        {
+            for(int j=outputStart; j < outputStart + outputCount; j++)
+            {
+                //lets create a connection plz
+                NeatConnection nc = new NeatConnection();
+                nc.gid = "" + g++;
+                nc.weight = neatParameters.connectionWeightRange*(2*Math.random() -1);
+                nc.sourceID = "" + i;
+                nc.targetID = "" + j;
+                connections.add(nc);
+            }
+        }
+        NeatGenome ng = new NeatGenome(cuid.getInstance().generate(), nodes, connections, inputCount, outputCount);
+        FilterArtifact loadedArtifact =  new FilterArtifact(ng);
+
+        //set our own wid for the seed, thanks!
+        loadedArtifact.setWID(cuid.getInstance().generate());
+
+        loadedArtifact.meta = FilterArtifact.createEmptyMeta();
+        loadedArtifact.meta.user = "Seed Filter";
+
+        //now we have the neatgenome set -- there are no parents -- we are good to go!
+        return loadedArtifact;
     }
 
     private ArrayList<Node> fakeNodes()

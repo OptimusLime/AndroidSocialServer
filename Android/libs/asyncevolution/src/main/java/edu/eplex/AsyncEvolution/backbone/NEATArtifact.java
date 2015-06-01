@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import eplex.win.FastNEATJava.genome.NeatGenome;
 import eplex.win.winBackbone.Artifact;
@@ -51,6 +52,10 @@ public class NEATArtifact implements Artifact {
         this.parents = parents;
     }
 
+    @Override
+    public Map<String, Artifact> setParentsFromArtifactMap(Map<String, Artifact> artifactMap) {
+        return null;
+    }
 
     @Override
     public Artifact clone() {
@@ -63,6 +68,12 @@ public class NEATArtifact implements Artifact {
         fa.wid = this.wid;
 
         return fa;
+    }
+
+    @Override
+    public void stripAllParents() {
+        this.setParents(null);
+        this.genome.parents = null;
     }
 
     @Override

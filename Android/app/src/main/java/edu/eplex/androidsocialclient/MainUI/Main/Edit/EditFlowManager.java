@@ -11,6 +11,7 @@ import android.util.Log;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.facebook.common.internal.Lists;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -19,13 +20,16 @@ import com.squareup.otto.Bus;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import bolts.Continuation;
 import bolts.Task;
 import dagger.ObjectGraph;
+import edu.eplex.AsyncEvolution.asynchronous.interfaces.AsyncInteractiveEvolution;
 import edu.eplex.AsyncEvolution.main.NEATInitializer;
 import edu.eplex.androidsocialclient.GPU.GPUNetworkFilter;
 import edu.eplex.androidsocialclient.MainUI.Cache.BitmapCacheManager;
@@ -35,7 +39,9 @@ import edu.eplex.androidsocialclient.MainUI.Filters.Evolution.FilterEvolutionInj
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterManager;
 import edu.eplex.androidsocialclient.MainUI.Main.MainEditScreen;
 import edu.eplex.androidsocialclient.R;
+import eplex.win.FastNEATJava.genome.NeatGenome;
 import eplex.win.FastNEATJava.utils.NeatParameters;
+import eplex.win.winBackbone.Artifact;
 
 /**
  * Created by paul on 3/16/15.
@@ -120,8 +126,63 @@ public class EditFlowManager {
         return i;
     }
 
-    public void finishIECFilter(FragmentActivity activity, FilterComposite startFilter, FilterComposite endFilter)
+
+
+
+    public void finishIECFilter(FragmentActivity activity, FilterComposite startFilter, FilterComposite endFilter,
+                                Map<AsyncInteractiveEvolution.SessionPublishType, Map<String, Artifact>> map)
     {
+
+        String innerArtifactID = endFilter.getFilterArtifact().wid();
+
+        //set that selected filter as the object-- then off we go!
+        endFilter.setFilterArtifact((FilterArtifact)map.get(AsyncInteractiveEvolution.SessionPublishType.publicPublish).get(innerArtifactID));
+
+        //TODO: do we also want to send along this extra map information? Then we need to save it somewhere
+
+        FilterArtifact before = startFilter.getFilterArtifact();
+
+        FilterManager fm  = FilterManager.getInstance();
+        //where did we branch from?
+        FilterArtifact bp = fm.getBranchPoint(before.wid());
+        String bType = fm.getBranchType(before.wid());
+        //now longer need it after this is complete
+        fm.removeBranchPoint(before.wid());
+
+//        if(bp == null) {
+//            fm.addBranchPoint(before.wid(), before);
+//            bp = before;
+//        }
+
+        //now get our after point -- check the parents
+        FilterArtifact after = endFilter.getFilterArtifact();
+
+
+        //now we're linked to this original branchpoint
+        fm.addBranchPoint(after.wid(), bType, bp);
+
+
+        //Discovery requires transfer of parents to original branch point
+        if(bType.equals(FilterManager.DISCOVER_TYPE)) {
+            //our parnet must be this branch point
+            //we do a 1-1 correspondence
+            after.setParents(Lists.newArrayList(bp.wid()));
+            for (int i = 0; i < after.genomeFilters.size(); i++) {
+                NeatGenome ng = after.genomeFilters.get(i);
+                ng.parents = Lists.newArrayList(bp.genomeFilters.get(i).wid);
+            }
+        }
+        //here- if you're a seed type, then we do not need to replace parents -- there are no parents for you
+        else if(bType.equals(FilterManager.SEED_TYPE))
+        {
+            //after has no seeds plz
+            after.setParents(new ArrayList<String>());
+            for (int i = 0; i < after.genomeFilters.size(); i++) {
+                NeatGenome ng = after.genomeFilters.get(i);
+                ng.parents = new ArrayList<>();
+            }
+        }
+        //our genomes must be descended from this branchpoint
 
         //replace our filter, and return, we're all done here!
         //do not copy the unique ID -- it must remain the same
@@ -204,11 +265,6 @@ public class EditFlowManager {
 
         //create our parameters
         NeatParameters np = NEATInitializer.DefaultNEATParameters();
-
-        //higher mutations after creating children plz
-        //-- for now
-        np.postSexualMutations = 15;
-        np.postAsexualMutations = 15;
 
         List<FilterArtifact> seedArtifacts = new ArrayList<>();
 

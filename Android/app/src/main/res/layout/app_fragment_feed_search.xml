@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.quinny898.library.persistentsearch.SearchBox
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/all_toolbar_height"
+        android:id="@+id/app_discovery_search_hash_searchbox"
+        android:layout_alignParentTop="true"
+        />
+
+    <in.srain.cube.views.ptr.PtrClassicFrameLayout
+        android:id="@+id/app_feed_header_grid_view_frame"
+        xmlns:cube_ptr="http://schemas.android.com/apk/res-auto"
+        android:layout_below="@id/app_discovery_search_hash_searchbox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        cube_ptr:ptr_duration_to_close="200"
+        cube_ptr:ptr_duration_to_close_header="1000"
+        cube_ptr:ptr_keep_header_when_refresh="true"
+        cube_ptr:ptr_pull_to_fresh="false"
+        cube_ptr:ptr_ratio_of_header_height_to_refresh="1.2"
+        cube_ptr:ptr_resistance="1.7">
+
+        <GridView
+            android:id="@+id/app_feed_header_grid_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fadingEdge="none"
+            android:focusable="false"
+            android:horizontalSpacing="10dp"
+            android:verticalSpacing="10dp"
+            android:listSelector="@android:color/transparent"
+            android:numColumns="1"
+            android:stretchMode="columnWidth" />
+
+    </in.srain.cube.views.ptr.PtrClassicFrameLayout>
+</RelativeLayout>

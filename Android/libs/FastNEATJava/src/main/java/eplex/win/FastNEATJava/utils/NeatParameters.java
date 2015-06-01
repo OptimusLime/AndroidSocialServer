@@ -25,7 +25,7 @@ public class NeatParameters
 
     public int postAsexualMutations = 5;
     public int postSexualMutations = 5;
-    public int seedMutateConnectionCount = 15;
+    public int seedMutateConnectionCount = 5;
 
     //----- High level mutation proportions
     public double pMutateConnectionWeights = DEFAULT_P_MUTATE_CONNECTION_WEIGHTS;

@@ -1,5 +1,6 @@
 package edu.eplex.androidsocialclient.Utilities;
 
+import android.content.Context;
 import android.graphics.Point;
 import android.support.v4.app.FragmentActivity;
 import android.view.Display;
@@ -15,6 +16,12 @@ public class ScreenUtilities {
         Point size = new Point();
         display.getSize(size);
         return size;
+    }
+
+    public static int dipsToPixels(Context ctx, float dips) {
+        final float scale = ctx.getResources().getDisplayMetrics().density;
+        int px = (int) (dips * scale + 0.5f);
+        return px;
     }
 
 }

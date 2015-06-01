@@ -10,6 +10,7 @@ public class FeedItem {
     public String username;
     public long date;
     public String hashtag;
+    public String photoCaption;
 
     public FeedItem()
     {

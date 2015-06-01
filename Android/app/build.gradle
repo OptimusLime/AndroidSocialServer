@@ -76,7 +76,7 @@ dependencies {
 //    compile 'com.squareup.okhttp:okhttp:2.3.0'
 //    compile 'com.loopj.android:android-async-http:1.4.5'
     //For hashtag text boxes
-//    compile 'com.jmpergar:AwesomeText:1.0.0'
+    compile 'com.jmpergar:AwesomeText:1.0.0'
     compile 'com.amulyakhare:com.amulyakhare.textdrawable:1.0.1'
     //pull to refresh library for feeds -- kthx
     compile 'in.srain.cube:ultra-ptr:1.0.9'
