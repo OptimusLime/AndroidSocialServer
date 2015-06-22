@@ -21,6 +21,7 @@ public class NeatParameters
     public int tournamentSize;
     public double connectionWeightRange;
     public boolean disallowRecurrence;
+    public boolean useHyperNEAT;
 
 
     public int postAsexualMutations = 5;

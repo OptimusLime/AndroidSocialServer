@@ -399,13 +399,14 @@ public class CPPN {
             "    mediump vec4 topLeftColor = texture2D(inputImageTexture, topLeftTextureCoordinate);\n";
 
     public static final String THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_MAIN_INPUT_COLORS = "" +
-            "bottomColor, bottomLeftColor, bottomRightColor, centerColor, leftColor, rightColor, topColor, topRightColor, topLeftColor";
+            "bottomLeftColor, bottomColor, bottomRightColor, leftColor, centerColor, rightColor, topRightColor, topColor, topLeftColor";
 
     public static final String THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_MAIN_END = "" +
             "\n" +
 //            "    gl_FragColor = resultColor;\n" +
 //            "    gl_FragColor = vec4(resultColor.xyz, centerColor.w);\n" +
             "    gl_FragColor = vec4(resultColor.rgb, 1.0);\n" +
+//            "    gl_FragColor = vec4(resultColor.xyz, 1.0);\n" +
             "}";
 
     static String nodeFunctionName(int ix)
@@ -428,6 +429,54 @@ public class CPPN {
     static String shaderOutputFunctionName(int outputIx)
     {
         return "outputFunction_" + outputIx;
+    }
+    static String shaderHiddenFunctionName(int hiddenIx)
+    {
+        return "hiddenFunction_" + hiddenIx;
+    }
+    static String hiddenVariableName(int hiddenIx)
+    {
+        return "hidden_" + hiddenIx;
+    }
+
+    String hyperNEATShaderFunctionWrap(String functionName, String innerFunction, int vec4InputCount)
+    {
+        String shaderFunction = "float " + functionName + "(";
+        for(int i=0; i < vec4InputCount; i++)
+        {
+            shaderFunction += "vec4 v" + i;
+            if(i != vec4InputCount - 1)
+                shaderFunction += ",";
+            else //close up the function
+                shaderFunction += "){";
+        }
+
+        shaderFunction += "\n";
+        shaderFunction += "return " + innerFunction;
+        shaderFunction += "\n}\n";
+
+        //send it all back now!
+        return  shaderFunction;
+    }
+
+    String hyperNEATShaderFunctionWrap(String functionName, String innerFunction, int hiddenNodeCount, int hiddenNodeStart)
+    {
+        String shaderFunction = "float " + functionName + "(";
+        for(int i=0; i < hiddenNodeCount; i++)
+        {
+            shaderFunction += "float " + hiddenVariableName(i + hiddenNodeStart);
+            if(i != hiddenNodeCount - 1)
+                shaderFunction += ",";
+            else //close up the function
+                shaderFunction += "){";
+        }
+
+        shaderFunction += "\n";
+        shaderFunction += "return " + innerFunction;
+        shaderFunction += "\n}\n";
+
+        //send it all back now!
+        return  shaderFunction;
     }
 
     String shaderFunctionWrap(String functionName, String innerFunction, int inputCount)
@@ -512,7 +561,107 @@ public class CPPN {
         return colorFunction;
     }
 
-    public String cppnToShader(String additionalActivations)
+    static String outputFunctionInputWrap(int ix, int hiddenNodeCount, int hiddenNodeStartIx)
+    {
+        String wrap = shaderOutputFunctionName(ix) + "(";
+        for(int x=0; x < hiddenNodeCount; x++)
+        {
+            //read the .xyz from the inputs
+            wrap += hiddenVariableName(hiddenNodeStartIx + x);
+            if(x != hiddenNodeCount - 1)
+                wrap += ", ";
+            else //close up the function
+                wrap += ")";
+        }
+
+        return wrap;
+    }
+    static String hiddenFunctionInputWrap(int ix, int inputCount)
+    {
+        String wrap = shaderHiddenFunctionName(ix) + "(";
+        for(int x=0; x < inputCount; x++)
+        {
+            //read the .xyz from the inputs
+            wrap += "v_" + x;
+            if(x != inputCount - 1)
+                wrap += ", ";
+            else //close up the function
+                wrap += ")";
+        }
+
+        return wrap;
+    }
+    static String hyperNEATColorOutputFunction(String functionName, int inputCount, int hiddenCount, int outputCount, int totalInputNeuronCount)
+    {
+        String colorFunction = "vec4 " + functionName + "(";
+
+        for(int i=0; i < inputCount; i++)
+        {
+            colorFunction += "vec4 v_" + i;
+            if(i != inputCount - 1)
+                colorFunction += ", ";
+            else //close up the function
+                colorFunction += "){";
+        }
+
+//        colorFunction += "\n";
+//
+//        //lets make grayscale conversions for all color inputs
+//        for(int i=0; i < inputCount; i++)
+//        {
+//            colorFunction += "float gs_x_" + i + " = grayscale(x_" + i + ");\n";
+//        }
+
+        colorFunction += "\n";
+
+        int hiddenNodeStart = totalInputNeuronCount + outputCount;
+
+        //now we're ready to activate the network
+        for(int i=0; i < hiddenCount; i++)
+        {
+            colorFunction += "float " + hiddenVariableName(hiddenNodeStart + i) + " = " + hiddenFunctionInputWrap(hiddenNodeStart + i, inputCount);
+
+            //close up the abs function
+            colorFunction += ";\n";
+
+            //now we have each output as the product of its function
+        }
+
+        for(int i=0; i < outputCount; i++)
+        {
+            colorFunction += "float output_" + i + " = " + outputFunctionInputWrap(totalInputNeuronCount + i, hiddenCount, hiddenNodeStart) + ";\n";
+        }
+
+        //we need to create our final color
+        //this is how we interpret our outputs
+        //we do basic stuff here just for an example
+        colorFunction += "float alphaBlend = 0.0f;";
+        colorFunction += "float omAlphaBlend = 1.0f - alphaBlend;";
+
+        //we blend together previous pixel with new pixel
+        colorFunction += "vec4 finalColor = vec4(" +
+                "alphaBlend*v_4.x + omAlphaBlend*output_0, " +
+                "alphaBlend*v_4.y + omAlphaBlend*output_1, " +
+                "alphaBlend*v_4.z + omAlphaBlend*output_2, " +
+                "1.0);";
+
+//        colorFunction += "vec4 finalColor = vec4(output_0, output_1, output_2, 1.0);";
+
+//        for(int i=0; i < outputCount; i++) {
+//            colorFunction += "output_" + i + "*x_" + i;
+//            if(i != outputCount -1)
+//                colorFunction += " + ";
+//        }
+//
+//        colorFunction += ";\n";
+
+        colorFunction += "return finalColor;\n}\n";
+
+        //all done up in this function!
+        return colorFunction;
+    }
+
+    public String cppnToShader(boolean useHyperNEAT, String additionalActivations)
     {
         //shader bo bader
         String cppnShader = "";
@@ -574,11 +723,11 @@ public class CPPN {
                     innerFunction += " + ";
 
                 if(srcNode < this.biasNeuronCount)
-                    innerFunction += conn.weight + "*" + biasFunctionName(srcNode);
+                    innerFunction += (float)conn.weight + "f*" + biasFunctionName(srcNode);
                 else if(srcNode < this.totalInputNeuronCount)
-                    innerFunction += conn.weight + "*" +inputFunctionName(srcNode);
+                    innerFunction += (float)conn.weight + "f*" + inputFunctionName(srcNode);
                 else
-                    innerFunction += conn.weight + "*" + nodeFunctionName(srcNode);
+                    innerFunction += (float)conn.weight + "f*" + nodeFunctionName(srcNode);
 
             }
 
@@ -588,87 +737,191 @@ public class CPPN {
             nodeFunctions[tgtNode] = innerFunction;
         }
 
+        String hyperNEATOutputVariables = "";
+        int hiddenNodeStartIx = this.totalInputNeuronCount + this.outputNeuronCount;
+        int hiddenNodeCount = this.totalNeuronCount - hiddenNodeStartIx;
+
         //now we have all the node functions -- we want to calculate the final node functions for the outputs
-        for(int i= this.totalInputNeuronCount; i < this.totalInputNeuronCount + this.outputNeuronCount; i++)
+        if(useHyperNEAT)
         {
-            //we have our output node
-            int outputIx = i;
+            hyperNEATOutputVariables = "";
+            //go through all the hidden nodes -- these are the only functions we need to call in our final value
+            for (int i = this.totalInputNeuronCount; i < this.totalNeuronCount; i++) {
+                //we have our output node
+                int hiddenIx = i;
 
-            //check it out yo
-            String outputFunction = nodeFunctions[outputIx];
-            String[] componentFunctions;
-            String reconstructed;
+                //check it out yo
+                String hiddenFunction = nodeFunctions[hiddenIx];
+                String[] componentFunctions;
+                String reconstructed;
 
-            //we go until we have replaced ALL the node functions
-            while(outputFunction.contains("$"))
-            {
+                //we go until we have replaced ALL the node functions
+                while (hiddenFunction.contains("$")) {
+                    //we need to replace any node functions with functions of the inputs and bias node strictly
+                    componentFunctions = hiddenFunction.split("#");
+
+                    reconstructed = "";
+
+                    for (int s = 0; s < componentFunctions.length; s++) {
+                        String inner = componentFunctions[s];
+                        //if we're a node function, we must replace
+                        if (inner.contains("node_function")) {
+                            //get the node number
+                            int replaceIx = Integer.parseInt(inner.split("-")[1]);
+                            componentFunctions[s] = hiddenVariableName(replaceIx);
+//                            componentFunctions[s] = hiddenFunctionInputWrap(replaceIx, this.inputNeuronCount/3);
+//                            componentFunctions[s] = nodeFunctions[replaceIx];
+                        }
+
+                        //reconstruct the string!
+                        reconstructed += componentFunctions[s];
+                    }
+
+                    //now replace
+                    hiddenFunction = reconstructed;
+                }
+
+                //now save our hidden node functions -- these are our precious outputs of course!
+                nodeFunctions[hiddenIx] = hiddenFunction;
+
+                //now lets break it apart
                 //we need to replace any node functions with functions of the inputs and bias node strictly
-                componentFunctions = outputFunction.split("#");
+                componentFunctions = hiddenFunction.split("%");
 
                 reconstructed = "";
 
-                for(int s=0; s < componentFunctions.length; s++)
-                {
+                for (int s = 0; s < componentFunctions.length; s++) {
                     String inner = componentFunctions[s];
                     //if we're a node function, we must replace
-                    if(inner.contains("node_function"))
-                    {
+                    if (inner.contains("input") || inner.contains("bias")) {
+                        //convert to input ix
                         //get the node number
-                        int replaceIx = Integer.parseInt(inner.split("-")[1]);
-                        componentFunctions[s] = nodeFunctions[replaceIx];
-                    }
+                        int nodeIx = Integer.parseInt(inner.split("-")[1]);
 
-                    //reconstruct the string!
+                        if (nodeIx < this.biasNeuronCount)
+                            componentFunctions[s] = "" + DEFAULT_BIAS_VALUE;
+                        else //what inputs to read from
+                        {
+                            int readVector = (nodeIx - this.biasNeuronCount) / 3;
+                            int channel = (nodeIx - this.biasNeuronCount)%3;
+
+                            //we need to read the rgb values separately from our pixel inputs
+                            switch (channel)
+                            {
+                                case 0:
+                                    componentFunctions[s] = "v" + readVector + ".x";
+                                    break;
+                                case 1:
+                                    componentFunctions[s] = "v" + readVector + ".y";
+                                    break;
+                                case 2:
+                                    componentFunctions[s] = "v" + readVector + ".z";
+                                    break;
+                            }
+                        }
+                    }
+                    //that should simplify our input and bias functions -- down to either hardcoded values -- or input value
                     reconstructed += componentFunctions[s];
                 }
 
-                //now replace
-                outputFunction = reconstructed;
+                //finish it up!
+                reconstructed += ";";
+
+                //that's a full network!
+                //Now we need to build the shader parts
+                String wrappedFunction;
+
+                //if we're an output neuron, call it an output name
+                if(i - this.totalInputNeuronCount < this.outputNeuronCount)
+                    wrappedFunction = hyperNEATShaderFunctionWrap(shaderOutputFunctionName(hiddenIx), reconstructed, hiddenNodeCount, hiddenNodeStartIx);
+                else
+                    wrappedFunction = hyperNEATShaderFunctionWrap(shaderHiddenFunctionName(hiddenIx), reconstructed, this.inputNeuronCount/3);
+
+
+                //includes some spaces too, so no need to pad it out
+                cppnShader += wrappedFunction;
             }
+        }
+        else {
+            for (int i = this.totalInputNeuronCount; i < this.totalInputNeuronCount + this.outputNeuronCount; i++) {
+                //we have our output node
+                int outputIx = i;
 
-            //now save our output functions -- these are our precious outputs of course!
-            nodeFunctions[outputIx] = outputFunction;
+                //check it out yo
+                String outputFunction = nodeFunctions[outputIx];
+                String[] componentFunctions;
+                String reconstructed;
 
-            //now lets break it apart
-            //we need to replace any node functions with functions of the inputs and bias node strictly
-            componentFunctions = outputFunction.split("%");
+                //we go until we have replaced ALL the node functions
+                while (outputFunction.contains("$")) {
+                    //we need to replace any node functions with functions of the inputs and bias node strictly
+                    componentFunctions = outputFunction.split("#");
 
-            reconstructed = "";
+                    reconstructed = "";
 
-            for(int s=0; s < componentFunctions.length; s++)
-            {
-                String inner = componentFunctions[s];
-                //if we're a node function, we must replace
-                if(inner.contains("input") || inner.contains("bias"))
-                {
-                    //convert to input ix
-                    //get the node number
-                    int nodeIx = Integer.parseInt(inner.split("-")[1]);
+                    for (int s = 0; s < componentFunctions.length; s++) {
+                        String inner = componentFunctions[s];
+                        //if we're a node function, we must replace
+                        if (inner.contains("node_function")) {
+                            //get the node number
+                            int replaceIx = Integer.parseInt(inner.split("-")[1]);
+                            componentFunctions[s] = nodeFunctions[replaceIx];
+                        }
 
-                    if(nodeIx < this.biasNeuronCount)
-                        componentFunctions[s] = "" + DEFAULT_BIAS_VALUE;
-                    else //what inputs to read from
-                        componentFunctions[s] = "x" + (nodeIx - this.biasNeuronCount);
+                        //reconstruct the string!
+                        reconstructed += componentFunctions[s];
+                    }
+
+                    //now replace
+                    outputFunction = reconstructed;
                 }
-                //that should simplify our input and bias functions -- down to either hardcoded values -- or input value
-                reconstructed += componentFunctions[s];
+
+                //now save our output functions -- these are our precious outputs of course!
+                nodeFunctions[outputIx] = outputFunction;
+
+                //now lets break it apart
+                //we need to replace any node functions with functions of the inputs and bias node strictly
+                componentFunctions = outputFunction.split("%");
+
+                reconstructed = "";
+
+                for (int s = 0; s < componentFunctions.length; s++) {
+                    String inner = componentFunctions[s];
+                    //if we're a node function, we must replace
+                    if (inner.contains("input") || inner.contains("bias")) {
+                        //convert to input ix
+                        //get the node number
+                        int nodeIx = Integer.parseInt(inner.split("-")[1]);
+
+                        if (nodeIx < this.biasNeuronCount)
+                            componentFunctions[s] = "" + DEFAULT_BIAS_VALUE;
+                        else //what inputs to read from
+                            componentFunctions[s] = "x" + (nodeIx - this.biasNeuronCount);
+                    }
+                    //that should simplify our input and bias functions -- down to either hardcoded values -- or input value
+                    reconstructed += componentFunctions[s];
+                }
+
+                //finish it up!
+                reconstructed += ";";
+
+                //that's a full network!
+                //Now we need to build the shader parts
+                String wrappedFunction = shaderFunctionWrap(shaderOutputFunctionName(outputIx), reconstructed, this.inputNeuronCount);
+
+                //includes some spaces too, so no need to pad it out
+                cppnShader += wrappedFunction;
             }
-
-            //finish it up!
-            reconstructed += ";";
-
-            //that's a full network!
-            //Now we need to build the shader parts
-            String wrappedFunction = shaderFunctionWrap(shaderOutputFunctionName(outputIx), reconstructed, this.inputNeuronCount);
-
-            //includes some spaces too, so no need to pad it out
-            cppnShader += wrappedFunction;
         }
 
         //we need to add in a final function, that will take the inputs of the convolution filter -- then get all the outputs
         //finally converting it into a pixel value
         String colorFunctionName = "pixelColor";
-        cppnShader += colorOutputFunction(colorFunctionName, inputNeuronCount, outputNeuronCount, totalInputNeuronCount);
+
+        if(useHyperNEAT)
+            cppnShader += hyperNEATColorOutputFunction(colorFunctionName, inputNeuronCount/3, (this.totalNeuronCount - this.totalInputNeuronCount - outputNeuronCount), outputNeuronCount, totalInputNeuronCount);
+        else
+            cppnShader += colorOutputFunction(colorFunctionName, inputNeuronCount, outputNeuronCount, totalInputNeuronCount);
 
         //now we add in the start to our main function -- setting our convolution filter 3x3
         cppnShader += THREE_X_THREE_TEXTURE_SAMPLING_FRAGMENT_SHADER_MAIN_START;

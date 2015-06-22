@@ -176,7 +176,7 @@ public class HomeFeedFragment extends Fragment {
 
 
     }
-    public class HashtagsSpanRenderer implements AwesomeTextHandler.ViewSpanRenderer {
+    public static class HashtagsSpanRenderer implements AwesomeTextHandler.ViewSpanRenderer {
 
         private final static int textSizeInDips = 18;
         private final static int backgroundResource = R.drawable.common_hashtags_background;
@@ -207,7 +207,7 @@ public class HomeFeedFragment extends Fragment {
             return view;
         }
     }
-    public class GridViewAdapter extends ArrayAdapter<FeedItem> {
+    public static class GridViewAdapter extends ArrayAdapter<FeedItem> {
         private FragmentActivity context;
 
         HashSet<String> existing = new HashSet<>();

@@ -35,6 +35,7 @@ public class NEATInitializer {
     {
         //no recurrent networks please!
         NeatParameters np = new NeatParameters();
+
         //set up the defaults here
         np.pMutateAddConnection = .13;
         np.pMutateAddNode = .12;
@@ -47,6 +48,10 @@ public class NEATInitializer {
         np.postAsexualMutations = 5;
         np.connectionWeightRange = .8;
         np.disallowRecurrence = true;
+
+        //use hyperneat based encoding for filters in here, yes please!
+        np.useHyperNEAT = true;
+
         return  np;
     }
 

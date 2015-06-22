@@ -70,17 +70,68 @@ public class FilterSeedLoader implements AsyncSeedLoader{
     public ArrayList<FilterArtifact> CreateRandomSeeds(int count)
     {
         ArrayList<FilterArtifact> artifactArrayList = new ArrayList<>();
-        for(int i=0; i < count; i++)
-            artifactArrayList.add(createArtifactSeed());
+        for(int i=0; i < count; i++) {
 
+            if(neatParameters.useHyperNEAT)
+                artifactArrayList.add(createHyperNEATArtifactSeed());
+            else
+                artifactArrayList.add(createNEATArtifactSeed());
+        }
         return artifactArrayList;
     }
 
+    private FilterArtifact createNEATArtifactSeed()
+    {
+        int inputCount = 9;
+        int outputCount = 9;
 
-    int inputCount = 9;
-    int outputCount = 9;
+        NeatGenome ng = createNEATGenome(inputCount, outputCount);
 
-    private FilterArtifact createArtifactSeed()
+        FilterArtifact loadedArtifact =  new FilterArtifact(ng);
+
+        //set our own wid for the seed, thanks!
+        loadedArtifact.setWID(cuid.getInstance().generate());
+
+        loadedArtifact.meta = FilterArtifact.createEmptyMeta();
+        loadedArtifact.meta.user = "Seed Filter";
+
+        //now we have the neatgenome set -- there are no parents -- we are good to go!
+        return loadedArtifact;
+//
+//        return  createArtifactSeed(inputCount, outputCount);
+
+    }
+    private FilterArtifact createHyperNEATArtifactSeed()
+    {
+        //HyperNEAT requires 4 inputs (not including bias - x1,y1 - x2,y2)
+        //And also 7 outputs - Bias, HSV (input - hidden), HSV (hidden - output)
+        int inputCount = 4;
+        int outputCount = 7;
+
+        boolean addAnotherFilter = false;
+
+        NeatGenome ng = createNEATGenome(inputCount, outputCount);
+
+        FilterArtifact loadedArtifact =  new FilterArtifact(ng);
+
+        if(addAnotherFilter) {
+            //create another object for different secondary filter please
+            NeatGenome secondGenome = createNEATGenome(9, 9);
+            loadedArtifact.genomeFilters.add(secondGenome);
+        }
+
+        //set our own wid for the seed, thanks!
+        loadedArtifact.setWID(cuid.getInstance().generate());
+
+        loadedArtifact.meta = FilterArtifact.createEmptyMeta();
+        loadedArtifact.meta.user = "Seed Filter";
+
+        //now we have the neatgenome set -- there are no parents -- we are good to go!
+        return loadedArtifact;
+
+//        return  createArtifactSeed(inputCount, outputCount);
+    }
+    private NeatGenome createNEATGenome(int inputCount, int outputCount)
     {
 
         ArrayList<NeatNode> nodes = new ArrayList<NeatNode>();
@@ -139,7 +190,14 @@ public class FilterSeedLoader implements AsyncSeedLoader{
                 connections.add(nc);
             }
         }
-        NeatGenome ng = new NeatGenome(cuid.getInstance().generate(), nodes, connections, inputCount, outputCount);
+        return new NeatGenome(cuid.getInstance().generate(), nodes, connections, inputCount, outputCount);
+
+    }
+
+    private FilterArtifact createArtifactSeed(int inputCount, int outputCount)
+    {
+        NeatGenome ng = createNEATGenome(inputCount, outputCount);
+
         FilterArtifact loadedArtifact =  new FilterArtifact(ng);
 
         //set our own wid for the seed, thanks!

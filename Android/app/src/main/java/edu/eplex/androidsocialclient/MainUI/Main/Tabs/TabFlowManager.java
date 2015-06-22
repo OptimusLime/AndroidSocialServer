@@ -116,7 +116,7 @@ public class TabFlowManager {
             case Search:
                 return mainTagActivity.getResources().getDrawable(R.drawable.ic_action_search_black);
             case Feed:
-                return mainTagActivity.getResources().getDrawable(R.drawable.ic_action_home_black);
+                return mainTagActivity.getResources().getDrawable(R.drawable.ic_action_tiles_large_black);
             case User:
                 return mainTagActivity.getResources().getDrawable(R.drawable.ic_action_user_black);
         }

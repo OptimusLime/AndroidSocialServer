@@ -1,6 +1,7 @@
 package edu.eplex.androidsocialclient.MainUI.Main;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
@@ -12,12 +13,18 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 
 import com.facebook.drawee.backends.pipeline.Fresco;
+//import com.nhaarman.supertooltips.ToolTip;
+//import com.nhaarman.supertooltips.ToolTipRelativeLayout;
+//import com.nhaarman.supertooltips.ToolTipView;
 import com.quinny898.library.persistentsearch.SearchBox;
+import com.ryanharter.android.tooltips.ToolTip;
+import com.ryanharter.android.tooltips.ToolTipLayout;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,10 +48,12 @@ import it.neokree.materialtabs.MaterialTabListener;
 /**
  * Created by paul on 3/15/15.
  */
-public class MainScreen extends ActionBarActivity implements MaterialTabListener {
+public class MainScreen extends ActionBarActivity implements MaterialTabListener{
     MaterialTabHost tabHost;
     public ViewPager pager;
     public TabFlowManager.ViewPagerAdapter adapter;
+
+    ArrayList<MaterialTab> allTabs = new ArrayList<>();
 
     @Override
     protected void onStart() {
@@ -91,13 +100,18 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
             }
         });
 
+        allTabs.clear();
+
         // insert all tabs from pagerAdapter data
         for (int i = 0; i < adapter.getCount(); i++) {
-            tabHost.addTab(
+
+            MaterialTab tab =
+//            tabHost.addTab(
                     tabHost.newTab()
                             .setIcon(tfm.getTabIcons(i))//adapter.getPageTitle(i))
-                            .setTabListener(this)
-            );
+                            .setTabListener(this);
+            tabHost.addTab(tab);
+            allTabs.add(tab);
         }
 
         //no need to be graceful, just switch immediately
@@ -110,7 +124,38 @@ public class MainScreen extends ActionBarActivity implements MaterialTabListener
         WinAPIManager.getInstance().injectAPIManager(graph);
 
         hideKeyboard();
+
+//        ToolTipRelativeLayout toolTipRelativeLayout = (ToolTipRelativeLayout) findViewById(R.id.activity_main_tooltipRelativeLayout);
+//
+//        ToolTip toolTip = new ToolTip()
+//                .withText("Feed of Images")
+//                .withTextColor(Color.WHITE)
+//                .withColor(R.color.primary_app_blue)
+//                .withShadow()
+//                .withAnimationType(ToolTip.AnimationType.FROM_MASTER_VIEW);
+//
+//        ToolTipView myToolTipView = toolTipRelativeLayout.showToolTipForView(toolTip, allTabs.get(0).getView());
+//        myToolTipView.setOnToolTipViewClickedListener(MainScreen.this);
+//        ToolTipLayout tipContainer = (ToolTipLayout) findViewById(R.id.activity_main_tooltip_container);
+//        // Create a ToolTip using the Builder class
+//        ToolTip t = new ToolTip.Builder(myContext)
+//                .anchor(myAnchorView)      // The view to which the ToolTip should be anchored
+//                .gravity(Gravity.TOP)      // The location of the view in relation to the anchor (LEFT, RIGHT, TOP, BOTTOM)
+//                .color(Color.RED)          // The color of the pointer arrow
+//                .pointerSize(POINTER_SIZE) // The size of the pointer
+//                .contentView(contentView)  // The actual contents of the ToolTip
+//                .build();
+//
+//// Add the ToolTip to the view, using the default animations
+//        tipContainer.addTooltip(t);
+
+
     }
+//
+//    @Override
+//    public void onToolTipViewClicked(ToolTipView toolTipView) {
+//        toolTipView.remove();
+//    }
 
     public void switchToTab(TabFlowManager.TabID tab, boolean smooth)
     {

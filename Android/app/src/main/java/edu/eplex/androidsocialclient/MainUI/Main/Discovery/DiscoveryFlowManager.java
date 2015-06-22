@@ -48,10 +48,10 @@ public class DiscoveryFlowManager {
     //what tab are we??? How do the tabs behave for switching?
     public enum DiscoveryID
     {
-        Popular,
-        Favorites,
-        Search,
         Recent,
+        Popular,
+        Search,
+        Favorites,
         Scratch
     }
 
@@ -191,7 +191,7 @@ public class DiscoveryFlowManager {
     }
     public DiscoveryID DefaultStartingTab()
     {
-        return DiscoveryID.Popular;
+        return DiscoveryID.Recent;
     }
 
     /*

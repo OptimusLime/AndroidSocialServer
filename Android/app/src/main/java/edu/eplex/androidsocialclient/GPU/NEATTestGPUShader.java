@@ -70,7 +70,7 @@ public class NEATTestGPUShader {
         CPPN decoded = DecodeToFloatFastConcurrentNetwork.DecodeNeatGenomeToCPPN(ng);
 
         //now decode please!
-        String buildShader = decoded.cppnToShader(null);
+        String buildShader = decoded.cppnToShader(false, null);
 
         GPUImage3x3TextureSamplingFilter cppnFilter = new GPUImage3x3TextureSamplingFilter(buildShader);
 

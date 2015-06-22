@@ -14,11 +14,13 @@ import edu.eplex.AsyncEvolution.activations.PBGaussian;
 import edu.eplex.AsyncEvolution.activations.pbLinear;
 import edu.eplex.AsyncEvolution.backbone.NEATArtifact;
 import edu.eplex.AsyncEvolution.cache.implementations.EvolutionBitmapManager;
+import edu.eplex.AsyncEvolution.main.NEATInitializer;
 import edu.eplex.androidsocialclient.MainUI.Filters.FilterArtifact;
 import eplex.win.FastCPPNJava.activation.functions.BipolarSigmoid;
 import eplex.win.FastCPPNJava.activation.functions.Cos;
 import eplex.win.FastCPPNJava.activation.functions.Gaussian;
 import eplex.win.FastCPPNJava.activation.functions.Linear;
+import eplex.win.FastCPPNJava.activation.functions.PlainSigmoid;
 import eplex.win.FastCPPNJava.activation.functions.Sine;
 import eplex.win.FastCPPNJava.network.CPPN;
 import eplex.win.FastNEATJava.decode.DecodeToFloatFastConcurrentNetwork;
@@ -39,6 +41,7 @@ public class GPUNetworkFilter {
     }
 
     public static final String SHADER_ACTIVATIONS_ADDITIONAL = "" +
+            "float PlainSigmoid(float val){ return " + new PlainSigmoid().gpuFunctionString() + " }\n" +
             "float pbLinear(float val){ return " + new pbLinear().gpuFunctionString() + " }\n" +
             "float PBBipolarSigmoid(float val){ return " + new PBBipolarSigmoid().gpuFunctionString() + " }\n" +
             "float PBGaussian(float val){ return " + new PBGaussian().gpuFunctionString() + " }\n" +
@@ -58,7 +61,7 @@ public class GPUNetworkFilter {
     Bitmap GPUNetworkToImage(Context context, Bitmap originalImage, Artifact artifact, JsonNode params)
     {
         //grab genome
-        NeatGenome g;
+        NeatGenome g, g2 = null;
 
         //check which type of artifact
         try {
@@ -72,27 +75,59 @@ public class GPUNetworkFilter {
         {
             FilterArtifact fa = (FilterArtifact) artifact;
             g = fa.genomeFilters.get(0);
+            if(fa.genomeFilters.size() > 1)
+                g2 = fa.genomeFilters.get(1);
         }
 
 //        NeatGenome g = ((NEATArtifact)artifact).genome;
 
         //decode
-        CPPN decoded = DecodeToFloatFastConcurrentNetwork.DecodeNeatGenomeToCPPN(g);
+
+        CPPN decoded;
+        CPPN secondaryCPPN = null;
+        boolean useHyperNEAT = NEATInitializer.DefaultNEATParameters().useHyperNEAT;
+
+        if(useHyperNEAT) {
+            decoded = DecodeToFloatFastConcurrentNetwork.DecodeNeatGenomeToHyperNEATCPPN(g);
+
+            if(g2 != null)
+                secondaryCPPN = DecodeToFloatFastConcurrentNetwork.DecodeNeatGenomeToCPPN(g2);
+
+        }
+        else {
+            decoded = DecodeToFloatFastConcurrentNetwork.DecodeNeatGenomeToCPPN(g);
+        }
 
         //turn into shader code
-        String fragShader = decoded.cppnToShader(SHADER_ACTIVATIONS_ADDITIONAL);
+        String fragShader = decoded.cppnToShader(useHyperNEAT, SHADER_ACTIVATIONS_ADDITIONAL);
 
         GPUImage3x3TextureSamplingFilter cppnFilter = new GPUImage3x3TextureSamplingFilter(fragShader);
+        GPUImage3x3TextureSamplingFilter secondaryFilter;
+
 
         //create our image plzzz
         GPUImage mGPUImage = new GPUImage(context);
 
         mGPUImage.setFilter(cppnFilter);
+
 //        mGPUImage.setFilter(new GPUImageBoxBlurFilter(.4f));
         mGPUImage.setImage(originalImage);
 
-        //create the filtered bitmap object and send it back
-        return mGPUImage.getBitmapWithFilterApplied();
+        if(secondaryCPPN != null) {
+            secondaryFilter = new GPUImage3x3TextureSamplingFilter(secondaryCPPN.cppnToShader(false, SHADER_ACTIVATIONS_ADDITIONAL));
+
+            Bitmap bm = mGPUImage.getBitmapWithFilterApplied();
+            mGPUImage.setFilter(secondaryFilter);
+            mGPUImage.setImage(bm);
+
+            Bitmap finalImage = mGPUImage.getBitmapWithFilterApplied();
+            bm.recycle();
+
+            return finalImage;
+        }
+        else
+            //create the filtered bitmap object and send it back
+            return mGPUImage.getBitmapWithFilterApplied();
     }
 
 }
